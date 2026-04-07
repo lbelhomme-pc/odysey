@@ -5,251 +5,358 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Odysey transforme les PDF en lecture adaptee pour les personnes dys. Gratuit, hors ligne, avec OCR, audio et profils de lecture."
+      content="Odysey adapte les PDF pour les personnes dys avec une lecture plus calme, un OCR local, des profils de lecture et une version web installable."
     />
-    <title>Odysey - Lecture PDF adaptee pour les troubles dys</title>
+    <meta name="theme-color" content="#161311" />
+    <title>Odysey | Lecture PDF adaptee pour les troubles dys</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="icon" type="image/png" href="./assets/odysey-icon.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="site-header">
-      <div class="container hero">
-        <div class="hero-copy">
-          <img class="hero-logo" src="./assets/odysey-brand.png" alt="Logo Odysey" />
-          <p class="eyebrow">Lecture PDF adaptee</p>
-          <h1>Odysey - Lecture PDF adaptee pour les troubles dys</h1>
-          <p class="hero-subtitle">Gratuit. Offline. Cree par un enseignant.</p>
-          <p class="hero-text">
-            Importe un PDF, applique un profil adapte, lance l'audio ou l'OCR,
-            puis lis immediatement sans cloud ni compte.
-          </p>
+    <div class="topline">
+      <div class="layout topline-inner">
+        <p>Paris &middot; Lecture adapt&eacute;e des PDF pour &eacute;l&egrave;ves, familles et professionnels.</p>
+        <a href="./app/">Acc&egrave;s en ligne</a>
+      </div>
+    </div>
 
-          <div class="hero-actions">
-            <a
-              class="button button-primary"
-              href="https://github.com/lbelhomme-pc/odysey/releases/latest/download/Odysey-1.0.0-win-x64.exe"
-              target="_blank"
-              rel="noreferrer"
-              >Telecharger pour Windows</a
-            >
-            <a class="button button-secondary" href="./app/">Utiliser en ligne</a>
-          </div>
+    <header class="header" id="accueil">
+      <div class="layout header-inner">
+        <a class="brand" href="#accueil" aria-label="Odysey, retour &agrave; l'accueil">
+          <img src="./assets/odysey-brand.png" alt="Odysey" />
+        </a>
 
-          <div class="hero-secondary">
-            <a
-              class="button button-tertiary"
-              href="https://github.com/lbelhomme-pc/odysey/releases/latest/download/Odysey-1.0.0-win-x64.zip"
-              target="_blank"
-              rel="noreferrer"
-              >Version portable (zip)</a
-            >
-          </div>
-
-          <p class="hero-note">
-            Windows aujourd'hui, version web utilisable sur Mac et Linux.
-            Aucune connexion internet requise apres le premier chargement.
-          </p>
-        </div>
+        <nav class="nav" aria-label="Navigation principale">
+          <a href="#maison">Maison Odysey</a>
+          <a href="#expertise">Expertise</a>
+          <a href="#transformation">Transformation</a>
+          <a href="#profils">Profils</a>
+          <a href="#acces">Acc&egrave;s</a>
+          <a href="#soutien">Soutenir</a>
+        </nav>
       </div>
     </header>
 
     <main>
-      <section class="section section-alt" id="avant-apres">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Avant / Apres</p>
-            <h2>Un PDF transforme en lecture adaptee</h2>
-            <p>
-              Import d'un PDF, choix d'un profil, lecture immediate. Pas de
-              compte, pas de cloud, pas de configuration lourde.
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="layout hero-inner">
+          <div class="hero-panel">
+            <p class="eyebrow eyebrow-light">Edition Odysey</p>
+            <h1 id="hero-title">Une lecture plus calme, plus nette, plus disponible.</h1>
+            <p class="hero-copy">
+              Odysey reprend les documents PDF trop denses, les reconstruit avec mesure,
+              puis restitue une lecture adapt&eacute;e aux troubles dys sans transformer le texte en interface.
             </p>
-          </div>
 
-          <div class="compare-grid">
-            <figure class="compare-card">
-              <img
-                src="./assets/screenshot-before.svg"
-                alt="Illustration d'un PDF brut classique difficile a lire"
-              />
-              <figcaption>PDF brut classique</figcaption>
-            </figure>
-            <figure class="compare-card">
-              <img
-                src="./assets/screenshot-after.svg"
-                alt="Illustration du meme PDF dans Odysey avec lecture adaptee"
-              />
-              <figcaption>Lecture adaptee dans Odysey</figcaption>
-            </figure>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="fonctionnalites">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Fonctionnalites</p>
-            <h2>Ce qu'Odysey fait pour vous</h2>
-          </div>
-
-          <div class="feature-grid">
-            <article class="feature-card">
-              <h3>Profils par trouble</h3>
-              <p>
-                Dyslexie, dyscalculie, TDA/H, dyspraxie : un profil pret pour
-                chaque besoin.
-              </p>
-            </article>
-            <article class="feature-card">
-              <h3>Coloration syllabique</h3>
-              <p>
-                Syllabes en couleur, lettres muettes attenuees, sons francais
-                visualises.
-              </p>
-            </article>
-            <article class="feature-card">
-              <h3>Lecture audio</h3>
-              <p>
-                Suivi mot par mot synchronise avec la voix. Vitesse et pauses
-                reglables.
-              </p>
-            </article>
-            <article class="feature-card">
-              <h3>OCR integre</h3>
-              <p>
-                Transforme les PDF scannes en texte lisible et adaptable, en
-                local.
-              </p>
-            </article>
-            <article class="feature-card">
-              <h3>Maths verbalisees</h3>
-              <p>
-                Les formules sont lues a voix haute en francais avec un rendu
-                plus clair.
-              </p>
-            </article>
-            <article class="feature-card">
-              <h3>Impression adaptee</h3>
-              <p>
-                Imprime une version propre et adaptee du document pour la
-                classe ou la maison.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section section-alt" id="profils">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Profils</p>
-            <h2>Un profil pour chaque besoin</h2>
-            <p>
-              Des profils prets a l'emploi, puis des reglages fins si besoin.
-            </p>
-          </div>
-
-          <div class="profiles-grid">
-            <article class="profile-chip"><strong>Normal</strong><span>Lecture reflow sans aide supplementaire.</span></article>
-            <article class="profile-chip"><strong>Lecture visuelle allegee</strong><span>Lecture stable, aeree et confortable.</span></article>
-            <article class="profile-chip"><strong>Dyslexie</strong><span>Aide moderee au decodage sans surcharge.</span></article>
-            <article class="profile-chip"><strong>Decodage renforce</strong><span>Syllabes et reperes plus visibles.</span></article>
-            <article class="profile-chip"><strong>Audio / Focus</strong><span>Lecture vocale et repere visuel combines.</span></article>
-            <article class="profile-chip"><strong>Comprehension simplifiee</strong><span>Presentation plus apaisante pour l'effort cognitif.</span></article>
-            <article class="profile-chip"><strong>Dyslexie renforcee</strong><span>Aides plus fortes pour la lecture difficile.</span></article>
-            <article class="profile-chip"><strong>Dyscalculie</strong><span>Rendu mieux adapte aux nombres et aux formules.</span></article>
-            <article class="profile-chip"><strong>TDA/H</strong><span>Focus, fenetre de lecture et immersion.</span></article>
-            <article class="profile-chip"><strong>Dyspraxie</strong><span>Navigation plus simple et plus stable.</span></article>
-            <article class="profile-chip"><strong>Enseignant / Ortho</strong><span>Vue utile pour accompagner et verifier.</span></article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="telechargement">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Telechargement</p>
-            <h2>Telecharger Odysey</h2>
-          </div>
-
-          <div class="download-grid">
-            <article class="download-card">
-              <h3>Windows Installateur</h3>
-              <p>Version classique avec installation guidee.</p>
+            <div class="hero-actions">
+              <a class="button button-accent" href="./app/">Utiliser l&rsquo;application web</a>
               <a
-                class="button button-primary"
+                class="button button-outline-light"
                 href="https://github.com/lbelhomme-pc/odysey/releases/latest/download/Odysey-1.0.0-win-x64.exe"
                 target="_blank"
                 rel="noreferrer"
-                >Telecharger l'exe</a
               >
-            </article>
-            <article class="download-card">
-              <h3>Windows Portable</h3>
-              <p>Version zip a decompresser puis lancer directement.</p>
-              <a
-                class="button button-secondary"
-                href="https://github.com/lbelhomme-pc/odysey/releases/latest/download/Odysey-1.0.0-win-x64.zip"
-                target="_blank"
-                rel="noreferrer"
-                >Telecharger le zip</a
-              >
-            </article>
-            <article class="download-card">
-              <h3>Mac / Linux</h3>
-              <p>Bientot disponible. En attendant, utilisez la version web.</p>
-              <a class="button button-tertiary" href="./app/">Ouvrir la version web</a>
-            </article>
-          </div>
+                T&eacute;l&eacute;charger pour Windows
+              </a>
+            </div>
 
-          <p class="download-linkline">
-            <a href="./app/">Ou utiliser directement dans le navigateur -></a>
-          </p>
-          <p class="download-note">
-            Windows peut afficher un avertissement SmartScreen au premier
-            lancement. Clique sur "Informations complementaires", puis
-            "Executer quand meme".
-          </p>
+            <div class="hero-signature" aria-label="Points forts">
+              <span>OCR local</span>
+              <span>Lecture audio</span>
+              <span>Impression adapt&eacute;e</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="section section-alt" id="soutenir">
-        <div class="container support-section">
-          <div class="section-heading">
-            <p class="eyebrow">Soutenir</p>
-            <h2>Soutenir le projet</h2>
+      <section class="section section-light" id="maison">
+        <div class="layout intro-grid">
+          <div class="intro-heading">
+            <p class="eyebrow">Direction</p>
+            <h2>Un outil con&ccedil;u pour all&eacute;ger la lecture, non pour capter l&rsquo;attention.</h2>
+          </div>
+
+          <div class="intro-copy">
             <p>
-              Odysey est gratuit et le restera. Ton soutien finance le
-              developpement, les tests et l'amelioration des outils pour les
-              familles, les enseignants et les professionnels.
+              Odysey suit une ligne claire : retirer du bruit, clarifier la structure,
+              rendre le texte plus habitable pour les personnes dyslexiques,
+              dysorthographiques, dyspraxiques, dyscalculiques ou TDA/H.
+            </p>
+            <p>
+              Le document garde sa dignit&eacute; de document. Les aides restent visibles,
+              mais jamais tapageuses. La technique s&rsquo;efface derri&egrave;re l&rsquo;usage.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="expertise">
+        <div class="layout">
+          <div class="section-heading">
+            <p class="eyebrow">Expertise</p>
+            <h2>Des fonctions choisies pour la lecture r&eacute;elle.</h2>
+            <p>
+              Chaque module a une fonction simple : mieux lire, mieux suivre, mieux comprendre,
+              sans ajouter de complexit&eacute; &agrave; la page.
+            </p>
+          </div>
+
+          <div class="service-list">
+            <article class="service-row">
+              <span class="service-index">01</span>
+              <div class="service-body">
+                <h3>Recomposition du PDF</h3>
+                <p>
+                  Odysey reconstitue le texte en une lecture continue, nettoie les en-t&ecirc;tes
+                  r&eacute;p&eacute;t&eacute;s et r&eacute;tablit une structure exploitable.
+                </p>
+              </div>
+            </article>
+
+            <article class="service-row">
+              <span class="service-index">02</span>
+              <div class="service-body">
+                <h3>Profils de lecture imm&eacute;diats</h3>
+                <p>
+                  Un profil normal, des profils dys, un mode audio/focus, puis des variantes
+                  avanc&eacute;es quand le besoin l&rsquo;exige vraiment.
+                </p>
+              </div>
+            </article>
+
+            <article class="service-row">
+              <span class="service-index">03</span>
+              <div class="service-body">
+                <h3>OCR local pour les documents scann&eacute;s</h3>
+                <p>
+                  Les PDF sans couche texte peuvent retrouver une lecture exploitable directement
+                  dans l&rsquo;application, sans d&eacute;pendre d&rsquo;un service externe.
+                </p>
+              </div>
+            </article>
+
+            <article class="service-row">
+              <span class="service-index">04</span>
+              <div class="service-body">
+                <h3>Audio et rep&egrave;res visuels</h3>
+                <p>
+                  Lecture &agrave; voix haute, point de reprise, paragraphe choisi, r&eacute;glette
+                  de lecture et mise en &eacute;vidence du passage courant.
+                </p>
+              </div>
+            </article>
+
+            <article class="service-row">
+              <span class="service-index">05</span>
+              <div class="service-body">
+                <h3>Math&eacute;matiques clarifi&eacute;es</h3>
+                <p>
+                  Les expressions sont normalis&eacute;es, espac&eacute;es, color&eacute;es avec mesure
+                  et verbalis&eacute;es pour une lecture plus stable.
+                </p>
+              </div>
+            </article>
+
+            <article class="service-row">
+              <span class="service-index">06</span>
+              <div class="service-body">
+                <h3>Version imprimable propre</h3>
+                <p>
+                  Une sortie PDF adapt&eacute;e reste disponible pour l&rsquo;&eacute;cole, la maison,
+                  l&rsquo;accompagnement orthophonique ou le contexte professionnel.
+                </p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-dark" id="transformation">
+        <div class="layout transformation-grid">
+          <div class="transformation-copy">
+            <p class="eyebrow eyebrow-light">Transformation</p>
+            <h2>Du document brut &agrave; une lecture tenue, stable et partageable.</h2>
+            <p>
+              Le texte original n&rsquo;est pas ni&eacute;. Il est repris, r&eacute;ordonn&eacute;,
+              rendu plus disponible, puis propos&eacute; dans un environnement de lecture
+              sobre, local et imprimable.
+            </p>
+          </div>
+
+          <div class="transformation-figures">
+            <figure class="figure-card">
+              <img src="./assets/screenshot-before.svg" alt="Exemple d'un PDF brut dense et peu lisible" />
+              <figcaption>Document d&rsquo;origine</figcaption>
+            </figure>
+
+            <figure class="figure-card">
+              <img src="./assets/screenshot-after.svg" alt="Version recomposee dans Odysey avec une lecture adaptee" />
+              <figcaption>Lecture recompos&eacute;e dans Odysey</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-light" id="profils">
+        <div class="layout">
+          <div class="section-heading section-heading-narrow">
+            <p class="eyebrow">Profils</p>
+            <h2>Une gamme courte, lisible, utilisable sans apprentissage.</h2>
+          </div>
+
+          <div class="profiles-grid">
+            <article class="profile-card">
+              <strong>Normal</strong>
+              <p>Lecture reflow sans aide suppl&eacute;mentaire.</p>
+            </article>
+            <article class="profile-card">
+              <strong>Lecture visuelle all&eacute;g&eacute;e</strong>
+              <p>Composition a&eacute;r&eacute;e, stable et sobre pour les textes longs.</p>
+            </article>
+            <article class="profile-card">
+              <strong>Dyslexie</strong>
+              <p>Appui mesur&eacute; au d&eacute;codage sans surcharge graphique.</p>
+            </article>
+            <article class="profile-card">
+              <strong>D&eacute;codage renforc&eacute;</strong>
+              <p>Syllabes, rep&egrave;res et guidage visuel plus affirm&eacute;s.</p>
+            </article>
+            <article class="profile-card">
+              <strong>Audio / Focus</strong>
+              <p>Lecture vocale, rep&egrave;re visuel et point de reprise r&eacute;unis.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="layout references-grid">
+          <div class="section-heading section-heading-narrow">
+            <p class="eyebrow">References</p>
+            <h2>Une proposition destinee au quotidien, pas a la demonstration.</h2>
+          </div>
+
+          <div class="quotes-grid">
+            <article class="quote-card">
+              <p>
+                &laquo;&nbsp;Le bon r&eacute;glage se voit imm&eacute;diatement. On ne demande pas
+                &agrave; l&rsquo;&eacute;l&egrave;ve d&rsquo;apprendre l&rsquo;outil avant de pouvoir lire.&nbsp;&raquo;
+              </p>
+              <span>Accompagnement familial</span>
+            </article>
+
+            <article class="quote-card">
+              <p>
+                &laquo;&nbsp;L&rsquo;int&eacute;r&ecirc;t tient &agrave; la retenue. Le texte reste central,
+                l&rsquo;interface cesse enfin de se faire remarquer.&nbsp;&raquo;
+              </p>
+              <span>Orthophonie</span>
+            </article>
+
+            <article class="quote-card">
+              <p>
+                &laquo;&nbsp;Entre la version web, l&rsquo;audio et l&rsquo;impression adapt&eacute;e,
+                Odysey devient un outil de travail autant qu&rsquo;un outil de lecture.&nbsp;&raquo;
+              </p>
+              <span>Cadre scolaire et professionnel</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-light" id="acces">
+        <div class="layout access-grid">
+          <article class="access-card">
+            <p class="eyebrow">Windows</p>
+            <h3>Version avec installation</h3>
+            <p>
+              Pour un usage classique sur poste fixe ou portable, avec raccourcis et installation guid&eacute;e.
+            </p>
+            <a
+              class="button button-accent"
+              href="https://github.com/lbelhomme-pc/odysey/releases/latest/download/Odysey-1.0.0-win-x64.exe"
+              target="_blank"
+              rel="noreferrer"
+            >
+              T&eacute;l&eacute;charger l&rsquo;exe
+            </a>
+          </article>
+
+          <article class="access-card">
+            <p class="eyebrow">Windows</p>
+            <h3>Version sans installation</h3>
+            <p>
+              Une archive &agrave; d&eacute;compresser, puis lancer directement pour un essai rapide.
+            </p>
+            <a
+              class="button button-dark"
+              href="https://github.com/lbelhomme-pc/odysey/releases/latest/download/Odysey-1.0.0-win-x64.zip"
+              target="_blank"
+              rel="noreferrer"
+            >
+              T&eacute;l&eacute;charger le zip
+            </a>
+          </article>
+
+          <article class="access-card">
+            <p class="eyebrow">Web / PWA</p>
+            <h3>Acc&egrave;s imm&eacute;diat</h3>
+            <p>
+              Utilisable depuis le navigateur, installable ensuite, avec les profils,
+              la lecture, l&rsquo;audio et l&rsquo;OCR local c&ocirc;t&eacute; navigateur.
+            </p>
+            <a class="button button-outline-dark" href="./app/">Ouvrir l&rsquo;application web</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="section support" id="soutien">
+        <div class="layout support-shell">
+          <div class="support-copy">
+            <p class="eyebrow">Soutenir</p>
+            <h2>Un projet gratuit &agrave; l&rsquo;usage, exigeant dans sa fabrication.</h2>
+            <p>
+              Le soutien permet de poursuivre les am&eacute;liorations sur l&rsquo;OCR, l&rsquo;audio,
+              le moteur de d&eacute;codage, la version web et la diffusion multiplateforme.
             </p>
           </div>
 
           <div class="support-actions">
             <a
-              class="button button-primary"
+              class="button button-accent"
               href="https://fr.tipeee.com/odysey/"
               target="_blank"
               rel="noreferrer"
-              >Soutenir sur Tipeee</a
             >
-            <a class="button button-tertiary" href="./app/">Essayer la version web</a>
+              Soutenir sur Tipeee
+            </a>
+            <a class="button button-outline-dark" href="./app/">Essayer l&rsquo;application</a>
           </div>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <div class="container footer-content">
-        <p>&copy; 2026 Ludovic Belhomme - Contact : ludovic.belhomme@outlook.com</p>
+      <div class="layout footer-inner">
+        <div class="footer-brand">
+          <img src="./assets/odysey-brand.png" alt="Odysey" />
+          <p>Lecture PDF adapt&eacute;e, version desktop, web et PWA.</p>
+        </div>
+
+        <div class="footer-meta">
+          <p>&copy; 2026 Ludovic Belhomme</p>
+          <p>Contact : ludovic.belhomme@outlook.com</p>
+        </div>
+
         <nav class="footer-links" aria-label="Liens utiles">
           <a href="https://github.com/lbelhomme-pc/odysey" target="_blank" rel="noreferrer">GitHub</a>
-          <a href="https://github.com/lbelhomme-pc/odysey/issues" target="_blank" rel="noreferrer">Signaler un probleme</a>
+          <a href="https://github.com/lbelhomme-pc/odysey/issues" target="_blank" rel="noreferrer">Signaler un probl&egrave;me</a>
         </nav>
       </div>
     </footer>
