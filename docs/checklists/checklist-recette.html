@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checklist de recette DysLecteur</title>
+    <link rel="stylesheet" href="./checklist-recette.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">DysLecteur · Recette fonctionnelle</p>
+          <h1>Checklist lisible pour tester les PDF, les profils et les fonctions clés</h1>
+          <p class="hero-text">
+            Cette page sert à suivre les essais de l'application avec de vrais documents. Les états sont mémorisés
+            localement dans le navigateur pour reprendre la recette plus tard.
+          </p>
+          <p class="hero-text">
+            Version recommandée maintenant :
+            <a href="./checklist-par-pdf.html">ouvrir la checklist par type de PDF</a>.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button type="button" class="action-button primary" id="printChecklistButton">Imprimer la checklist</button>
+          <button type="button" class="action-button" id="exportChecklistButton">Exporter les réponses</button>
+          <button type="button" class="action-button" id="importChecklistButton">Importer les réponses</button>
+          <button type="button" class="action-button subtle" id="toggleAllSectionsButton">Tout déplier</button>
+          <button type="button" class="action-button danger subtle" id="resetChecklistButton">Réinitialiser</button>
+          <input id="importChecklistFile" type="file" accept="application/json" hidden />
+        </div>
+      </header>
+
+      <section class="summary-grid" aria-label="Résumé de progression">
+        <article class="summary-card">
+          <span class="summary-label">Progression</span>
+          <strong id="completionCount">0 / 0</strong>
+          <span id="completionText" class="summary-muted">Aucun point validé pour l'instant.</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">OK</span>
+          <strong id="statusOkCount">0</strong>
+          <span class="status-pill ok">Validés</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">À revoir</span>
+          <strong id="statusReviewCount">0</strong>
+          <span class="status-pill review">À retester</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">KO</span>
+          <strong id="statusFailCount">0</strong>
+          <span class="status-pill fail">Bloquants</span>
+        </article>
+      </section>
+
+      <section class="meta-panel">
+        <div class="panel-head">
+          <h2>Contexte du test</h2>
+          <p>Note ici la session de recette pour savoir qui a testé, sur quelle version et avec quel appareil.</p>
+        </div>
+        <div class="meta-grid">
+          <label class="field">
+            <span>Testeur</span>
+            <input type="text" id="testerName" placeholder="Exemple : Ludovic" />
+          </label>
+          <label class="field">
+            <span>Date</span>
+            <input type="date" id="testDate" />
+          </label>
+          <label class="field">
+            <span>Version de l'application</span>
+            <input type="text" id="appVersion" placeholder="Exemple : 1.0.0 test OCR" />
+          </label>
+          <label class="field">
+            <span>Machine / navigateur</span>
+            <input type="text" id="testDevice" placeholder="Exemple : Windows 11 · portable HP" />
+          </label>
+        </div>
+        <label class="field field--full">
+          <span>Notes globales</span>
+          <textarea id="globalNotes" rows="3" placeholder="Observations générales sur cette session de recette."></textarea>
+        </label>
+      </section>
+
+      <main class="checklist-layout">
+        <details class="checklist-section" open>
+          <summary>
+            <div>
+              <h2>1. Corpus recommandé de PDF</h2>
+              <p>Une vue claire des types de documents à réunir pour couvrir les vrais cas limites.</p>
+            </div>
+          </summary>
+          <div id="pdfTypesOverview" class="overview-grid"></div>
+        </details>
+
+        <details class="checklist-section" open>
+          <summary>
+            <div>
+              <h2>2. Points de contrôle communs</h2>
+              <p>Les critères que l'on vérifie à chaque fois, quel que soit le PDF testé.</p>
+            </div>
+          </summary>
+          <div id="commonChecksPanel" class="feature-groups"></div>
+        </details>
+
+        <details class="checklist-section" open>
+          <summary>
+            <div>
+              <h2>3. Recette par type de PDF</h2>
+              <p>Pour chaque famille de document, on teste les points communs puis tous les profils utiles.</p>
+            </div>
+          </summary>
+          <div id="pdfProtocolChecklist" class="pdf-protocol-grid"></div>
+        </details>
+      </main>
+    </div>
+
+    <template id="statusTemplate">
+      <fieldset class="status-group">
+        <legend>Statut global</legend>
+      </fieldset>
+    </template>
+
+    <script type="module" src="./checklist-recette.js"></script>
+  </body>
+</html>

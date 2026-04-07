@@ -1,0 +1,75 @@
+MACOS ET LINUX - COMMENT FAIRE
+==============================
+
+Machine actuelle :
+- Windows
+
+
+1. Ce qui fonctionne ici
+------------------------
+
+Depuis cette machine Windows :
+- Windows : build complete possible
+- macOS : configuration prete, mais build impossible localement
+- Linux : configuration prete, mais build non fiable localement
+
+
+2. macOS
+--------
+
+Scripts disponibles :
+- npm run build:mac:dmg
+- npm run build:mac:unpacked
+- npm run build:mac
+
+Regle simple :
+- une vraie build macOS doit etre lancee sur un Mac
+- ou sur GitHub Actions via `macos-latest`
+
+Formats produits :
+- `.dmg` pour diffusion
+- dossier `.app` non signe pour verification
+
+Pour une diffusion propre sans alertes Gatekeeper :
+- certificat Apple Developer ID
+- signature du binaire
+- notarization Apple
+
+Sans signature/notarization :
+- le `.dmg` est utile pour tests ou diffusion limitee
+- macOS affichera des avertissements de securite
+
+
+3. Linux
+--------
+
+Scripts disponibles :
+- npm run build:linux:appimage
+- npm run build:linux:deb
+- npm run build:linux:unpacked
+- npm run build:linux
+
+Regle simple :
+- une vraie build Linux doit etre lancee sur Linux
+- ou sur GitHub Actions via `ubuntu-latest`
+
+Formats produits :
+- `AppImage` : un seul fichier executable, pratique pour la diffusion
+- `.deb` : installation classique Debian / Ubuntu
+- dossier brut : verification technique
+
+Pourquoi pas ici sous Windows :
+- AppImage demande une chaine Linux propre
+- `.deb` demande `fpm`
+- le packaging Linux est plus fiable sur une machine Linux ou sur le CI
+
+
+4. Recommandation pratique
+--------------------------
+
+La solution la plus propre pour ce projet est :
+1. construire Windows localement sur cette machine
+2. construire macOS et Linux via GitHub Actions
+3. telecharger les artefacts depuis l'onglet Actions
+
+Le workflow fourni dans `.github/workflows/build-desktop.yml` fait cela.

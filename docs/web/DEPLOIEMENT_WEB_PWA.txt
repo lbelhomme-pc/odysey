@@ -1,0 +1,78 @@
+WEB / PWA ODYSEY
+================
+
+But :
+- publier un site vitrine a la racine
+- publier l'application web / PWA sous `/app/`
+- deployer simplement via GitHub Pages
+
+
+1. Ce qui est en place
+----------------------
+
+- fallback navigateur dans `src/app.mjs`
+- manifeste PWA : `manifest.webmanifest`
+- service worker : `service-worker.js`
+- bouton d'installation web dans l'application
+- build statique : `npm run build:web`
+- landing page : `site/index.html`
+- workflow GitHub Pages : `.github/workflows/deploy-site.yml`
+
+
+2. Build local
+--------------
+
+Commande :
+- `npm run build:web`
+
+Resultat :
+- dossier `web-dist/`
+
+Contenu :
+- point d'entree web
+- manifeste PWA
+- service worker
+- renderer web dans `src/`
+- dependances navigateur pour PDF.js et OCR
+
+
+3. Publication sur GitHub Pages
+-------------------------------
+
+1. pousser le depot sur GitHub
+2. ouvrir `Settings > Pages`
+3. choisir `GitHub Actions`
+4. lancer le workflow `Deploy site + web app`
+
+Le workflow :
+- lance `npm ci`
+- lance `npm run check`
+- lance `npm run build:web`
+- publie la landing a la racine
+- publie l'application web dans `/app/`
+
+
+4. URLs finales
+---------------
+
+- site vitrine : `https://lbelhomme-pc.github.io/odysey/`
+- application web : `https://lbelhomme-pc.github.io/odysey/app/`
+
+
+5. Installation PWA
+-------------------
+
+Une fois le site ouvert sur HTTPS :
+- Chrome / Edge : bouton `Installer l'app web` dans Odysey ou menu du navigateur
+- Safari iPhone / iPad : `Partager > Sur l'ecran d'accueil`
+
+
+6. Limites actuelles
+--------------------
+
+- la version web n'a pas le bridge Electron
+- l'OCR web utilise Tesseract.js dans le navigateur
+- au premier usage OCR, les ressources peuvent devoir etre chargees puis mises en cache
+- l'ouverture de fichiers, l'impression et l'export reposent sur les APIs navigateur
+
+La base de lecture adaptee, les profils et le reflow restent reutilises.

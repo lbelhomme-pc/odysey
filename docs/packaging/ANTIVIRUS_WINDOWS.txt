@@ -1,0 +1,178 @@
+﻿ANTIVIRUS WINDOWS - STRATEGIE PRATIQUE POUR ODYSEY
+=====================================================
+
+Objectif
+--------
+Limiter au maximum :
+- les faux positifs antivirus
+- les alertes Microsoft Defender
+- les avertissements SmartScreen
+
+Point important
+---------------
+On ne peut pas promettre "zero alerte" avec une application Windows non signee.
+
+Le vrai levier pour reduire fortement les alertes, c'est :
+- une signature de code Windows
+- des metadonnees propres
+- des formats de diffusion moins suspects que les executables portables monobloc
+
+
+1. CE QU'IL FAUT FAIRE EN PRIORITE
+----------------------------------
+
+A. Diffuser en priorite deux formats
+- AVEC installation : installateur NSIS
+- SANS installation : archive ZIP de l'application
+
+Pourquoi
+- le format "portable" monofichier auto-extractible peut declencher plus facilement des heuristiques antivirus
+- une archive ZIP contenant l'application non installee est souvent plus propre pour les tests terrain
+
+Conclusion pratique
+- pour Windows avec install : utiliser NSIS
+- pour Windows sans install : utiliser ZIP
+- garder le format portable seulement en secours interne
+
+
+B. Garder une identite binaire stable
+- Nom produit : ODYSEY
+- Auteur / editeur : Ludovic Belhomme
+- Version claire
+- Meme nom de fichier, meme icone, meme structure de build d'une version a l'autre
+
+Pourquoi
+- les outils de reputation et les antivirus aiment la stabilite
+- changer sans cesse de nom, d'icone ou de structure peut faire perdre de la confiance
+
+
+C. Eviter tout ce qui ressemble a un comportement suspect
+- pas d'obfuscation
+- pas de packer exotique
+- pas d'auto-modification du binaire
+- pas de telechargements silencieux caches
+- pas de scripts externes non documentes au premier lancement
+
+Pour ODYSEY, la ligne a tenir est simple
+- application locale
+- OCR local
+- documents prives, non envoyes sur un serveur
+- comportement lisible et explicable
+
+
+2. LA VRAIE SOLUTION PROFESSIONNELLE : SIGNER L'APPLICATION
+-----------------------------------------------------------
+
+Sans signature
+- Windows peut afficher un avertissement SmartScreen
+- certains antivirus peuvent etre plus mefiants
+
+Avec signature de code Windows
+- la confiance augmente
+- la diffusion utilisateur devient beaucoup plus propre
+
+Recommandation
+- certificat OV minimum
+- certificat EV ideal si l'objectif est une diffusion publique large avec le moins de friction possible
+
+Dans ce projet, electron-builder sait deja signer automatiquement si tu fournis :
+- CSC_LINK
+- CSC_KEY_PASSWORD
+
+Voir documentation officielle :
+- https://www.electron.build/code-signing.html
+
+Important pour ce depot
+- la configuration actuelle de build local reste volontairement non signee
+- cela evite un blocage du helper Windows de signature sur un poste sans privilege suffisant
+- pour une diffusion publique propre, il faudra faire une build signee sur une machine ou un CI adapte
+
+
+3. SI DEFENDER OU UN ANTIVIRUS FAIT UN FAUX POSITIF
+---------------------------------------------------
+
+Il faut soumettre le fichier a Microsoft pour analyse.
+
+Portail Microsoft Security Intelligence :
+- https://www.microsoft.com/wdsi/filesubmission
+
+Bonne pratique
+- soumettre le vrai binaire genere
+- donner le nom du produit : ODYSEY
+- preciser qu'il s'agit d'un faux positif
+
+
+4. FORMATS A PRIVILEGIER POUR ODYSEY
+----------------------------------------
+
+A. Format recommande pour diffusion simple
+- installateur NSIS
+
+Avantages
+- plus familier pour Windows
+- raccourcis propres
+- desinstallation propre
+
+
+B. Format recommande sans installation
+- ZIP
+
+Avantages
+- l'utilisateur decompresse puis lance l'application
+- moins aggressif qu'un "portable" auto-extractible monofichier
+- pratique pour testeurs et cle USB
+
+
+C. Format a eviter en premiere diffusion
+- portable monobloc .exe
+
+Pourquoi
+- peut attirer plus de heuristiques antivirus
+- utile en interne, mais pas ideal comme format principal
+
+
+5. CE QUI EST PREPARE DANS LE PROJET
+------------------------------------
+
+Scripts Windows utiles :
+- npm run build:win:installer
+- npm run build:win:noinstall
+- npm run build:win:unpacked
+- npm run build:win:portable-risky
+
+Interpretation
+- installer : version avec installation
+- noinstall : version ZIP a diffuser sans installation
+- unpacked : dossier brut pour test local
+- portable-risky : a garder comme solution secondaire
+
+Etat de la signature
+- builds locales : non signees
+- diffusion publique propre : a faire ensuite avec certificat Windows
+
+
+6. RECOMMANDATION FINALE
+------------------------
+
+Pour eviter au maximum les soucis antivirus :
+
+1. construire d'abord :
+- NSIS
+- ZIP
+
+2. ajouter ensuite une vraie signature Windows
+
+3. garder le meme nom produit, la meme icone et les memes metadonnees
+
+4. si un faux positif apparait, soumettre le binaire a Microsoft
+
+
+7. SOURCES OFFICIELLES
+----------------------
+
+- electron-builder, signature de code :
+  https://www.electron.build/code-signing.html
+
+- Microsoft Security Intelligence, soumission de fichier :
+  https://www.microsoft.com/wdsi/filesubmission
+

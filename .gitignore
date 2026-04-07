@@ -1,0 +1,31 @@
+# Dependances
+node_modules/
+
+# Builds desktop
+dist/
+win-unpacked/
+*.blockmap
+builder-debug.yml
+
+# Build web
+web-dist/
+
+# Fichiers de test personnels
+Test_pdf/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+npm-debug.log*
+
+# Temporary reports
+arbo.txt

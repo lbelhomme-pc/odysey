@@ -1,0 +1,190 @@
+FICHE PROFIL - NORMAL
+=====================
+
+But du profil
+-------------
+Ce profil sert de point de reference.
+Il doit afficher le texte reconstruit de la facon la plus simple possible,
+sans aide au decodage, sans syllabes, sans focus, sans reglette, sans
+coloration pedagogique.
+
+Il ne s'agit pas d'un "PDF brut" pixel pour pixel.
+Il s'agit d'un texte reflow propre, neutre, lisible, avec un minimum
+d'intervention visuelle.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+  Definit les valeurs par defaut du profil.
+- src/app.mjs
+  Active le profil, applique les preferences, alimente les variables CSS
+  et declenche le rendu.
+- src/styles.css
+  Traduit les preferences en rendu ecran.
+- src/index.html
+  Expose le profil dans l'interface.
+- src/print.css
+  Gere le comportement du profil a l'impression / export PDF.
+
+Fichiers indirects tres importants :
+- src/pdf-processing.mjs
+  Nettoie le PDF et reconstruit le texte.
+- src/core/reading/decoding-engine.mjs
+  Garantit que le mode normal reste sans aide visuelle supplementaire.
+- src/core/reading/reading-guide.mjs
+  Doit rester inactif par defaut pour ce profil.
+- src/core/reading/audio-engine.mjs
+  Doit rester compatible si l'utilisateur lit a voix haute sans changer
+  de profil.
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = normal
+
+Libelle :
+- Normal
+
+Description :
+- Affiche le texte reconstruit sans aide au decodage ni reperes
+  supplementaires.
+
+Note de conception :
+- Mode sobre pour lire le texte importe en reflow, sans coloration,
+  syllabes, focus ou reglette.
+
+Valeurs definies explicitement :
+- fontFamily = "Aptos", "Segoe UI", sans-serif
+- fontSize = 20
+- lineHeight = 1.8
+- letterSpacing = 0.12
+- wordSpacing = 0.16
+- maxLineLength = 72
+- theme = neutre
+- overlayPreset = none
+- overlayOpacity = 0
+- focusMode = none
+- highlightMode = none
+- colorationMode = none
+- syllableLevel = off
+- soundColorMode = soft
+- syllableBreakMode = none
+- readingGuideMode = off
+- verificationMode = off
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontFamily = Aptos
+- Interet technique :
+  police propre, lisible, moderne, sans effet dys specialise.
+- Interet pedagogique :
+  laisse respirer le texte sans imposer une signature visuelle forte.
+
+fontSize = 20
+- Interet :
+  taille confortable mais encore dense ;
+  bonne base neutre.
+
+lineHeight = 1.8
+- Interet :
+  limite les sauts de ligne sans trop disperser le texte.
+
+letterSpacing = 0.12
+- Interet :
+  conserve un minimum de confort dys-friendly sans donner une impression
+  de texte artificiellement etire.
+
+wordSpacing = 0.16
+- Interet :
+  delimite bien les mots sans casser le rythme de lecture.
+
+maxLineLength = 72
+- Interet :
+  colonne encore assez large, proche d'une lecture normale, mais plus
+  stable qu'un texte pleine largeur.
+
+theme = neutre
+- Interet :
+  fond doux, non blanc pur, sans teinte trop marquee.
+
+overlayPreset = none / overlayOpacity = 0
+- Interet :
+  aucune teinte additionnelle ;
+  rendu simple.
+
+focusMode = none
+- Interet :
+  pas de guidage impose.
+
+highlightMode = none
+- Interet :
+  pas de surlignage fort du bloc courant.
+
+colorationMode = none
+- Interet :
+  aucune coloration pedagogique.
+
+syllableLevel = off
+- Interet :
+  aucun decoupage syllabique.
+
+soundColorMode = soft
+- Interet :
+  valeur de reserve seulement ;
+  pas d'effet visible tant que la coloration est a none.
+
+syllableBreakMode = none
+- Interet :
+  aucun separateur entre syllabes.
+
+readingGuideMode = off
+- Interet :
+  pas de reglette ni fenetre de lecture.
+
+verificationMode = off
+- Interet :
+  pas de marqueurs visuels de controle.
+
+
+4. CE QUE LE PROFIL DOIT PRODUITRE
+----------------------------------
+
+Attendu ecran :
+- page calme ;
+- texte simple ;
+- pas de syllabes ;
+- pas de lettres muettes grisees ;
+- pas de couleurs pedagogiques ;
+- pas de gros focus ;
+- pas de repere de verification visible.
+
+Attendu utilisateur :
+- servir de base de comparaison ;
+- montrer le texte adapte sans aide specialisee.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- colorer les mots ;
+- decouper en syllabes ;
+- souligner des segments ;
+- imposer une reglette ;
+- faire croire qu'il s'agit du profil dys principal.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- lecteurs qui veulent une version propre du texte sans assistance ;
+- comparaison avec les autres profils ;
+- enseignants ou adultes voulant voir le reflow "a plat".

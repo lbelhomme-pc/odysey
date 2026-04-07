@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checklist par type de PDF - DysLecteur</title>
+    <link rel="stylesheet" href="./checklist-recette.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Nouvelle version · protocole par PDF</p>
+          <h1>Une fiche de test par type de PDF, avec tous les profils à vérifier dessous</h1>
+          <p class="hero-text">
+            Cette version est pensée pour une recette concrète : on choisit un type de PDF, on contrôle les points
+            communs, puis on teste tous les profils sur ce même document.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button type="button" class="action-button primary" id="printChecklistButton">Imprimer la checklist</button>
+          <button type="button" class="action-button" id="exportChecklistButton">Exporter les réponses</button>
+          <button type="button" class="action-button" id="importChecklistButton">Importer les réponses</button>
+          <button type="button" class="action-button subtle" id="toggleAllSectionsButton">Tout déplier</button>
+          <button type="button" class="action-button danger subtle" id="resetChecklistButton">Réinitialiser</button>
+          <input id="importChecklistFile" type="file" accept="application/json" hidden />
+        </div>
+      </header>
+
+      <section class="summary-grid" aria-label="Résumé de progression">
+        <article class="summary-card">
+          <span class="summary-label">Progression</span>
+          <strong id="completionCount">0 / 0</strong>
+          <span id="completionText" class="summary-muted">Aucun point validé pour l'instant.</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">OK</span>
+          <strong id="statusOkCount">0</strong>
+          <span class="status-pill ok">Validés</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">À revoir</span>
+          <strong id="statusReviewCount">0</strong>
+          <span class="status-pill review">À retester</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">KO</span>
+          <strong id="statusFailCount">0</strong>
+          <span class="status-pill fail">Bloquants</span>
+        </article>
+      </section>
+
+      <section class="meta-panel">
+        <div class="panel-head">
+          <h2>Contexte du test</h2>
+          <p>Remplis rapidement ces informations pour savoir qui a testé quoi, et dans quelles conditions.</p>
+        </div>
+        <div class="meta-grid">
+          <label class="field">
+            <span>Testeur</span>
+            <input type="text" id="testerName" placeholder="Exemple : Ludovic" />
+          </label>
+          <label class="field">
+            <span>Date</span>
+            <input type="date" id="testDate" />
+          </label>
+          <label class="field">
+            <span>Version de l'application</span>
+            <input type="text" id="appVersion" placeholder="Exemple : build OCR avril" />
+          </label>
+          <label class="field">
+            <span>Machine / contexte</span>
+            <input type="text" id="testDevice" placeholder="Exemple : Windows 11 · portable HP" />
+          </label>
+        </div>
+        <label class="field field--full">
+          <span>Notes globales</span>
+          <textarea id="globalNotes" rows="3" placeholder="Retour général sur la campagne de test."></textarea>
+        </label>
+      </section>
+
+      <main class="checklist-layout">
+        <details class="checklist-section" open>
+          <summary>
+            <div>
+              <h2>1. Corpus recommandé</h2>
+              <p>Les types de PDF à réunir pour couvrir les vrais cas d'usage.</p>
+            </div>
+          </summary>
+          <div id="pdfTypesOverview" class="overview-grid"></div>
+        </details>
+
+        <details class="checklist-section" open>
+          <summary>
+            <div>
+              <h2>2. Points communs à vérifier sur chaque PDF</h2>
+              <p>Ce bloc sert de référence. Ensuite, on applique ces points dans chaque fiche PDF.</p>
+            </div>
+          </summary>
+          <div id="commonChecksPanel" class="feature-groups"></div>
+        </details>
+
+        <details class="checklist-section" open>
+          <summary>
+            <div>
+              <h2>3. Fiches de recette par type de PDF</h2>
+              <p>Dans chaque fiche : statut global, points communs, puis tous les profils à tester sur ce document.</p>
+            </div>
+          </summary>
+          <div id="pdfProtocolChecklist" class="pdf-protocol-grid"></div>
+        </details>
+      </main>
+    </div>
+
+    <script type="module" src="./checklist-recette.js"></script>
+  </body>
+</html>

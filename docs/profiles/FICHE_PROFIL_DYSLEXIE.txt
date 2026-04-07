@@ -1,0 +1,174 @@
+FICHE PROFIL - DYSLEXIE
+=======================
+
+But du profil
+-------------
+Ce profil est le profil principal d'aide a la lecture pour la dyslexie.
+Il doit apporter une aide visible, mais moderee.
+
+Son objectif n'est pas de tout marquer.
+Son objectif est de :
+- rendre la lecture plus confortable ;
+- soutenir le decodage sans surcharge ;
+- garder un fond doux ;
+- garder un texte assez grand et assez aere ;
+- aider juste ce qu'il faut.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects majeurs :
+- src/core/reading/decoding-engine.mjs
+  C'est lui qui decide comment apparait l'aide au decodage.
+- src/core/reading/syllabify-french.mjs
+  Gere la logique syllabique legere.
+- src/pdf-processing.mjs
+  Si le texte reconstruit est mauvais, le profil devient visuellement
+  incoherent.
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = dyslexie-legere
+
+Libelle visible :
+- Dyslexie
+
+Description :
+- Reglages equilibres pour une lecture plus fluide avec aide au decodage
+  moderee.
+
+Note de conception :
+- Profil principal dyslexie : espacements utiles, fond doux et aide
+  legere sans surcharge.
+
+Valeurs definies explicitement :
+- fontFamily = "Verdana", "Geneva", sans-serif
+- fontSize = 22
+- lineHeight = 1.95
+- letterSpacing = 0.12
+- wordSpacing = 0.2
+- maxLineLength = 60
+- theme = creme
+- overlayPreset = creme
+- overlayOpacity = 0.06
+- highlightMode = none
+- colorationMode = pedagogique
+- syllableLevel = light
+- soundColorMode = soft
+- syllableBreakMode = none
+- readingGuideMode = off
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontFamily = Verdana
+- Interet :
+  lettres simples, bien differenciees, sans surcharge graphique.
+
+fontSize = 22
+- Interet :
+  facilite le reperage visuel ;
+  bon compromis entre lisibilite et densite.
+
+lineHeight = 1.95
+- Interet :
+  plus de respiration entre lignes ;
+  aide a eviter les sauts de ligne.
+
+letterSpacing = 0.12
+- Interet :
+  soutient la distinction entre lettres sans casser les mots.
+
+wordSpacing = 0.2
+- Interet :
+  separe un peu mieux les mots qu'un profil neutre ;
+  utile en dyslexie.
+
+maxLineLength = 60
+- Interet :
+  colonne plus etroite ;
+  retour ligne plus facile a retrouver ;
+  moins de fatigue oculaire.
+
+theme = creme
+- Interet :
+  fond chaud et doux ;
+  souvent mieux tolere que le blanc pur.
+
+overlayPreset = creme / overlayOpacity = 0.06
+- Interet :
+  renforce legerement la douceur du fond sans jaunir fortement la page.
+
+highlightMode = none
+- Interet :
+  evite la surcharge d'un surlignage permanent.
+
+colorationMode = pedagogique
+- Interet :
+  ajoute une aide visuelle legere, plus douce qu'un vrai code sons.
+
+syllableLevel = light
+- Interet :
+  ne decoupe pas tout ;
+  reserve la syllabation visible aux mots qui le meritent le plus.
+
+soundColorMode = soft
+- Interet :
+  palette douce si le moteur a besoin d'une coloration auxiliaire.
+
+syllableBreakMode = none
+- Interet :
+  pas de points ni tirets visibles entre syllabes ;
+  meilleure discretion.
+
+readingGuideMode = off
+- Interet :
+  ce profil doit rester utilisable sans reglette.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- texte plus grand ;
+- fond creme doux ;
+- lecture plus aeree ;
+- quelques aides de decodage, mais pas partout ;
+- aucun effet "texte hache".
+
+Attendu pedagogique :
+- premier vrai profil d'aide pour un lecteur dyslexique ;
+- assez lisible pour un usage quotidien ;
+- moins agressif que Decodage renforce.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- colorer massivement le texte ;
+- decouper tous les mots ;
+- toucher les titres, auteurs, sommaires ou reperes structurels ;
+- ressembler a un mode expert ;
+- fatiguer plus qu'il n'aide.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- lecteurs dyslexiques qui veulent une aide visible mais discrete ;
+- eleves qui lisent mieux avec de l'espace et un fond plus doux ;
+- usage quotidien sur textes simples ou scolaires.

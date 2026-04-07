@@ -1,0 +1,124 @@
+FICHE PROFIL - DYSCALCULIE
+==========================
+
+But du profil
+-------------
+Ce profil sert a mieux lire les nombres, tableaux, expressions et
+documents mathematiques.
+
+Il ne cherche pas a decouper les mots.
+Il cherche surtout a :
+- clarifier les nombres ;
+- garder des espaces stables ;
+- rendre les expressions moins oppressantes ;
+- activer la verification des zones a controler.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects majeurs :
+- src/core/reading/math-support.mjs
+- src/core/reading/decoding-engine.mjs
+- src/pdf-processing.mjs
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = dyscalculie
+
+Libelle :
+- Dyscalculie
+
+Description :
+- Optimise la lecture des nombres et expressions mathematiques.
+
+Note de conception :
+- Accent sur lisibilite des nombres, verbalisation et repere calme pour
+  les formules.
+
+Valeurs definies explicitement :
+- fontFamily = "Atkinson Hyperlegible", "Verdana", sans-serif
+- fontSize = 20
+- lineHeight = 2
+- letterSpacing = 0.12
+- wordSpacing = 0.16
+- maxLineLength = 60
+- theme = creme
+- colorationMode = none
+- syllableLevel = off
+- readingGuideMode = off
+- verificationMode = markers
+- speechRate = 0.95
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontFamily = Atkinson Hyperlegible
+- Interet :
+  tres bonne distinction des caracteres et symboles.
+
+lineHeight = 2
+- Interet :
+  aide a ne pas melanger visuellement les lignes de calcul ou d'explication.
+
+maxLineLength = 60
+- Interet :
+  largeur stable pour lire des expressions sans s'egarer.
+
+theme = creme
+- Interet :
+  fond doux, meilleur confort visuel.
+
+colorationMode = none / syllableLevel = off
+- Interet :
+  aucune aide de lecture mot a mot ;
+  le profil reste centre sur la comprehension mathematique.
+
+verificationMode = markers
+- Interet :
+  repere les zones qui meritent une relecture ou un controle.
+
+speechRate = 0.95
+- Interet :
+  leger ralentissement utile pour la verbalisation des nombres et formules.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- lecture calme des nombres ;
+- meilleure tenue des formules ;
+- verification visible mais discrete ;
+- aucune aide syllabique parasite.
+
+Attendu pedagogique :
+- aider la lecture mathematique sans transformer tout le document en mode
+  dyslexie.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- colorer arbitrairement le texte courant ;
+- traiter des lignes administratives comme des formules ;
+- hacher les nombres ou expressions.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- documents de maths, sciences, tableaux, garanties, calculs.

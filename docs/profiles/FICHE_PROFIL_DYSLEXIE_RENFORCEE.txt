@@ -1,0 +1,149 @@
+FICHE PROFIL - DYSLEXIE RENFORCEE
+=================================
+
+But du profil
+-------------
+Ce profil est le profil d'aide forte a la lecture pour les situations de
+decodage tres difficile.
+
+Il doit :
+- agrandir fortement le texte ;
+- espacer fortement les lignes et les mots ;
+- rendre les syllabes et sons plus visibles ;
+- ajouter une reglette ;
+- ralentir la lecture audio.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects majeurs :
+- src/core/reading/decoding-engine.mjs
+- src/core/reading/syllabify-french.mjs
+- src/core/reading/reading-guide.mjs
+- src/core/reading/audio-engine.mjs
+- src/pdf-processing.mjs
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = dyslexie-severe
+
+Libelle :
+- Dyslexie renforcee
+
+Description :
+- Reglages renforces avec aide au decodage plus marquee et reglette active.
+
+Note de conception :
+- Profil fort pour lecture lente, avec grands espacements, OpenDyslexic,
+  audio et reglette.
+
+Valeurs definies explicitement :
+- fontFamily = "OpenDyslexic", "Arial", sans-serif
+- fontSize = 24
+- lineHeight = 2.2
+- letterSpacing = 0.15
+- wordSpacing = 0.25
+- maxLineLength = 54
+- theme = creme
+- overlayPreset = creme
+- overlayOpacity = 0.1
+- colorationMode = sonsFrancais
+- syllableLevel = strong
+- soundColorMode = strong
+- syllableBreakMode = dot
+- readingGuideMode = ruler
+- readingGuideLines = 1
+- speechRate = 0.9
+- pauseBetweenSentences = 700
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontFamily = OpenDyslexic
+- Interet :
+  aide certains lecteurs a mieux distinguer les formes de lettres.
+
+fontSize = 24
+- Interet :
+  facilite la discrimination visuelle et ralentit naturellement la
+  lecture.
+
+lineHeight = 2.2
+- Interet :
+  tres grande respiration ;
+  utile pour eviter les sauts de ligne.
+
+letterSpacing = 0.15 / wordSpacing = 0.25
+- Interet :
+  separation plus nette des lettres et mots ;
+  utile en lecture difficile.
+
+maxLineLength = 54
+- Interet :
+  colonne tres controlee pour garder le fil.
+
+theme = creme + overlay creme
+- Interet :
+  fond doux et stabilisateur.
+
+colorationMode = sonsFrancais / soundColorMode = strong
+- Interet :
+  les groupes de sons sont plus lisibles et mieux differencies.
+
+syllableLevel = strong / syllableBreakMode = dot
+- Interet :
+  aide syllabique tres visible.
+
+readingGuideMode = ruler
+- Interet :
+  reglette pour tenir la ligne.
+
+speechRate = 0.9 / pauseBetweenSentences = 700
+- Interet :
+  audio plus lent et plus respirant.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- aide au decodage forte ;
+- texte tres lisible ;
+- syllabes et sons bien reperables ;
+- reglette stable ;
+- bon support de lecture lente.
+
+Attendu pedagogique :
+- profil de soutien fort, pas profil de tous les jours pour tout le
+  monde.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- toucher les titres, sommaires, auteurs ou labels structurels ;
+- empiler des effets parasites ;
+- creer du bruit visuel inutile ;
+- devenir plus dur a lire que le texte d'origine.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- lecteurs qui ont besoin d'une aide forte au decodage ;
+- remediations ;
+- lecture lente accompagnee.

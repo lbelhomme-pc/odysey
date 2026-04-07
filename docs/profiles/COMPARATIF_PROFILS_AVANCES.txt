@@ -1,0 +1,306 @@
+COMPARATIF DES PROFILS AVANCES
+==============================
+
+Profils compares
+----------------
+- Compréhension simplifiée
+- Dyslexie renforcée
+- Dyscalculie
+- TDAH - Attention
+- Dyspraxie - Motricité
+- Enseignant / Ortho
+
+
+1. IDEE GENERALE
+----------------
+
+Ces profils avancés ne sont pas des profils "de base".
+Ils servent à des besoins plus ciblés.
+
+- Compréhension simplifiée
+  Cherche surtout à alléger l’effort cognitif global.
+
+- Dyslexie renforcée
+  Profil très assisté pour lecture difficile et lente.
+
+- Dyscalculie
+  Profil ciblé sur les nombres, formules et repères mathématiques.
+
+- TDAH - Attention
+  Profil centré sur le maintien de l’attention.
+
+- Dyspraxie - Motricité
+  Profil centré sur la stabilité de lecture et le confort d’interaction.
+
+- Enseignant / Ortho
+  Profil d’analyse et de préparation, pas seulement de lecture.
+
+
+2. TABLEAU TECHNIQUE
+--------------------
+
+| Profil | Police | Taille | Interligne | Lettres | Mots | Largeur | Theme | Coloration | Syllabes | Focus | Regl. | Verification | Audio |
+|--------|--------|--------|------------|---------|------|---------|-------|------------|----------|-------|-------|--------------|-------|
+| Compréhension simplifiée | Arial | 24 | 1.95 | 0.12 | 0.22 | 56 | nuitDouce | none | off | paragraph | window (2 lignes) | off | vitesse 1 |
+| Dyslexie renforcée | OpenDyslexic | 24 | 2.2 | 0.15 | 0.25 | 54 | creme | sonsFrancais | strong | none | ruler | off | vitesse 0.9, pause 700 ms |
+| Dyscalculie | Atkinson Hyperlegible | 20 | 2.0 | 0.12 | 0.16 | 60 | creme | none | off | none | off | markers | vitesse 0.95 |
+| TDAH - Attention | Verdana | 20 | 2.0 | 0.12 | 0.16 | 54 | creme | none | off | none | window (3 lignes) | off | vitesse 0.95, pause 600 ms |
+| Dyspraxie - Motricité | Verdana | 22 | 2.0 | 0.12 | 0.20 | 64 | creme | none | off | none | ruler | off | vitesse 1 |
+| Enseignant / Ortho | Atkinson Hyperlegible | 18 | 1.8 | 0.12 | 0.16 | 70 | creme | pedagogique | light | none | off | markers | vitesse 1 |
+
+Notes :
+- "Regl." = guide de lecture / reglette / fenetre
+- "Verification" = mode de reperage des zones douteuses
+- "Audio" = parametres saillants seulement
+
+
+3. DIFFERENCE PRINCIPALE ENTRE LES PROFILS
+------------------------------------------
+
+Compréhension simplifiée
+- Aide surtout à suivre le sens.
+- Pas de syllabes.
+- Colonne très étroite.
+- Focus paragraphe + fenêtre de lecture.
+
+Dyslexie renforcée
+- C’est le profil le plus fort pour le décodage.
+- Grande taille.
+- Interligne très ouvert.
+- Couleurs de sons plus visibles.
+- Réglette active.
+
+Dyscalculie
+- Ne cherche pas à aider sur les syllabes.
+- Cherche à sécuriser la lecture des nombres et des expressions.
+- Vérification activée pour mieux repérer les zones à contrôler.
+
+TDAH - Attention
+- Cherche à réduire les distractions.
+- Colonne étroite.
+- Fenêtre de lecture.
+- Immersion activée.
+- Rythme audio légèrement ralenti.
+
+Dyspraxie - Motricité
+- Profil de confort moteur et de stabilité.
+- Grande lisibilité.
+- Réglette simple.
+- Pas d’aide de décodage visuelle.
+
+Enseignant / Ortho
+- Profil d’observation.
+- Décodage modéré visible.
+- Vérification active.
+- Sert à relire, analyser, préparer.
+
+
+4. NIVEAU D'AIDE VISUELLE
+-------------------------
+
+Du plus sobre au plus assisté visuellement :
+
+1. Dyspraxie - Motricité
+2. Dyscalculie
+3. TDAH - Attention
+4. Enseignant / Ortho
+5. Compréhension simplifiée
+6. Dyslexie renforcée
+
+Remarques :
+- TDAH n’est pas très coloré, mais reste très assisté par le cadrage
+  attentionnel.
+- Dyslexie renforcée est le plus fort en aide au décodage.
+
+
+5. NIVEAU DE CHARGE COGNITIVE ATTENDU
+-------------------------------------
+
+Compréhension simplifiée
+- Charge visuelle modérée.
+- Charge cognitive abaissée par cadrage et confort.
+
+Dyslexie renforcée
+- Charge visuelle élevée.
+- À utiliser quand l’aide forte compense réellement la surcharge.
+
+Dyscalculie
+- Charge visuelle faible à modérée.
+- Charge de compréhension mathématique mieux structurée.
+
+TDAH - Attention
+- Charge visuelle modérée.
+- Charge attentionnelle réduite par la fenêtre et l’immersion.
+
+Dyspraxie - Motricité
+- Charge visuelle faible.
+- Charge motrice réduite.
+
+Enseignant / Ortho
+- Charge visuelle modérée.
+- Charge analytique assumée.
+
+
+6. POUR QUI ?
+-------------
+
+Compréhension simplifiée
+- Pour les lecteurs qui se fatiguent surtout sur le sens, la densité ou
+  la quantité d’information.
+
+Dyslexie renforcée
+- Pour les lecteurs dyslexiques qui ont besoin d’un soutien marqué et
+  d’une lecture lente.
+
+Dyscalculie
+- Pour les documents avec nombres, unités, tableaux, formules.
+
+TDAH - Attention
+- Pour les lecteurs vite distraits ou qui perdent facilement le fil.
+
+Dyspraxie - Motricité
+- Pour les utilisateurs qui ont besoin d’une interface stable,
+  prévisible et peu exigeante gestuellement.
+
+Enseignant / Ortho
+- Pour l’adulte qui prépare, vérifie ou analyse un rendu adapté.
+
+
+7. CE QUE CHAQUE PROFIL DOIT ABSOLUMENT EVITER
+----------------------------------------------
+
+Compréhension simplifiée
+- Ne pas devenir sombre ou oppressant.
+- Ne pas ajouter des syllabes ou sons inutiles.
+- Ne pas rétrécir trop la lecture au point de casser le rythme.
+
+Dyslexie renforcée
+- Ne pas toucher les titres, sommaires, auteurs ou repères structurels.
+- Ne pas empiler sons + syllabes + soulignements + autres effets.
+- Ne pas rendre le texte plus fatigant que l’original.
+
+Dyscalculie
+- Ne pas colorer arbitrairement le texte courant.
+- Ne pas confondre repérage mathématique et faux positifs administratifs.
+- Ne pas casser les expressions.
+
+TDAH - Attention
+- Ne pas créer un effet tunnel trop dur.
+- Ne pas rendre la navigation ou la reprise de lecture confuse.
+- Ne pas masquer des repères utiles.
+
+Dyspraxie - Motricité
+- Ne pas forcer des gestes fins.
+- Ne pas imposer des réglages visuels trop complexes.
+- Ne pas rendre les zones actives trop petites.
+
+Enseignant / Ortho
+- Ne pas surcharger l’écran d’analyse.
+- Ne pas produire un rendu trop “apprenant final” ou trop “debug”.
+- Ne pas mélanger observation et lecture assistée forte.
+
+
+8. CAS D'USAGE CONSEILLES
+-------------------------
+
+Compréhension simplifiée
+- Paragraphes denses
+- Textes explicatifs
+- Révisions longues
+
+Dyslexie renforcée
+- Lecture mot à mot
+- Remédiation
+- Soutien ponctuel sur texte difficile
+
+Dyscalculie
+- Cours de maths
+- Physique-chimie
+- Documents de calcul ou de garanties
+
+TDAH - Attention
+- Reprise après fatigue
+- Lecture de consignes
+- Sessions courtes et guidées
+
+Dyspraxie - Motricité
+- Lecture clavier
+- Usage long
+- Situations avec fatigue motrice
+
+Enseignant / Ortho
+- Vérification de rendu
+- Préparation de document adapté
+- Contrôle des zones douteuses
+
+
+9. ORDRE DE CALIBRATION RECOMMANDE
+----------------------------------
+
+Quand les profils principaux sont stabilisés, l’ordre conseillé est :
+
+1. Dyslexie renforcée
+   Car c’est l’extension forte du profil Dyslexie.
+
+2. Audio / Focus avancé si besoin
+   Déjà proche du principal, mais à vérifier avec TDAH.
+
+3. TDAH - Attention
+   Dépend beaucoup du bon réglage de focus / fenêtre.
+
+4. Dyscalculie
+   Dépend du moteur maths et du mode vérification.
+
+5. Dyspraxie - Motricité
+   Dépend surtout du confort global et du repère.
+
+6. Enseignant / Ortho
+   Profil de travail à affiner une fois les autres stabilisés.
+
+7. Compréhension simplifiée
+   À garder pour la fin, car il dépend aussi de la qualité de reflow et
+   des futurs outils de simplification.
+
+
+10. FICHIERS COMMUNS QUI IMPACTENT TOUS LES PROFILS AVANCES
+-----------------------------------------------------------
+
+- src/profiles.mjs
+  Source des réglages par profil
+
+- src/app.mjs
+  Application du profil dans l’état et le DOM
+
+- src/styles.css
+  Rendu écran
+
+- src/print.css
+  Impression / export PDF
+
+- src/pdf-processing.mjs
+  Qualité du texte reconstruit
+
+- src/core/reading/decoding-engine.mjs
+  Décodage et sobriété selon profil
+
+- src/core/reading/audio-engine.mjs
+  Surtout important pour TDAH et lecture assistée
+
+- src/core/reading/reading-guide.mjs
+  Très important pour TDAH, Dyspraxie et Dyslexie renforcée
+
+- src/core/reading/math-support.mjs
+  Très important pour Dyscalculie
+
+
+11. RESUME COURT
+----------------
+
+Si on simplifie au maximum :
+
+- Compréhension simplifiée = comprendre plus facilement
+- Dyslexie renforcée = décoder avec aide forte
+- Dyscalculie = sécuriser la lecture mathématique
+- TDAH - Attention = rester concentré
+- Dyspraxie - Motricité = lire avec moins d’effort moteur
+- Enseignant / Ortho = observer et préparer

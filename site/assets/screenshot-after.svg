@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-labelledby="title desc">
+  <title id="title">PDF adapte dans Odysey</title>
+  <desc id="desc">Illustration d'un document restructure pour une lecture adaptee dans Odysey.</desc>
+  <rect width="1280" height="820" fill="#f5f0eb"/>
+  <rect x="95" y="55" width="1090" height="710" rx="28" fill="#ffffff" stroke="#d5cfc8" stroke-width="8"/>
+  <rect x="150" y="110" width="220" height="56" rx="14" fill="#eef3fb" stroke="#c5d4eb" stroke-width="4"/>
+  <text x="190" y="146" font-family="DM Sans, Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#3f6ea6">
+    Profil Dyslexie
+  </text>
+  <rect x="150" y="220" width="920" height="34" rx="8" fill="#a0344a" opacity="0.10"/>
+  <rect x="150" y="290" width="430" height="28" rx="8" fill="#3f6ea6" opacity="0.92"/>
+  <rect x="150" y="360" width="920" height="24" rx="8" fill="#2d2a26" opacity="0.82"/>
+  <rect x="150" y="408" width="875" height="24" rx="8" fill="#2d2a26" opacity="0.82"/>
+  <rect x="150" y="456" width="860" height="24" rx="8" fill="#2d2a26" opacity="0.82"/>
+  <rect x="150" y="540" width="920" height="24" rx="8" fill="#2d2a26" opacity="0.82"/>
+  <rect x="150" y="588" width="910" height="24" rx="8" fill="#2d2a26" opacity="0.82"/>
+  <rect x="150" y="636" width="780" height="24" rx="8" fill="#2d2a26" opacity="0.82"/>
+  <circle cx="218" cy="372" r="8" fill="#3f6ea6"/>
+  <circle cx="466" cy="372" r="8" fill="#3f6ea6"/>
+  <circle cx="758" cy="420" r="8" fill="#4d9782"/>
+  <circle cx="356" cy="552" r="8" fill="#3f6ea6"/>
+  <circle cx="648" cy="600" r="8" fill="#4d9782"/>
+  <text x="150" y="202" font-family="DM Sans, Segoe UI, Arial, sans-serif" font-size="34" font-weight="700" fill="#a0344a">
+    Lecture adaptee dans Odysey
+  </text>
+  <text x="150" y="714" font-family="DM Sans, Segoe UI, Arial, sans-serif" font-size="24" fill="#6b6560">
+    Reflow, profil actif, aides visuelles et rendu plus lisible.
+  </text>
+</svg>

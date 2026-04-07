@@ -1,0 +1,231 @@
+@page {
+  size: A4;
+  margin: 14mm 12mm 14mm 12mm;
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  :root {
+    --shadow: transparent;
+  }
+
+  html,
+  body {
+    display: block !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #1f2d3d !important;
+  }
+
+  body::before,
+  .sidebar,
+  .app-copyright,
+  .floating-sidebar-toggle,
+  .topbar-actions,
+  .warning-banner,
+  .stage-footer,
+  .ruler-overlay,
+  .dl-reading-guide,
+  .dl-shortcuts-dialog,
+  .block-anchor,
+  .reader-stage-header {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .app-shell {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  .main-stage {
+    display: block !important;
+    min-width: 0 !important;
+  }
+
+  .stage-topbar,
+  .reader-stage-card,
+  .reading-area,
+  .reader-page,
+  .reader-block,
+  .print-summary {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .print-summary {
+    display: none !important;
+  }
+
+  .doc-state,
+  .reader-stage-card,
+  .reading-area,
+  .page-list {
+    display: block !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .reading-area::after {
+    display: none !important;
+  }
+
+  .reader-page {
+    padding: 0 !important;
+    break-inside: auto;
+    page-break-inside: auto;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .reader-page:last-of-type {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+
+  .reader-page-header {
+    margin: 0 0 3mm !important;
+    color: #425972 !important;
+    font-size: 9pt !important;
+  }
+
+  .reader-page-body {
+    display: block !important;
+    gap: 4mm !important;
+    text-align: left !important;
+  }
+
+  .reader-block {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+    opacity: 1 !important;
+  }
+
+  .reader-block + .reader-block {
+    margin-top: 4mm !important;
+  }
+
+  .reader-block.is-current {
+    border: none !important;
+  }
+
+  .table-block {
+    display: grid !important;
+    gap: 2mm !important;
+  }
+
+  .table-row {
+    display: grid !important;
+    gap: 2mm !important;
+  }
+
+  .table-cell {
+    padding: 1.8mm 2mm !important;
+    border: 0.2mm solid #d6dfeb !important;
+    background: transparent !important;
+  }
+
+  .formula-content {
+    white-space: pre-wrap !important;
+    font-family: "Cambria Math", "Times New Roman", serif !important;
+    line-height: 1.5 !important;
+  }
+
+  .verification-note {
+    margin-top: 2mm !important;
+    padding-top: 2mm !important;
+    border-top: 0.2mm solid #d8d1c4 !important;
+    font-size: 9pt !important;
+  }
+
+  .print-copyright {
+    display: block !important;
+    margin-top: 8mm !important;
+    color: #5a6e84 !important;
+    font-size: 0 !important;
+    text-align: center !important;
+    line-height: 1.5 !important;
+  }
+
+  .print-copyright::before {
+    content: "© 2026 Ludovic Belhomme";
+    display: block !important;
+    font-size: 9pt !important;
+  }
+
+  .print-copyright::after {
+    content: "\A Contact : ludovic.belhomme@outlook.com";
+    white-space: pre !important;
+    font-size: 9pt !important;
+  }
+
+  .word-adapted.important {
+    box-shadow: none !important;
+  }
+
+  .syllabe.syllabe1,
+  .syllabe.syllabe2 {
+    box-shadow: none !important;
+  }
+
+  .syllable-chunk {
+    display: inline !important;
+  }
+
+  .phoneme.syllabe1 {
+    color: #334f73 !important;
+    text-decoration: none !important;
+  }
+
+  .phoneme.syllabe2 {
+    color: #3f6b64 !important;
+    text-decoration: none !important;
+  }
+
+  .phoneme.sound.sound-vowel {
+    color: #1f5aa0 !important;
+    text-decoration: none !important;
+  }
+
+  .phoneme.sound.sound-nasal {
+    color: #b83846 !important;
+    text-decoration: none !important;
+  }
+
+  .phoneme.sound.sound-complex {
+    color: #2f7565 !important;
+    text-decoration: none !important;
+  }
+
+  .phoneme.sound.sound-consonant {
+    color: #5e4e8c !important;
+    text-decoration: none !important;
+  }
+
+  .syllable-separator {
+    color: #6b7c90 !important;
+  }
+
+  .muet {
+    color: #8d949d !important;
+  }
+}

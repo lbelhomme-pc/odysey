@@ -1,0 +1,82 @@
+WINDOWS - BUILDS ODYSEY
+=======================
+
+1. Avec installation
+--------------------
+
+Commande :
+- npm run build:win:installer
+
+Resultat :
+- un installateur Windows `.exe` de type NSIS
+
+Fichier attendu :
+- dist\Odysey-1.0.0-win-x64.exe
+
+
+2. Sans installation
+--------------------
+
+Commande :
+- npm run build:win:noinstall
+
+Resultat :
+- une archive ZIP a decompresser
+
+Fichier attendu :
+- dist\Odysey-1.0.0-win-x64.zip
+
+Usage :
+- tests terrain
+- envoi a un utilisateur sans droits admin
+- usage "je dezippe puis j'ouvre"
+
+
+3. Application ouvrable directement sans install
+------------------------------------------------
+
+Commande :
+- npm run build:win:unpacked
+
+Resultat :
+- un dossier brut pret a lancer
+
+Executable a ouvrir :
+- dist\win-unpacked\Odysey.exe
+
+Usage :
+- test local immediat
+- validation avant diffusion
+- version la plus directe sans installateur
+
+
+4. Build Windows complet recommande
+-----------------------------------
+
+Commande :
+- npm run build:win
+
+Resultat :
+- installateur `.exe`
+- archive `.zip`
+- dossier `win-unpacked`
+
+
+5. Format portable monofichier
+------------------------------
+
+Commande :
+- npm run build:win:portable-risky
+
+Important :
+- ce format n'est pas recommande en premier
+- il attire plus facilement des heuristiques antivirus
+
+
+6. Recommandation de diffusion
+------------------------------
+
+Ordre conseille :
+1. tester `dist\win-unpacked\Odysey.exe`
+2. envoyer ensuite `dist\Odysey-1.0.0-win-x64.zip` pour une version sans installation
+3. diffuser enfin `dist\Odysey-1.0.0-win-x64.exe` pour l'installation classique

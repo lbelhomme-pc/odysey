@@ -1,0 +1,116 @@
+FICHE PROFIL - DYSPRAXIE - MOTRICITE
+====================================
+
+But du profil
+-------------
+Ce profil cherche a rendre la lecture stable et confortable sans exiger
+beaucoup de precision gestuelle.
+
+Il doit :
+- garder une grande lisibilite ;
+- proposer un repere de lecture simple ;
+- eviter la surcharge visuelle ;
+- rester compatible avec une navigation clavier confortable.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects majeurs :
+- src/core/reading/reading-guide.mjs
+- src/core/accessibility/keyboard-nav.mjs
+- src/pdf-processing.mjs
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = dyspraxie
+
+Libelle :
+- Dyspraxie - Motricite
+
+Description :
+- Grandes cibles, lecture stable et navigation clavier confortable.
+
+Note de conception :
+- Profil confortable pour usage clavier, avec grands espacements et
+  reglette simple.
+
+Valeurs definies explicitement :
+- fontFamily = "Verdana", "Geneva", sans-serif
+- fontSize = 22
+- lineHeight = 2
+- letterSpacing = 0.12
+- wordSpacing = 0.2
+- maxLineLength = 64
+- theme = creme
+- overlayPreset = blue
+- overlayOpacity = 0.08
+- colorationMode = none
+- syllableLevel = off
+- readingGuideMode = ruler
+- readingGuideLines = 1
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontSize = 22 / lineHeight = 2
+- Interet :
+  lecture stable, peu fatigante, bien aeree.
+
+maxLineLength = 64
+- Interet :
+  colonne confortable sans etre trop etroite.
+
+overlayPreset = blue / overlayOpacity = 0.08
+- Interet :
+  ambiance douce et reposante.
+
+readingGuideMode = ruler
+- Interet :
+  repere simple de ligne, utile sans demander beaucoup de precision.
+
+colorationMode = none / syllableLevel = off
+- Interet :
+  pas de surcharge ; la priorite est la stabilite.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- lecture confortable ;
+- reglette simple ;
+- interface visuelle calme ;
+- bonne compatibilite avec navigation clavier.
+
+Attendu pedagogique :
+- diminuer la fatigue motrice et l'effort de reperage.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- imposer des effets visuels complexes ;
+- multiplier les interactions fines ;
+- reduire la fluidite clavier.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- utilisateurs avec fatigue motrice ;
+- lecture longue ;
+- usage clavier et repere simple.

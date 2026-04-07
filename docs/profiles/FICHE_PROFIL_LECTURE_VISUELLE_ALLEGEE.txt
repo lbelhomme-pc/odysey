@@ -1,0 +1,451 @@
+FICHE PROFIL - LECTURE VISUELLE ALLEGEE
+======================================
+
+But du profil
+-------------
+Ce profil sert de base de lecture calme et confortable.
+Il ne cherche pas a aider fortement au decodage.
+Il cherche surtout a :
+- aerer le texte ;
+- stabiliser la ligne de lecture ;
+- garder un contraste doux ;
+- eviter la surcharge visuelle ;
+- rester lisible sur des textes longs.
+
+En pratique, c'est un profil de confort general.
+Il doit etre plus reposant que "Normal", mais beaucoup plus sobre que
+"Dyslexie" ou "Decodage renforce".
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+A. Fichiers directs
+-------------------
+
+1) src/profiles.mjs
+   Role :
+   - declare le profil "lecture-visuelle-allegee" ;
+   - fixe ses valeurs par defaut ;
+   - fournit aussi les tokens de theme utilises par ce profil.
+
+   Pourquoi c'est le fichier principal :
+   - c'est ici que l'on decide la police, la taille, l'interligne,
+     l'espacement, le theme, l'absence de syllabes, l'absence de focus,
+     l'absence de reglette, etc.
+
+2) src/app.mjs
+   Role :
+   - active le profil quand l'utilisateur clique dessus ;
+   - fusionne les valeurs du profil avec les preferences par defaut ;
+   - applique les variables CSS --dl-* de lecture ;
+   - lance le rendu du document ;
+   - marque le DOM avec data-profile-id="lecture-visuelle-allegee".
+
+   Pourquoi c'est important :
+   - sans ce fichier, le profil existe dans les donnees, mais il n'est
+     pas applique a l'interface ;
+   - c'est lui qui transforme les valeurs du profil en rendu visible.
+
+3) src/styles.css
+   Role :
+   - transforme les preferences du profil en affichage ecran ;
+   - utilise exclusivement les variables --dl-* pour la zone de lecture ;
+   - applique des planchers CSS : max(1.8, --dl-line-height) et
+     max(0.12em, --dl-letter-spacing) comme filets de securite.
+
+   Pourquoi c'est important :
+   - c'est le fichier qui decide si le texte parait calme, trop bleu,
+     trop cadre, trop serre ou trop aere.
+
+4) src/index.html
+   Role :
+   - expose le profil dans la liste des profils ;
+   - fournit les controles de reglage qui peuvent ensuite modifier ses
+     valeurs en temps reel.
+
+   Pourquoi c'est important :
+   - le profil est choisi et compris a travers cette interface.
+
+5) src/print.css
+   Role :
+   - applique le rendu du profil a l'impression et a l'export PDF.
+
+   Pourquoi c'est important :
+   - si l'ecran est bon mais que l'impression est differente, le profil
+     n'est pas coherent jusqu'au bout.
+
+
+B. Fichiers indirects mais tres importants
+------------------------------------------
+
+6) src/pdf-processing.mjs
+   Role :
+   - reconstruit le texte du PDF ;
+   - retire les en-tetes et pieds repetes ;
+   - fusionne certains titres coupes ;
+   - prepare le texte qui sera ensuite lu avec ce profil.
+
+   Pourquoi c'est important :
+   - un bon profil ne peut pas compenser un texte mal reconstruit ;
+   - si le PDF est mal importe, le profil "lecture visuelle allegee"
+     paraitra mauvais alors que le probleme vient du reflow.
+
+7) src/core/reading/decoding-engine.mjs
+   Role :
+   - gere syllabes, sons, lettres muettes et mots a decorer ou non ;
+   - pour ce profil, il sert surtout a ne PAS ajouter d'aide au decodage.
+
+   Pourquoi c'est important :
+   - ce profil doit rester sobre ;
+   - ce fichier garantit que colorationMode="none" et syllableLevel="off"
+     donnent bien un texte simple.
+
+8) src/core/reading/syllabify-french.mjs
+   Role :
+   - moteur pur de decoupe syllabique.
+
+   Importance pour ce profil :
+   - faible en usage normal, car les syllabes sont desactivees ;
+   - important si l'utilisateur modifie ensuite le profil.
+
+9) src/core/reading/reading-guide.mjs
+   Role :
+   - gere la reglette et la fenetre de lecture.
+
+   Importance pour ce profil :
+   - faible par defaut, car readingGuideMode="off" ;
+   - peut devenir utile si l'utilisateur personnalise ce profil.
+
+10) src/core/reading/audio-engine.mjs
+    Role :
+    - gere la lecture audio, pause, reprise et navigation.
+
+    Importance pour ce profil :
+    - indirecte ;
+    - le profil ne met pas l'audio en avant, mais il doit rester
+      compatible si l'utilisateur active la lecture audio ensuite.
+
+
+2. PARAMETRES EXACTS DU PROFIL
+------------------------------
+
+Source principale : src/profiles.mjs
+
+Identifiant technique :
+- id = lecture-visuelle-allegee
+
+Libelle :
+- Lecture visuelle allegee
+
+Description fonctionnelle :
+- Une lecture stable, aeree et confortable pour les textes longs.
+
+Note de conception :
+- Profil de base recommande pour une lecture calme, avec colonne moderee
+  et contraste doux.
+
+Valeurs definies explicitement par le profil :
+- fontFamily = "Verdana", "Geneva", sans-serif
+- fontSize = 22
+- lineHeight = 1.8
+- letterSpacing = 0.12
+- wordSpacing = 0.18
+- maxLineLength = 66
+- pagePadding = 34
+- theme = brume
+- overlayPreset = none
+- overlayOpacity = 0
+- focusMode = none
+- highlightMode = soft
+- colorationMode = none
+- syllableLevel = off
+- soundColorMode = soft
+- syllableBreakMode = none
+- readingGuideMode = off
+- verificationMode = off
+
+Valeurs heritees depuis DEFAULT_PREFERENCES :
+- overlayCustomColor = #dbeafe
+- readingGuideLines = 1
+- readingGuideOpacity = 0.16
+- readingGuideColor = #a0344a
+- speechRate = 1
+- pauseBetweenSentences = 0
+- speechVoiceId = ""
+- ocrLanguage = fra
+- distractionFree = false
+
+
+3. DETAIL PARAMETRE PAR PARAMETRE
+---------------------------------
+
+1) fontFamily = Verdana / Geneva / sans-serif
+   Effet technique :
+   - police sans serif tres lisible ;
+   - formes de lettres claires ;
+   - bonne separation visuelle des caracteres.
+
+   Interet pedagogique :
+   - Verdana est souvent bien toleree par des lecteurs qui fatiguent vite ;
+   - elle garde une lecture simple sans imposer une police "speciale dys" ;
+   - bon compromis pour un profil de confort general.
+
+   Risque si trop change :
+   - une police trop originale ou trop lourde peut fatiguer plus vite.
+
+2) fontSize = 22
+   Effet technique :
+   - texte plus grand que le mode Normal (20).
+
+   Interet pedagogique :
+   - reduit l'effort d'acuite visuelle ;
+   - aide a suivre plus facilement une ligne ;
+   - rend la lecture plus reposante sur les textes longs.
+
+   Risque si trop grand :
+   - trop peu de texte visible ;
+   - scroll plus frequent ;
+   - sensation de texte "explose".
+
+3) lineHeight = 1.8
+   Effet technique :
+   - espace vertical confortable entre les lignes ;
+   - correspond au minimum recommande (WCAG SC 1.4.12) ;
+   - le CSS applique un plancher max(1.8, ...) comme filet de securite.
+
+   Interet pedagogique :
+   - limite les sauts de ligne ;
+   - reduit l'effet de melange entre la ligne du dessus et celle du dessous ;
+   - bon point d'equilibre entre respiration et densite de lecture.
+
+   Risque si trop faible :
+   - lignes trop collees, lecture plus fatigante ;
+   - ne jamais descendre en dessous de 1.8.
+
+   Risque si trop fort :
+   - texte trop eclate, perte de continuite.
+
+4) letterSpacing = 0.12
+   Effet technique :
+   - espacement entre les lettres conforme au minimum WCAG SC 1.4.12 ;
+   - le CSS applique un plancher max(0.12em, ...) comme filet de securite.
+
+   Interet pedagogique :
+   - aide a distinguer les caracteres ;
+   - reduit les confusions visuelles ;
+   - suit une logique favorable aux besoins dys sans etre spectaculaire.
+
+   Risque si trop fort :
+   - les mots se desagregent visuellement ;
+   - la lecture perd son rythme naturel.
+
+5) wordSpacing = 0.18
+   Effet technique :
+   - legerement plus d'espace entre les mots que le minimum (0.16em).
+
+   Interet pedagogique :
+   - clarifie les frontieres entre les mots ;
+   - aide les lecteurs qui "collent" visuellement plusieurs mots.
+
+   Risque si trop fort :
+   - texte trop decoupe ;
+   - baisse de fluidite.
+
+6) maxLineLength = 66
+   Effet technique :
+   - colonne de lecture plus etroite que le mode Normal (72ch).
+
+   Interet pedagogique :
+   - evite les lignes trop longues ;
+   - facilite le retour a la ligne ;
+   - reduit la fatigue attentionnelle sur les grands paragraphes.
+
+   Risque si trop etroit :
+   - trop de retours ligne ;
+   - impression de texte casse.
+
+7) pagePadding = 34
+   Effet technique :
+   - marge interieure autour du texte ;
+   - surcharge la valeur par defaut (30) pour plus d'air.
+
+   Interet pedagogique :
+   - le texte ne touche pas les bords de la zone de lecture ;
+   - donne une impression de page propre et aeree ;
+   - coherent avec l'esprit "confort et aeration" du profil.
+
+8) theme = brume
+   Effet technique :
+   - fond clair legerement bleute ;
+   - texte sombre mais non agressif ;
+   - contraste doux.
+
+   Interet pedagogique :
+   - evite le blanc pur ;
+   - donne un rendu reposant pour la lecture continue ;
+   - utile pour les personnes sensibles au contraste brutal.
+
+   Pourquoi ce theme est logique ici :
+   - il soutient la lecture sans donner l'impression d'un mode "medical"
+     ou "surcharge d'aide".
+
+9) highlightMode = soft
+   Effet technique :
+   - surlignage leger du bloc en cours de lecture ;
+   - fond semi-transparent et trait fin a gauche.
+
+   Interet pedagogique :
+   - donne un repere discret pour savoir ou on en est ;
+   - ne masque pas le reste du texte ;
+   - coherent avec l'esprit "confort sans forcer".
+
+   Pourquoi pas "none" :
+   - un lecteur fatigue perd facilement le fil ;
+   - un repere doux ne surcharge pas l'interface ;
+   - le passage de "none" a "soft" ne change pas la philosophie du profil.
+
+   Pourquoi pas "strong" :
+   - "strong" ajoute une ombre et un encadrement marque ;
+   - trop visible pour un profil de confort general.
+
+10) focusMode = none
+    Effet technique :
+    - pas de diminution du reste du texte ;
+    - pas de bloc mis en avant par opacite.
+
+    Interet pedagogique :
+    - ce profil doit rester simple ;
+    - il ne doit pas imposer une guidance attentionnelle forte.
+
+    Pourquoi c'est bien pour ce profil :
+    - on cherche le confort global, pas la concentration forcee.
+
+11) colorationMode = none
+    Effet technique :
+    - pas de coloration phonemique ;
+    - pas de mise en evidence pedagogique des mots.
+
+    Interet pedagogique :
+    - indispensable pour maintenir un rendu sobre ;
+    - ce profil est fait pour les lecteurs qui veulent surtout de
+      l'aeration et du calme.
+
+12) syllableLevel = off
+    Effet technique :
+    - aucune decoupe syllabique visible.
+
+    Interet pedagogique :
+    - evite de surcharger l'oeil ;
+    - reserve la decoupe aux profils qui en ont reellement besoin.
+
+13) soundColorMode = soft
+    Effet technique :
+    - valeur prete si l'utilisateur active ensuite une aide sonore.
+
+    Interet pedagogique :
+    - permet une transition douce vers une aide plus forte sans repartir
+      d'un profil vide.
+
+    Note :
+    - en l'etat, ce reglage n'a quasiment pas d'effet visible car
+      colorationMode = none.
+
+14) syllableBreakMode = none
+    Effet technique :
+    - pas de tiret ni de point median entre syllabes.
+
+    Interet pedagogique :
+    - coherence avec l'idee d'un profil de lecture simple et stable.
+
+15) readingGuideMode = off
+    Effet technique :
+    - pas de reglette ni de fenetre de lecture.
+
+    Interet pedagogique :
+    - garde l'interface discrete ;
+    - laisse le profil "Audio / Focus" et les profils avances gerer
+      les aides directionnelles plus fortes.
+
+16) verificationMode = off
+    Effet technique :
+    - pas de reperes sur les zones potentiellement fragiles.
+
+    Interet pedagogique :
+    - ce profil est fait pour lire, pas pour corriger ;
+    - les reperes de verification sont reserves au profil enseignant
+      ou dyscalculie.
+
+
+4. CE QUE CE PROFIL DOIT FAIRE VISUELLEMENT
+-------------------------------------------
+
+Attendu ecran :
+- texte aere ;
+- repere doux sur le bloc actif (surlignage leger, pas de bordure forte) ;
+- peu d'effet de carte ;
+- titres lisibles mais pas trop massifs ;
+- pas de syllabes ;
+- pas de lettres muettes grisees ;
+- pas de couleurs pedagogiques ;
+- fond doux ;
+- ligne de lecture stable.
+
+Attendu pedagogique :
+- convenir a un lecteur fatigue ;
+- convenir a un lecteur qui ne veut pas "voir de l'aide partout" ;
+- servir de profil de base confortable avant d'aller vers Dyslexie ou
+  Decodage renforce.
+
+
+5. CE QUE CE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Ce profil ne doit pas :
+- hacher les mots ;
+- colorer les syllabes ;
+- afficher des lettres muettes grisees ;
+- mettre des traits ou soulignements partout ;
+- assombrir fortement le reste du texte ;
+- donner une impression de mode expert ou de mode scolaire surcharge.
+
+
+6. DEPENDANCES DE QUALITE A SURVEILLER
+--------------------------------------
+
+Meme si le profil est bon, il paraitra mauvais si :
+- le PDF a ete mal reconstruit ;
+- les titres sont colles au texte ;
+- les en-tetes repetes n'ont pas ete retires ;
+- les lignes du sommaire sont mal fusionnees ;
+- des artefacts OCR ou reflow restent dans le texte.
+
+Donc, quand ce profil "semble mauvais", il faut verifier d'abord :
+1. la qualite d'import dans src/pdf-processing.mjs ;
+2. la reconstruction du texte ;
+3. seulement ensuite les reglages de profil.
+
+
+7. RESUME COURT
+---------------
+
+Lecture visuelle allegee = profil de confort.
+
+Ce qu'il apporte :
+- un peu plus de taille ;
+- un peu plus d'espace ;
+- une colonne plus raisonnable ;
+- un fond doux ;
+- un repere de lecture discret (surlignage soft) ;
+- zero aide au decodage visible.
+
+Ce qu'il ne doit pas apporter :
+- syllabes ;
+- sons ;
+- decoupage visible ;
+- focus fort ;
+- reglette ;
+- surlignage appuye.
+
+Si ce profil parait encore "charge", le probleme vient en general du
+rendu global du document, pas de la philosophie du profil lui-meme.

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-labelledby="title desc">
+  <title id="title">PDF brut classique</title>
+  <desc id="desc">Illustration d'un document PDF dense, peu adapte a la lecture.</desc>
+  <rect width="1280" height="820" fill="#f4efe8"/>
+  <rect x="110" y="70" width="1060" height="680" rx="20" fill="#ffffff" stroke="#d5cfc8" stroke-width="8"/>
+  <rect x="170" y="130" width="280" height="32" rx="8" fill="#6b6560" opacity="0.22"/>
+  <rect x="170" y="190" width="900" height="22" rx="6" fill="#2d2a26" opacity="0.86"/>
+  <rect x="170" y="230" width="860" height="22" rx="6" fill="#2d2a26" opacity="0.86"/>
+  <rect x="170" y="270" width="910" height="22" rx="6" fill="#2d2a26" opacity="0.86"/>
+  <rect x="170" y="310" width="845" height="22" rx="6" fill="#2d2a26" opacity="0.86"/>
+  <rect x="170" y="380" width="420" height="20" rx="6" fill="#6b6560" opacity="0.24"/>
+  <rect x="170" y="420" width="860" height="20" rx="6" fill="#2d2a26" opacity="0.84"/>
+  <rect x="170" y="458" width="910" height="20" rx="6" fill="#2d2a26" opacity="0.84"/>
+  <rect x="170" y="496" width="760" height="20" rx="6" fill="#2d2a26" opacity="0.84"/>
+  <rect x="170" y="558" width="280" height="18" rx="6" fill="#6b6560" opacity="0.18"/>
+  <rect x="170" y="592" width="720" height="18" rx="6" fill="#2d2a26" opacity="0.86"/>
+  <rect x="170" y="626" width="680" height="18" rx="6" fill="#2d2a26" opacity="0.86"/>
+  <text x="170" y="112" font-family="DM Sans, Segoe UI, Arial, sans-serif" font-size="34" font-weight="700" fill="#a0344a">
+    PDF brut classique
+  </text>
+</svg>

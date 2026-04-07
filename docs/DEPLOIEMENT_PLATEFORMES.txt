@@ -1,0 +1,181 @@
+DEPLOIEMENT MULTI-PLATEFORME - DYSLECTEUR
+=========================================
+
+Etat actuel du projet
+---------------------
+L'application actuelle est une application Electron desktop.
+
+Cela permet directement :
+- Windows avec installateur
+- Windows sans installation
+- macOS avec image disque
+- Linux avec AppImage ou paquet .deb
+
+En revanche :
+- iPad
+- tablette Android
+- smartphone Android
+
+ne doivent pas etre cibles avec Electron.
+Pour ces appareils, il faut une version web / PWA.
+
+
+1. WINDOWS
+----------
+
+A. Installateur Windows (.exe)
+Commande :
+- npm run build:win:installer
+
+Resultat attendu :
+- un installateur Windows de type NSIS
+- installation classique sur le poste
+- raccourci bureau / menu demarrer possibles
+
+Cas d'usage :
+- diffusion a un utilisateur Windows classique
+- tests terrain simples
+
+
+B. Windows sans installation
+Commande :
+- npm run build:win:noinstall
+
+Resultat attendu :
+- une archive ZIP a decompresser
+- l'utilisateur ouvre ensuite l'application sans installation
+
+Reponse a ta question :
+- oui, c'est possible
+- le format recommande est desormais le ZIP
+- le format "portable" monofichier reste possible, mais il est moins recommande
+
+Cas d'usage :
+- test rapide
+- cle USB
+- poste ou l'on ne veut rien installer
+
+
+2. MACOS
+--------
+
+Commande :
+- npm run build:mac:dmg
+- npm run build:mac:unpacked
+
+Resultat attendu :
+- un fichier .dmg
+- ou un dossier applicatif brut pour test local
+
+Important :
+- en pratique, un vrai packaging macOS propre se fait idealement depuis un Mac
+- pour une diffusion large, la signature Apple et la notarisation sont
+  fortement recommandees
+
+Conclusion :
+- oui, le projet est prepare pour macOS
+- mais la vraie sortie propre doit idealement etre generee depuis un environnement macOS
+- avec signature et notarisation pour une diffusion publique sereine
+
+
+3. LINUX
+--------
+
+A. AppImage
+Commande :
+- npm run build:linux:appimage
+- ou `npm run build:linux:noinstall`
+
+Resultat attendu :
+- une application portable Linux
+
+B. Debian / Ubuntu
+Commande :
+- npm run build:linux:deb
+
+Resultat attendu :
+- un paquet .deb installable
+
+C. Dossier brut
+Commande :
+- npm run build:linux:unpacked
+
+Resultat attendu :
+- un dossier Linux non compacte pour verification
+
+Conclusion :
+- oui, Linux est prevu
+- deux formats sont deja prepares : AppImage et .deb
+
+
+4. IPAD / TABLETTE ANDROID / MOBILE
+-----------------------------------
+
+Electron n'est pas la bonne cible pour iPad et Android.
+
+La bonne strategie est :
+- faire une version web
+- puis la rendre installable en PWA
+
+Ce que cela permet :
+- ouverture dans Safari / Chrome
+- ajout a l'ecran d'accueil
+- comportement proche d'une application
+- meme base fonctionnelle de lecture adaptee, avec des limites sur les APIs desktop
+
+Conclusion claire :
+- pas d'installateur Electron iPad / Android
+- oui pour une version web / PWA adaptee
+
+
+5. CE QUE LE PROJET SAIT DEJA FAIRE
+-----------------------------------
+
+Le projet contient deja :
+- des scripts de build Windows, macOS et Linux
+- une configuration electron-builder
+- un fallback navigateur dans l'application
+
+Scripts principaux :
+- npm run build:win:installer
+- npm run build:win:noinstall
+- npm run build:win:unpacked
+- npm run build:mac:dmg
+- npm run build:linux:appimage
+- npm run build:linux:deb
+
+
+6. RECOMMANDATION PRATIQUE
+--------------------------
+
+Si on veut diffuser vite et bien :
+
+1. Windows
+- priorite 1 : build ZIP sans installation
+- priorite 2 : installateur
+
+2. macOS
+- faire le packaging depuis un Mac
+
+3. Linux
+- sortir AppImage en premier
+
+4. iPad / Android
+- preparer une vraie version web / PWA
+
+
+7. RESUME TRES COURT
+--------------------
+
+Oui, tu peux avoir :
+- un .exe installable Windows
+- une version Windows sans installation
+- une version macOS
+- une version Linux
+
+Non, pas directement avec Electron pour :
+- iPad
+- Android
+
+Pour iPad / Android :
+- il faut une version web / PWA

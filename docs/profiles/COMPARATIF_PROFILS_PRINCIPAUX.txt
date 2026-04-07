@@ -1,0 +1,236 @@
+COMPARATIF DES PROFILS PRINCIPAUX
+=================================
+
+Profils compares
+----------------
+- Normal
+- Lecture visuelle allegee
+- Dyslexie
+- Decodage renforce
+- Audio / Focus
+
+
+1. IDEE GENERALE
+----------------
+
+Ces 5 profils ne servent pas au meme usage.
+
+- Normal
+  Version la plus sobre.
+  Sert de base de comparaison.
+
+- Lecture visuelle allegee
+  Version plus confortable que Normal, sans vraie aide au decodage.
+
+- Dyslexie
+  Premier vrai profil d'aide a la lecture, avec aide legere et fond doux.
+
+- Decodage renforce
+  Profil d'aide au decodage le plus visible parmi les profils principaux.
+
+- Audio / Focus
+  Profil centre sur le suivi du texte avec la lecture audio et le reperage
+  du paragraphe courant.
+
+
+2. TABLEAU TECHNIQUE
+--------------------
+
+| Profil | Police | Taille | Interligne | Lettres | Mots | Largeur | Theme | Coloration | Syllabes | Focus | Regl. | Verification |
+|--------|--------|--------|------------|---------|------|---------|-------|------------|----------|-------|-------|--------------|
+| Normal | Aptos | 20 | 1.8 | 0.12 | 0.16 | 72 | neutre | none | off | none | off | off |
+| Lecture visuelle allegee | Verdana | 22 | 1.8 | 0.12 | 0.18 | 66 | brume | none | off | none | off | off |
+| Dyslexie | Verdana | 22 | 1.95 | 0.12 | 0.20 | 60 | creme | pedagogique | light | none | off | off |
+| Decodage renforce | OpenDyslexic | 22 | 1.85 | 0.12 | 0.20 | 58 | contraste | pedagogique | strong | none | ruler | off |
+| Audio / Focus | Verdana | 22 | 1.9 | 0.12 | 0.20 | 62 | brume | none | off | paragraph | off | off |
+
+Notes :
+- "Regl." = reglette / guide de lecture
+- "Syllabes" = niveau de decoupe syllabique
+- "Coloration" = aide visuelle pedagogique globale
+
+
+3. DIFFERENCE PRINCIPALE ENTRE LES PROFILS
+------------------------------------------
+
+Normal
+- Reste au plus proche d'un texte simple reflow.
+- Pas d'aide specialisee.
+- A utiliser quand on veut juste lire proprement.
+
+Lecture visuelle allegee
+- Meme philosophie que Normal, mais plus confortable.
+- Plus grande taille.
+- Un peu plus d'espace.
+- Colonne plus etroite.
+- Theme plus doux.
+
+Dyslexie
+- Ajoute une aide au decodage moderee.
+- Garde un rendu encore assez calme.
+- Ne doit pas sembler hache ou trop scolaire.
+
+Decodage renforce
+- Accentue franchement l'aide syllabique.
+- Ajoute une reglette.
+- Plus utile en lecture difficile mot a mot.
+- Ne doit pas decorer les titres, sommaires ou mots structurels.
+
+Audio / Focus
+- N'aide pas par syllabes.
+- Aide par le suivi de paragraphe et la lecture vocale.
+- Doit etre tres fluide sur play / pause / reprise / lire ici.
+
+
+4. NIVEAU D'AIDE VISUELLE
+-------------------------
+
+Du plus sobre au plus assiste :
+
+1. Normal
+2. Lecture visuelle allegee
+3. Audio / Focus
+4. Dyslexie
+5. Decodage renforce
+
+Important :
+- Audio / Focus n'est pas tres colore, mais il reste plus "assiste"
+  fonctionnellement que Lecture visuelle allegee.
+- Dyslexie doit rester moins fort que Decodage renforce.
+
+
+5. NIVEAU DE CHARGE COGNITIVE ATTENDU
+-------------------------------------
+
+Normal
+- Charge visuelle minimale.
+- Peu d'aide.
+- Bonne base neutre.
+
+Lecture visuelle allegee
+- Charge visuelle faible.
+- Confort augmente.
+- Ideal pour textes longs.
+
+Dyslexie
+- Charge visuelle moderee.
+- Aide utile sans surcharge.
+
+Decodage renforce
+- Charge visuelle la plus forte parmi les profils principaux.
+- Doit rester reserve aux besoins reels de decodage.
+
+Audio / Focus
+- Charge visuelle moderee, mais centree sur le suivi.
+- Le coeur de l'aide vient du comportement, pas de la coloration.
+
+
+6. POUR QUI ?
+-------------
+
+Normal
+- Pour lire le PDF tel quel, sans aide visuelle supplementaire.
+
+Lecture visuelle allegee
+- Pour les lecteurs fatigues qui veulent surtout plus de confort.
+
+Dyslexie
+- Pour les lecteurs dyslexiques qui ont besoin d'un soutien modere.
+
+Decodage renforce
+- Pour les lecteurs qui ont besoin d'un guidage syllabique visible.
+
+Audio / Focus
+- Pour les lecteurs qui suivent mieux avec la voix et le paragraphe actif.
+
+
+7. CE QUE CHAQUE PROFIL DOIT ABSOLUMENT EVITER
+----------------------------------------------
+
+Normal
+- Pas de syllabes.
+- Pas de lettres muettes grisees.
+- Pas de coloration.
+
+Lecture visuelle allegee
+- Pas de surcharge.
+- Pas d'effets "dys" visibles.
+- Pas de focus impose.
+
+Dyslexie
+- Pas d'effet hache.
+- Pas de surcharge de couleurs.
+- Pas de reglette imposee.
+
+Decodage renforce
+- Pas de soulignements parasites.
+- Pas d'aide sur titres, sommaires, auteurs, labels de page.
+- Pas de bruit visuel excessif.
+
+Audio / Focus
+- Pas de reprise confuse.
+- Pas d'obligation de repartir depuis le debut.
+- Pas de coloration syllabique parasite.
+
+
+8. FICHIERS COMMUNS QUI IMPACTENT TOUS LES PROFILS
+--------------------------------------------------
+
+Tous ces profils dependent surtout de :
+
+- src/profiles.mjs
+  Source des reglages par profil
+
+- src/app.mjs
+  Application du profil dans l'etat et le DOM
+
+- src/styles.css
+  Rendu ecran
+
+- src/print.css
+  Rendu impression / export PDF
+
+- src/pdf-processing.mjs
+  Qualite du texte importe
+
+- src/core/reading/decoding-engine.mjs
+  Aide au decodage ou neutralite selon le profil
+
+- src/core/reading/audio-engine.mjs
+  Surtout important pour Audio / Focus
+
+- src/core/reading/reading-guide.mjs
+  Surtout important pour Decodage renforce et certains profils avances
+
+
+9. ORDRE DE CALIBRATION RECOMMANDE
+----------------------------------
+
+Pour stabiliser les profils sans se perdre :
+
+1. Normal
+   Base neutre
+
+2. Lecture visuelle allegee
+   Confort sans aide de decodage
+
+3. Dyslexie
+   Aide legere
+
+4. Decodage renforce
+   Aide forte
+
+5. Audio / Focus
+   Qualite de l'interaction audio et du suivi
+
+
+10. RESUME COURT
+----------------
+
+Si on simplifie au maximum :
+
+- Normal = lecture simple
+- Lecture visuelle allegee = lecture simple plus confortable
+- Dyslexie = lecture avec aide legere
+- Decodage renforce = lecture avec aide forte
+- Audio / Focus = lecture accompagnee par la voix

@@ -1,0 +1,120 @@
+FICHE PROFIL - ENSEIGNANT / ORTHO
+=================================
+
+But du profil
+-------------
+Ce profil est un profil de travail et d'analyse.
+Il ne sert pas seulement a lire.
+Il sert aussi a :
+- observer le rendu ;
+- controler les zones fragiles ;
+- verifier la qualite de l'adaptation ;
+- preparer des documents pour un eleve ou un patient.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects majeurs :
+- src/core/reading/decoding-engine.mjs
+- src/core/reading/math-support.mjs
+- src/pdf-processing.mjs
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = enseignant
+
+Libelle :
+- Enseignant / Ortho
+
+Description :
+- Vue de travail pour preparer une lecture adaptee et verifier le rendu.
+
+Note de conception :
+- Profil d'analyse avec contraste doux, verification visible et decodage
+  modere.
+
+Valeurs definies explicitement :
+- fontFamily = "Atkinson Hyperlegible", "Verdana", sans-serif
+- fontSize = 18
+- lineHeight = 1.8
+- letterSpacing = 0.12
+- wordSpacing = 0.16
+- maxLineLength = 70
+- theme = creme
+- colorationMode = pedagogique
+- syllableLevel = light
+- soundColorMode = soft
+- verificationMode = markers
+- readingGuideMode = off
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontFamily = Atkinson Hyperlegible
+- Interet :
+  bonne lecture analytique et bonne discrimination des caracteres.
+
+fontSize = 18
+- Interet :
+  plus compact qu'un profil eleve ;
+  utile pour voir plus de contenu a l'ecran.
+
+maxLineLength = 70
+- Interet :
+  colonne large mais encore lisible ;
+  pratique pour verifier la structure.
+
+colorationMode = pedagogique / syllableLevel = light
+- Interet :
+  montre une aide moderee, suffisante pour evaluation.
+
+verificationMode = markers
+- Interet :
+  signale les zones douteuses a relire.
+
+readingGuideMode = off
+- Interet :
+  ne pas brouiller l'analyse du document par un guidage visuel fort.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- rendu lisible et utile pour observer ;
+- repères de verification visibles ;
+- decodage modere lisible ;
+- bon compromis entre lecture et analyse.
+
+Attendu pedagogique :
+- aider l'adulte a preparer ou verifier un document adapte.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- etre trop charge ;
+- se transformer en profil eleve tres assiste ;
+- masquer les problemes reels du document.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- enseignants ;
+- orthophonistes ;
+- adultes qui verifient la qualite d'un rendu adapte.

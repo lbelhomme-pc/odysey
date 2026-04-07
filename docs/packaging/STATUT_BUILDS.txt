@@ -1,0 +1,64 @@
+STATUT DES BUILDS - 2026-04-07
+==============================
+
+Verifications faites :
+- npm run check : OK
+- build Windows complet : OK
+- tentative build macOS : blocage normal, macOS requis
+- tentative build Linux : configuration OK mais artefacts finals bloques par les limites de la machine Windows
+- workflow GitHub Actions ajoute pour Windows + macOS + Linux
+
+
+1. Artefacts Windows valides
+----------------------------
+
+Installateur :
+- dist\Odysey-1.0.0-win-x64.exe
+
+Version sans installation :
+- dist\Odysey-1.0.0-win-x64.zip
+
+Version ouvrable directement :
+- dist\win-unpacked\Odysey.exe
+
+
+2. macOS
+--------
+
+Statut local :
+- non genere ici
+
+Raison :
+- build macOS supportee uniquement depuis macOS
+
+Solution retenue :
+- build via GitHub Actions `macos-latest`
+
+
+3. Linux
+--------
+
+Statut local :
+- non valide pour diffusion depuis cette machine
+
+Raisons :
+- AppImage bloquee par une contrainte de symlink Windows
+- `.deb` bloque par l'absence de `fpm` sur Windows
+
+Solution retenue :
+- build via GitHub Actions `ubuntu-latest`
+
+
+4. Recommandation immediate
+---------------------------
+
+A diffuser des maintenant :
+- Windows installateur : `dist\Odysey-1.0.0-win-x64.exe`
+- Windows sans installation : `dist\Odysey-1.0.0-win-x64.zip`
+
+Pour le test local le plus direct :
+- lancer `dist\win-unpacked\Odysey.exe`
+
+Pour macOS et Linux :
+- pousser le depot sur GitHub
+- lancer le workflow `.github/workflows/build-desktop.yml`

@@ -1,0 +1,182 @@
+FICHE PROFIL - DECODAGE RENFORCE
+================================
+
+But du profil
+-------------
+Ce profil est le profil d'aide au decodage la plus visible parmi les
+profils principaux.
+
+Il doit :
+- aider a decouper les mots longs ;
+- rendre les syllabes plus visibles ;
+- proposer un repere de lecture discret ;
+- aider les lecteurs qui ont besoin d'un guidage plus appuye.
+
+Il ne doit pas devenir un texte "bruite".
+La priorite reste la lisibilite.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects majeurs :
+- src/core/reading/decoding-engine.mjs
+  Coeur du comportement de ce profil.
+- src/core/reading/syllabify-french.mjs
+  Fournit la decoupe syllabique forte.
+- src/core/reading/reading-guide.mjs
+  Gere le repere de lecture type reglette.
+- src/pdf-processing.mjs
+  Important car ce profil amplifie visuellement les problemes d'import.
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = decodage-renforce
+
+Libelle :
+- Decodage renforce
+
+Description :
+- Active une aide visuelle plus marquee pour syllabes et reperes de
+  lecture.
+
+Note de conception :
+- Renforce les appuis visuels sans surcharge, avec focus leger et
+  coloration douce.
+
+Valeurs definies explicitement :
+- fontFamily = "OpenDyslexic", "Arial", sans-serif
+- fontSize = 22
+- lineHeight = 1.85
+- letterSpacing = 0.12
+- wordSpacing = 0.2
+- maxLineLength = 58
+- theme = contraste
+- focusMode = none
+- highlightMode = soft
+- colorationMode = pedagogique
+- syllableLevel = strong
+- soundColorMode = soft
+- syllableBreakMode = dot
+- readingGuideMode = ruler
+- readingGuideLines = 1
+- readingGuideOpacity = 0.14
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontFamily = OpenDyslexic
+- Interet :
+  donne des formes de lettres plus distinctes ;
+  peut aider certains lecteurs a mieux differencier les caracteres.
+
+fontSize = 22
+- Interet :
+  taille assez grande pour supporter la decoupe syllabique.
+
+lineHeight = 1.85
+- Interet :
+  garde une bonne respiration tout en laissant assez de densite.
+
+letterSpacing = 0.12
+- Interet :
+  espace utile entre les lettres sans trop disperser les syllabes.
+
+wordSpacing = 0.2
+- Interet :
+  clarifie bien les frontieres entre mots.
+
+maxLineLength = 58
+- Interet :
+  colonne plus etroite ;
+  aide a garder le fil de ligne malgre la charge visuelle plus forte.
+
+theme = contraste
+- Interet :
+  meilleur contraste de lecture, tout en restant doux.
+
+focusMode = none
+- Interet :
+  le guidage principal vient deja du decodage et de la reglette ;
+  pas besoin d'un focus de type fenetre.
+
+highlightMode = soft
+- Interet :
+  conserve un leger reperage du bloc courant sans gros aplats.
+
+colorationMode = pedagogique
+- Interet :
+  la coloration suit une logique pedagogique plus douce qu'un vrai mode
+  phonemique fort.
+
+syllableLevel = strong
+- Interet :
+  davantage de mots sont aides par la decoupe syllabique.
+
+soundColorMode = soft
+- Interet :
+  palette douce ; evite un code couleur trop agressif.
+
+syllableBreakMode = dot
+- Interet :
+  le point median rend la coupure visible sans etre aussi cassant qu'un
+  tiret partout.
+
+readingGuideMode = ruler
+- Interet :
+  ajoute un repere de lecture qui aide a tenir la ligne.
+
+readingGuideLines = 1
+- Interet :
+  guide precis, ligne par ligne.
+
+readingGuideOpacity = 0.14
+- Interet :
+  intensite legere ; le repere doit guider, pas ecraser le texte.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- aide syllabique visible ;
+- mots longs mieux decoupables ;
+- reglette discrete ;
+- structure du document laissee sobre ;
+- vrai texte de lecture plus aide que les titres ou sommaires.
+
+Attendu pedagogique :
+- profil utile pour lecture difficile mot a mot ;
+- support fort au decodage ;
+- usage possible sur textes scolaires ou litteraires exigeants.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- decorer les titres, sommaires, auteurs ou etiquettes de page ;
+- souligner partout ;
+- hacher les mots courts ;
+- melanger trop fort syllabes + sons + autres marquages ;
+- devenir plus fatigant que le texte d'origine.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- lecteurs qui ont besoin d'une aide au decodage franchement visible ;
+- textes difficiles ;
+- moments d'apprentissage, de relecture ou de soutien.

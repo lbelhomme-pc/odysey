@@ -1,0 +1,523 @@
+﻿<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1f2b3b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Odysey" />
+    <title>Odysey</title>
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./assets/odysey-icon.png" />
+    <link rel="apple-touch-icon" href="./assets/pwa-icon-192.png" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./print.css" media="print" />
+  </head>
+  <body>
+    <div id="startupSplash" class="startup-splash" aria-hidden="true">
+      <div class="startup-splash__surface">
+        <img class="startup-splash__image" src="./assets/odysey-brand.png" alt="" />
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Réglages de lecture">
+        <section class="sidebar-hero">
+          <div class="brand-block">
+            <img class="brand-logo" src="./assets/odysey-brand.png" alt="Odysey" />
+          </div>
+
+          <div class="document-preview-card" aria-label="Aperçu du document">
+            <div class="document-preview-sheet">
+              <p class="document-preview-kicker">Document actif</p>
+              <strong id="documentTitle">Aucun PDF chargé</strong>
+              <span id="documentMeta">Importe un PDF pour activer la lecture adaptée.</span>
+              <div class="document-preview-lines" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-pills">
+            <div class="info-pill">
+              <span>Pages</span>
+              <strong id="documentPagesInfo">0</strong>
+            </div>
+            <div class="info-pill">
+              <span>Mode actif</span>
+              <strong id="documentModeInfo">Lecture reflow</strong>
+            </div>
+            <div class="info-pill">
+              <span>Profil</span>
+              <strong id="documentProfileInfo">Lecture visuelle allégée</strong>
+            </div>
+          </div>
+
+          <div class="sidebar-primary-actions">
+            <button id="openPdfButton" class="primary-action wide" type="button">Importer un PDF</button>
+            <button id="printButton" class="ghost-action wide" type="button">Imprimer version adaptée</button>
+            <button id="immersionButton" class="ghost-action wide" type="button">Masquer les réglages</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h2>Profils</h2>
+          </div>
+
+          <div class="control-grid">
+            <label class="control">
+              <span>Nom du profil personnalisé</span>
+              <input
+                id="customProfileName"
+                type="text"
+                maxlength="60"
+                placeholder="Exemple : Mon profil maths calme"
+                autocomplete="off"
+              />
+            </label>
+          </div>
+
+          <div class="quick-actions-grid profile-actions-grid">
+            <button id="saveProfileButton" class="ghost-action subtle" type="button">Enregistrer ce profil</button>
+            <button id="deleteProfileButton" class="ghost-action danger subtle" type="button">Supprimer le profil</button>
+          </div>
+
+          <p id="profileFeedback" class="inline-feedback" hidden></p>
+
+          <div class="section-head compact">
+            <h3>Importants</h3>
+          </div>
+          <div id="profilesList" class="profiles-grid"></div>
+          <details class="profiles-advanced">
+            <summary>Profils avancés</summary>
+            <p class="support-copy">
+              Réglages plus spécialisés pour des besoins précis : maths, attention, motricité ou analyse.
+            </p>
+            <div id="advancedProfilesList" class="profiles-grid"></div>
+          </details>
+          <div class="section-head compact">
+            <h3>Personnalisés</h3>
+          </div>
+          <div id="customProfilesList" class="profiles-grid"></div>
+          <p id="researchNotes" class="support-copy"></p>
+          <button id="profileSummaryButton" class="ghost-action subtle wide" type="button">Voir le tableau des profils</button>
+        </section>
+
+        <section class="panel controls-panel">
+          <div class="section-head">
+            <h2>Lecture visuelle</h2>
+            <div class="audio-actions">
+              <button id="openHeaderButton" class="ghost-action subtle" type="button">Importer un autre PDF</button>
+              <button id="resetSettingsButton" class="ghost-action subtle" type="button">Réinitialiser</button>
+            </div>
+          </div>
+
+          <p class="support-copy help-intro">
+            Survole un réglage marqué d’un ? pour afficher une explication rapide.
+          </p>
+
+          <div class="control-grid">
+            <label class="control">
+              <span>Police</span>
+              <select id="fontFamily"></select>
+            </label>
+
+            <label class="control">
+              <span>Taille du texte <output data-output-for="fontSize"></output></span>
+              <input id="fontSize" type="range" min="16" max="34" step="1" />
+            </label>
+
+            <label class="control">
+              <span>Interligne <output data-output-for="lineHeight"></output></span>
+              <input id="lineHeight" type="range" min="1.6" max="2.8" step="0.05" />
+            </label>
+
+            <label class="control">
+              <span>Espacement des lettres <output data-output-for="letterSpacing"></output></span>
+              <input id="letterSpacing" type="range" min="0.05" max="0.25" step="0.005" />
+            </label>
+
+            <label class="control">
+              <span>Espacement des mots <output data-output-for="wordSpacing"></output></span>
+              <input id="wordSpacing" type="range" min="0.1" max="0.5" step="0.01" />
+            </label>
+
+            <label class="control">
+              <span>Largeur de lecture <output data-output-for="maxLineLength"></output></span>
+              <input id="maxLineLength" type="range" min="42" max="90" step="1" />
+            </label>
+
+            <label class="control">
+              <span>Marges <output data-output-for="pagePadding"></output></span>
+              <input id="pagePadding" type="range" min="14" max="64" step="2" />
+            </label>
+
+            <label class="control">
+              <span>Thème de l'application</span>
+              <select id="appTheme"></select>
+            </label>
+
+            <label class="control">
+              <span>Thème du PDF</span>
+              <select id="theme"></select>
+            </label>
+
+            <label class="control">
+              <span>Filtre visuel</span>
+              <select id="overlayPreset">
+                <option value="none">Aucun</option>
+                <option value="creme">Crème</option>
+                <option value="blue">Bleu pâle</option>
+                <option value="green">Vert pâle</option>
+                <option value="rose">Rose pâle</option>
+                <option value="yellow">Jaune doux</option>
+                <option value="grey">Gris</option>
+                <option value="custom">Couleur personnalisée</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Opacité du filtre <output data-output-for="overlayOpacity"></output></span>
+              <input id="overlayOpacity" type="range" min="0" max="0.3" step="0.01" />
+            </label>
+
+            <label class="control">
+              <span>Couleur du filtre</span>
+              <input id="overlayCustomColor" type="color" value="#dbeafe" />
+            </label>
+          </div>
+
+          <p id="settingsFeedback" class="inline-feedback" hidden></p>
+        </section>
+
+        <section class="panel controls-panel">
+          <div class="section-head">
+            <h2>Assistances de lecture</h2>
+          </div>
+
+          <p class="support-copy">
+            Ajoute seulement l’aide utile : focus, réglette, syllabes, sons ou vérification peuvent être utilisés séparément.
+          </p>
+
+          <div class="control-grid">
+            <label class="control">
+              <span>Mise en évidence</span>
+              <select id="highlightMode">
+                <option value="none">Aucune</option>
+                <option value="soft">Douce</option>
+                <option value="strong">Forte</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Mode focus</span>
+              <select id="focusMode">
+                <option value="none">Libre</option>
+                <option value="paragraph">Focus paragraphe</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Réglette de lecture</span>
+              <select id="readingGuideMode">
+                <option value="off">Désactivée</option>
+                <option value="ruler">Réglette</option>
+                <option value="window">Fenêtre</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Lignes visibles <output data-output-for="readingGuideLines"></output></span>
+              <input id="readingGuideLines" type="range" min="1" max="3" step="1" />
+            </label>
+
+            <label class="control">
+              <span>Opacité de la réglette <output data-output-for="readingGuideOpacity"></output></span>
+              <input id="readingGuideOpacity" type="range" min="0.05" max="0.3" step="0.01" />
+            </label>
+
+            <label class="control">
+              <span>Couleur de la réglette</span>
+              <input id="readingGuideColor" type="color" value="#a0344a" />
+            </label>
+
+            <label class="control">
+              <span>Mode dys</span>
+              <select id="colorationMode">
+                <option value="none">Aucun</option>
+                <option value="pedagogique">Coloration douce</option>
+                <option value="pedagogiqueAlt">Coloration alternative</option>
+                <option value="sonsFrancais">Sons français</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Mode syllabes</span>
+              <select id="syllableLevel">
+                <option value="off">D&eacute;sactiv&eacute;</option>
+                <option value="light">L&eacute;ger</option>
+                <option value="strong">Renforc&eacute;</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Couleurs des sons</span>
+              <select id="soundColorMode">
+                <option value="soft">Douces</option>
+                <option value="strong">Nettes</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Coupure syllabique</span>
+              <select id="syllableBreakMode">
+                <option value="none">Aucune</option>
+                <option value="dot">Point médian</option>
+                <option value="hyphen">Tiret discret</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Vérification</span>
+              <select id="verificationMode">
+                <option value="off">Aucune</option>
+                <option value="markers">Repères discrets</option>
+                <option value="review">Relecture ciblée</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="verificationSummary" class="verification-summary" hidden></div>
+
+          <p class="support-copy">
+            La vérification sert à relire les zones les plus fragiles du document sans surcharger tout le reste.
+          </p>
+        </section>
+
+        <section class="panel controls-panel">
+          <div class="section-head">
+            <h2>Lecture audio</h2>
+          </div>
+
+          <p class="support-copy">
+            La vitesse de base a été ralentie pour rendre le suivi plus confortable en lecture assistée.
+          </p>
+
+          <p class="support-copy">
+            Clique un bloc puis utilise Lire pour démarrer ici, ou sélectionne un passage puis utilise le bouton dédié.
+            Au clavier, Entrée ou Espace sur un bloc lancent aussi la lecture depuis cet endroit.
+          </p>
+
+          <div class="audio-actions">
+            <button id="speechPrevButton" class="ghost-action subtle" type="button">Phrase précédente</button>
+            <button id="speechToggleButton" class="ghost-action subtle" type="button">Lire</button>
+            <button id="speechStopButton" class="ghost-action subtle" type="button">Arrêter</button>
+            <button id="speechNextButton" class="ghost-action subtle" type="button">Phrase suivante</button>
+          </div>
+
+          <div class="control-grid">
+            <label class="control">
+              <span>Voix</span>
+              <select id="speechVoiceId"></select>
+            </label>
+
+            <label class="control">
+              <span>Vitesse audio réelle <output data-output-for="speechRate"></output></span>
+              <input id="speechRate" type="range" min="0.7" max="1.4" step="0.05" />
+            </label>
+
+            <label class="control">
+              <span>Pause entre les phrases</span>
+              <select id="pauseBetweenSentences">
+                <option value="0">Aucune</option>
+                <option value="500">0,5 seconde</option>
+                <option value="1000">1 seconde</option>
+                <option value="2000">2 secondes</option>
+              </select>
+            </label>
+          </div>
+
+          <p class="support-copy">
+            Les réglages audio restent locaux, stables, et s’appliquent immédiatement sans rechargement.
+          </p>
+        </section>
+
+        <section class="panel support-panel">
+          <div class="section-head">
+            <h2>Documents et export</h2>
+          </div>
+          <p class="support-copy">
+            Retrouve ici les actions utiles sur le document en cours : impression, export, marque-pages et passages surlignés.
+          </p>
+          <div class="quick-actions-grid">
+            <button id="exportPdfButton" class="quick-action" type="button">Exporter en PDF</button>
+            <button id="openExternalButton" class="quick-action" type="button">PDF original</button>
+            <button id="bookmarkQuickButton" class="quick-action" type="button">Marque-page rapide</button>
+            <button id="exportNotesButton" class="quick-action" type="button">Exporter mes notes</button>
+          </div>
+          <div class="section-head compact">
+            <h3>Marque-pages</h3>
+          </div>
+          <ul id="bookmarksList" class="bookmark-list"></ul>
+          <p id="bookmarksEmpty" class="support-copy bookmark-empty">Aucun repère enregistré pour ce document.</p>
+          <div class="section-head compact">
+            <h3>Passages surlignés</h3>
+          </div>
+          <ul id="annotationsList" class="annotation-list"></ul>
+          <p id="annotationsEmpty" class="support-copy annotation-empty">Aucun passage surligné pour ce document.</p>
+          <p class="support-copy copyright-note">© Ludovic Belhomme</p>
+        </section>
+
+        <section class="panel controls-panel">
+          <div class="section-head">
+            <h2>OCR local</h2>
+          </div>
+
+          <p class="support-copy">
+            L’OCR sert à reconstruire du texte lisible quand le PDF est un scan, une photo ou un document mal extrait.
+          </p>
+
+          <div class="control-grid">
+              <label class="control">
+                <span>Langue OCR</span>
+                <select id="ocrLanguage">
+                  <option value="fra">Fran&ccedil;ais</option>
+                  <option value="eng">English</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="quick-actions-grid">
+              <button id="startOcrButton" class="quick-action" type="button">Lancer l'OCR</button>
+              <button id="cancelOcrButton" class="quick-action" type="button">Annuler l'OCR</button>
+            </div>
+
+            <div id="ocrProgress" class="ocr-progress" hidden>
+              <div class="ocr-progress__meta">
+                <strong id="ocrStatusText">OCR pr&ecirc;t</strong>
+                <span id="ocrProgressValue">0%</span>
+              </div>
+              <progress id="ocrProgressBar" max="1" value="0"></progress>
+            </div>
+
+            <p id="ocrHint" class="support-copy">
+              Recommand&eacute; pour les PDF scann&eacute;s ou quand le texte adapt&eacute; n'appara&icirc;t pas correctement.
+            </p>
+          </section>
+      </aside>
+
+      <main class="main-stage">
+        <header class="stage-topbar" hidden>
+          <div class="stage-topbar-copy">
+            <p class="eyebrow">Lecture adaptée</p>
+            <p class="stage-topbar-caption">Vue texte reflow, impression et export adaptés.</p>
+          </div>
+          <div class="topbar-actions">
+            <span class="view-pill is-active">Texte adapté</span>
+            <button id="toggleSidebarButton" class="ghost-action subtle" type="button">Masquer le panneau</button>
+          </div>
+        </header>
+
+        <button id="floatingSidebarButton" class="floating-sidebar-toggle ghost-action subtle" type="button" hidden>
+          Afficher les réglages
+        </button>
+
+        <div id="warningBanner" class="warning-banner" hidden>
+          <strong>Attention</strong>
+          <span id="warningText"></span>
+        </div>
+
+        <section id="printSummary" class="print-summary print-only" aria-label="Résumé d’impression"></section>
+
+        <section id="selectionAssist" class="selection-assist" hidden aria-label="Sélection active">
+          <div class="selection-assist__copy">
+            <strong>Sélection active</strong>
+            <p id="selectionPreview">Choisis un passage dans le texte pour le surligner.</p>
+          </div>
+          <div class="selection-assist__actions">
+            <button id="selectionSpeechButton" type="button" class="ghost-action subtle">Lire la sélection</button>
+            <button type="button" class="ghost-action subtle" data-annotation-color="amber">Jaune doux</button>
+            <button type="button" class="ghost-action subtle" data-annotation-color="blue">Bleu doux</button>
+            <button type="button" class="ghost-action subtle" data-annotation-color="rose">Rose doux</button>
+            <button id="clearSelectionAssistButton" type="button" class="ghost-action subtle">Fermer</button>
+          </div>
+        </section>
+
+        <section id="emptyState" class="empty-state">
+          <div class="empty-card">
+            <p class="eyebrow">Commencer</p>
+            <h3>Importe un PDF et ajuste la lecture</h3>
+            <p>
+              Charge un document, choisis un profil dys-friendly, active le focus ou le mode audio, puis imprime une
+              version adaptée propre.
+            </p>
+            <button id="emptyOpenButton" class="primary-action" type="button">Choisir un PDF</button>
+          </div>
+        </section>
+
+        <section id="docState" class="doc-state" hidden>
+          <div class="reader-stage-card">
+            <div class="reader-stage-header">
+              <div class="reader-stage-pills">
+                <span class="view-pill is-active">Document adapté</span>
+              </div>
+              <p class="reader-stage-caption">
+                Lecture stable, largeur confortable et rendu prêt pour l’impression.
+              </p>
+            </div>
+
+            <div id="readingArea" class="reading-area" tabindex="0">
+              <div id="pageList" class="page-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="app-copyright" aria-label="Copyright et contact">
+          <p>&copy; 2026 Ludovic Belhomme</p>
+          <p>Contact : ludovic.belhomme@outlook.com</p>
+          <button id="installPwaButton" class="ghost-action subtle support-footer-action" type="button" hidden>
+            Installer l'app web
+          </button>
+          <button id="supportDialogButton" class="ghost-action subtle support-footer-action" type="button">
+            Soutenir sur Tipeee
+          </button>
+        </footer>
+
+        <footer class="print-copyright print-only">© Ludovic Belhomme</footer>
+
+        <footer class="stage-footer sr-only-live-region" aria-hidden="false">
+          <span id="statusLine">Préparation de l’application...</span>
+          <span id="keyboardHint">Navigation clavier disponible dans la zone de lecture.</span>
+        </footer>
+      </main>
+    </div>
+
+    <dialog id="profileSummaryDialog" class="dl-profile-dialog" aria-labelledby="profileSummaryDialogTitle" aria-modal="true">
+      <form method="dialog" class="dl-profile-dialog__surface">
+        <div class="dl-profile-dialog__header">
+          <div>
+            <p class="eyebrow">Profils Odysey</p>
+            <h2 id="profileSummaryDialogTitle">Comparer les profils</h2>
+          </div>
+          <button id="closeProfileSummaryDialogButton" type="submit" class="ghost-action subtle">Fermer</button>
+        </div>
+
+        <div class="dl-profile-dialog__body">
+          <p class="support-copy">
+            Ce tableau résume les différences techniques des profils intégrés : police, taille, largeur, thème,
+            aides au décodage, repères visuels et audio.
+          </p>
+
+          <div id="profileSummaryTable" class="profile-summary-table-wrap" aria-label="Tableau comparatif des profils"></div>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

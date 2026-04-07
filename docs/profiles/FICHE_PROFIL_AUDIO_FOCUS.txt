@@ -1,0 +1,180 @@
+FICHE PROFIL - AUDIO / FOCUS
+============================
+
+But du profil
+-------------
+Ce profil sert a suivre le texte avec la lecture audio et le reperage
+visuel.
+
+Il doit :
+- rendre l'audio confortable ;
+- aider a suivre le bon paragraphe ;
+- garder une page calme ;
+- ne pas ajouter de syllabes inutiles ;
+- permettre de repartir facilement depuis un bloc choisi.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects majeurs :
+- src/core/reading/audio-engine.mjs
+  Coeur du comportement audio.
+- src/core/reading/reading-guide.mjs
+  Important si le profil doit suivre visuellement une zone de lecture.
+- src/pdf-processing.mjs
+  Important pour avoir des blocs lisibles, donc des points de depart audio
+  propres.
+- src/core/reading/decoding-engine.mjs
+  Doit rester sobre, car l'audio est deja l'aide principale.
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = audio
+
+Libelle :
+- Audio / Focus
+
+Description :
+- Optimise l'affichage pour suivre le texte avec la lecture vocale et le
+  reperage visuel.
+
+Note de conception :
+- Accent sur la stabilite visuelle pendant la synthese vocale, avec un
+  focus utile sans surcharge.
+
+Valeurs definies explicitement :
+- fontFamily = "Verdana", "Geneva", sans-serif
+- fontSize = 22
+- lineHeight = 1.9
+- letterSpacing = 0.12
+- wordSpacing = 0.2
+- maxLineLength = 62
+- theme = brume
+- focusMode = paragraph
+- highlightMode = none
+- colorationMode = none
+- syllableLevel = off
+- soundColorMode = soft
+- syllableBreakMode = none
+- readingGuideMode = off
+- pauseBetweenSentences = 500
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontFamily = Verdana
+- Interet :
+  police claire pour suivre l'audio sans fatigue supplementaire.
+
+fontSize = 22
+- Interet :
+  texte assez grand pour suivre du regard pendant l'ecoute.
+
+lineHeight = 1.9
+- Interet :
+  ligne plus stable ;
+  facilite le suivi visuel pendant la voix.
+
+letterSpacing = 0.12
+- Interet :
+  meilleure distinction des caracteres pendant le suivi audio.
+
+wordSpacing = 0.2
+- Interet :
+  clarifie les mots quand le lecteur alterne ecoute et lecture visuelle.
+
+maxLineLength = 62
+- Interet :
+  colonne ni trop large ni trop etroite ;
+  bien adaptee au suivi paragraphe par paragraphe.
+
+theme = brume
+- Interet :
+  fond doux et calme ;
+  convient bien a une lecture accompagnee par la voix.
+
+focusMode = paragraph
+- Interet :
+  met en avant le paragraphe utile ;
+  aide a ne pas se perdre pendant l'ecoute.
+
+highlightMode = none
+- Interet :
+  evite de cumuler plusieurs systemes de surbrillance.
+
+colorationMode = none
+- Interet :
+  l'audio est l'aide principale ;
+  on evite de rajouter une surcharge visuelle.
+
+syllableLevel = off
+- Interet :
+  aucun hachage syllabique ;
+  meilleure fluidite pendant l'ecoute.
+
+soundColorMode = soft
+- Interet :
+  valeur de reserve si un utilisateur personnalise ensuite ce profil.
+
+syllableBreakMode = none
+- Interet :
+  aucune coupure visible qui pourrait parasiter l'ecoute.
+
+readingGuideMode = off
+- Interet :
+  ce profil s'appuie surtout sur le focus paragraphe et les marqueurs
+  audio plutot que sur une reglette permanente.
+
+pauseBetweenSentences = 500
+- Interet :
+  petite respiration entre les phrases ;
+  laisse le temps de suivre et de comprendre.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- texte lisible et calme ;
+- paragraphe courant mieux reperable ;
+- pas de coloration syllabique ;
+- demarrage audio possible depuis un bloc choisi ;
+- pause et reprise fluides.
+
+Attendu pedagogique :
+- aide pour les lecteurs qui comprennent mieux avec la voix ;
+- reduction de la charge attentionnelle ;
+- bon support pour lecture assistee.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- rajouter des syllabes colorees ;
+- surligner toute la page ;
+- rendre la pause/reprise confuse ;
+- obliger l'utilisateur a reprendre au mauvais endroit ;
+- forcer un demarrage audio uniquement depuis le debut du document.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- lecteurs qui ont besoin d'un appui audio ;
+- TDAH leger a modere ;
+- fatigue cognitive ;
+- relecture accompagnee.

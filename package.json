@@ -1,0 +1,110 @@
+{
+  "name": "odysey-desktop",
+  "version": "1.0.0",
+  "description": "Application desktop locale de lecture PDF adaptee aux besoins dys.",
+  "main": "src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/app.mjs && node --check src/profiles.mjs && node --check src/pdf-processing.mjs && node --check src/core/document/bookmark-store.mjs && node --check src/core/document/annotation-store.mjs && node --check src/core/ocr/ocr-engine.mjs && node --check src/core/reading/reading-guide.mjs && node --check src/core/reading/audio-engine.mjs && node --check src/core/reading/decoding-engine.mjs && node --check src/core/reading/syllabify-french.mjs && node --check src/core/reading/math-support.mjs && node --check src/core/accessibility/keyboard-nav.mjs && node --check src/core/accessibility/aria-manager.mjs && node --check src/core/support/support-links.mjs && node --check src/core/lexicon/french-lexicon.mjs && node tests/syllabify-french.test.mjs && node tests/french-lexicon.test.mjs && node tests/decoding-engine.test.mjs && node tests/math-support.test.mjs",
+    "build:lexicon": "node scripts/build-french-lexicon.mjs",
+    "build:web": "node scripts/build-web-static.mjs",
+    "test:syllables": "node tests/syllabify-french.test.mjs",
+    "test:lexicon": "node tests/french-lexicon.test.mjs",
+    "build:win:installer": "electron-builder --win nsis",
+    "build:win:noinstall": "electron-builder --win zip",
+    "build:win:unpacked": "electron-builder --win dir",
+    "build:win:portable-risky": "electron-builder --win portable",
+    "build:mac:dmg": "electron-builder --mac dmg",
+    "build:mac:unpacked": "electron-builder --mac dir",
+    "build:linux:appimage": "electron-builder --linux AppImage",
+    "build:linux:noinstall": "electron-builder --linux AppImage",
+    "build:linux:deb": "electron-builder --linux deb",
+    "build:linux:unpacked": "electron-builder --linux dir",
+    "build:win": "electron-builder --win nsis zip dir",
+    "build:test-win": "electron-builder --win dir",
+    "build:mac": "electron-builder --mac dmg dir",
+    "build:linux": "electron-builder --linux AppImage deb dir",
+    "build:all": "electron-builder --mac --win --linux"
+  },
+  "keywords": [
+    "electron",
+    "pdf",
+    "accessibilite",
+    "dys"
+  ],
+  "author": {
+    "name": "Ludovic Belhomme",
+    "email": "ludovic.belhomme@outlook.com"
+  },
+  "homepage": "mailto:ludovic.belhomme@outlook.com",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/fra": "^1.0.0",
+    "pdfjs-dist": "^5.4.296",
+    "tesseract.js": "^7.0.0"
+  },
+  "build": {
+    "appId": "com.ludovicbelhomme.odysey",
+    "productName": "Odysey",
+    "icon": "packaging/build-resources/icon.png",
+    "copyright": "Copyright (c) 2026 Ludovic Belhomme",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "packaging/build-resources"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/tesseract.js-core/**/*",
+      "node_modules/tesseract.js/dist/**/*",
+      "node_modules/@tesseract.js-data/**/*"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "packaging/build-resources/icon.ico",
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "packaging/build-resources/icon.ico",
+      "uninstallerIcon": "packaging/build-resources/icon.ico",
+      "installerHeaderIcon": "packaging/build-resources/icon.ico",
+      "installerLanguages": [
+        "fr"
+      ],
+      "language": "1036"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.education",
+      "darkModeSupport": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "maintainer": "Ludovic Belhomme <ludovic.belhomme@outlook.com>",
+      "category": "Education"
+    }
+  }
+}

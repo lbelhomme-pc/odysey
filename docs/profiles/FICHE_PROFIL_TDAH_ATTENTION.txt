@@ -1,0 +1,123 @@
+FICHE PROFIL - TDAH - ATTENTION
+================================
+
+But du profil
+-------------
+Ce profil sert a limiter les distractions et a aider a garder le fil de
+lecture.
+
+Il doit :
+- restreindre la zone utile ;
+- reduire les elements parasites ;
+- concentrer l'attention sur une petite fenetre de texte ;
+- activer l'immersion.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects majeurs :
+- src/core/reading/reading-guide.mjs
+- src/core/reading/audio-engine.mjs
+- src/pdf-processing.mjs
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = tdah
+
+Libelle :
+- TDAH - Attention
+
+Description :
+- Mode concentre avec fenetre de lecture et interface allegee.
+
+Note de conception :
+- Profil centre sur l'attention soutenue : largeur plus etroite,
+  immersion et fenetre de lecture.
+
+Valeurs definies explicitement :
+- fontFamily = "Verdana", "Geneva", sans-serif
+- fontSize = 20
+- lineHeight = 2
+- letterSpacing = 0.12
+- wordSpacing = 0.16
+- maxLineLength = 54
+- theme = creme
+- overlayPreset = grey
+- overlayOpacity = 0.1
+- colorationMode = none
+- syllableLevel = off
+- readingGuideMode = window
+- readingGuideLines = 3
+- distractionFree = true
+- speechRate = 0.95
+- pauseBetweenSentences = 600
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+maxLineLength = 54
+- Interet :
+  colonne etroite qui limite la dispersion.
+
+overlayPreset = grey / overlayOpacity = 0.1
+- Interet :
+  ambiance plus contenue, moins stimulante.
+
+readingGuideMode = window / readingGuideLines = 3
+- Interet :
+  la fenetre de lecture limite le bruit autour du texte utile.
+
+distractionFree = true
+- Interet :
+  l'interface secondaire s'efface.
+
+speechRate = 0.95 / pauseBetweenSentences = 600
+- Interet :
+  lecture audio plus respirante et plus facile a suivre.
+
+colorationMode = none / syllableLevel = off
+- Interet :
+  pas de surcharge visuelle supplementaire.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- lecture plus canalisee ;
+- peu de distractions laterales ;
+- petite zone de lecture utile ;
+- bonne aide a la concentration.
+
+Attendu pedagogique :
+- faciliter le maintien de l'attention sur la tache.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- enfermer excessivement le lecteur ;
+- rendre la navigation confuse ;
+- empecher de reprendre facilement ou de retrouver sa place.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- lecteurs TDAH ;
+- fatigue attentionnelle ;
+- lecture de consignes ou sessions courtes.

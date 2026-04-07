@@ -1,0 +1,148 @@
+FICHE PROFIL - COMPREHENSION SIMPLIFIEE
+=======================================
+
+But du profil
+-------------
+Ce profil sert a reduire l'effort cognitif global.
+Il n'aide pas d'abord au decodage mot a mot.
+Il aide surtout a :
+- suivre plus facilement le sens ;
+- lire dans une colonne courte ;
+- garder un rythme lent et stable ;
+- isoler visuellement le paragraphe utile ;
+- diminuer la sensation de masse de texte.
+
+
+1. FICHIERS QUI IMPACTENT CE PROFIL
+-----------------------------------
+
+Fichiers directs :
+- src/profiles.mjs
+- src/app.mjs
+- src/styles.css
+- src/index.html
+- src/print.css
+
+Fichiers indirects importants :
+- src/pdf-processing.mjs
+  Le profil ne peut etre utile que si le texte a ete bien reconstruit.
+- src/core/reading/reading-guide.mjs
+  Important car le profil utilise une fenetre de lecture.
+- src/core/reading/decoding-engine.mjs
+  Important pour garantir qu'aucune aide de decodage inutile n'apparait.
+
+
+2. PARAMETRES EXACTS
+--------------------
+
+Identifiant :
+- id = comprehension-simplifiee
+
+Libelle :
+- Comprehension simplifiee
+
+Description :
+- Augmente le confort de lecture pour alleger l'effort cognitif.
+
+Note de conception :
+- Colonne plus etroite, interligne genereux et reperage renforce pour
+  mieux suivre le sens.
+
+Valeurs definies explicitement :
+- fontFamily = "Arial", "Helvetica Neue", sans-serif
+- fontSize = 24
+- lineHeight = 1.95
+- letterSpacing = 0.12
+- wordSpacing = 0.22
+- maxLineLength = 56
+- pagePadding = 34
+- theme = nuitDouce
+- focusMode = paragraph
+- highlightMode = strong
+- colorationMode = none
+- syllableLevel = off
+- soundColorMode = soft
+- syllableBreakMode = none
+- readingGuideMode = window
+- readingGuideLines = 2
+
+
+3. INTERET DETAILLE DES PARAMETRES
+----------------------------------
+
+fontFamily = Arial
+- Interet :
+  police simple, tres connue, peu chargee visuellement.
+
+fontSize = 24
+- Interet :
+  diminue l'effort de lecture visuelle ;
+  bon pour les lecteurs fatigues.
+
+lineHeight = 1.95
+- Interet :
+  respiration importante entre les lignes ;
+  bon pour suivre le sens sans se perdre.
+
+wordSpacing = 0.22
+- Interet :
+  clarifie les mots dans les phrases denses.
+
+maxLineLength = 56
+- Interet :
+  colonne courte, plus facile a suivre cognitivement.
+
+theme = nuitDouce
+- Interet :
+  ambiance douce, calme, sans contraste agressif.
+
+focusMode = paragraph
+- Interet :
+  le paragraphe utile reste visuellement prioritaire.
+
+highlightMode = strong
+- Interet :
+  renforce le reperage du bloc courant.
+
+readingGuideMode = window / readingGuideLines = 2
+- Interet :
+  la fenetre limite la dispersion visuelle ;
+  deux lignes donnent un guidage sans enfermer totalement la lecture.
+
+colorationMode = none / syllableLevel = off
+- Interet :
+  ce profil aide a comprendre, pas a decouper les mots.
+
+
+4. CE QUE LE PROFIL DOIT PRODUIRE
+---------------------------------
+
+Attendu ecran :
+- colonne courte ;
+- forte lisibilite ;
+- moins de texte "en masse" ;
+- paragraphe courant bien identifiable ;
+- zero surcharge syllabique.
+
+Attendu pedagogique :
+- aider quand le probleme principal est la densite du texte ou la
+  comprehension continue.
+
+
+5. CE QUE LE PROFIL NE DOIT PAS FAIRE
+-------------------------------------
+
+Il ne doit pas :
+- devenir trop sombre ;
+- imposer une fenetre trop petite ;
+- rajouter des syllabes ou sons ;
+- donner une impression de texte enferme ou oppressant.
+
+
+6. USAGE CONSEILLE
+------------------
+
+Pour qui ?
+- lecteurs fatigues par les longs paragraphes ;
+- comprehension plus difficile que le decodage ;
+- relecture de cours ou textes denses.

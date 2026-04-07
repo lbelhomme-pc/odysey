@@ -1,0 +1,81 @@
+GITHUB ACTIONS - BUILDS MULTI-PLATEFORMES
+=========================================
+
+But :
+- generer Windows, macOS et Linux sans changer de machine
+
+Fichier du workflow :
+- `.github/workflows/build-desktop.yml`
+
+
+1. Ce que fait le workflow
+--------------------------
+
+Job Windows :
+- installe les dependances
+- lance `npm run check`
+- lance `npm run build:win`
+- publie :
+  - installateur `.exe`
+  - archive `.zip`
+  - dossier `win-unpacked`
+
+Job macOS :
+- installe les dependances
+- lance `npm run check`
+- lance `npm run build:mac`
+- publie :
+  - `.dmg`
+  - dossier `mac*`
+
+Job Linux :
+- installe Ruby + `fpm`
+- lance `npm run check`
+- lance `npm run build:linux`
+- publie :
+  - `AppImage`
+  - `.deb`
+  - dossier `linux-unpacked`
+
+
+2. Comment le lancer
+--------------------
+
+Option A - manuelle :
+1. pousser le depot sur GitHub
+2. ouvrir l'onglet `Actions`
+3. ouvrir `Build desktop packages`
+4. cliquer sur `Run workflow`
+
+Option B - automatique :
+- creer un tag `v1.0.0`, `v1.0.1`, etc.
+- pousser le tag
+- GitHub lance automatiquement les 3 jobs
+
+
+3. Recuperer les builds
+-----------------------
+
+Quand le workflow est termine :
+1. ouvrir l'execution dans `Actions`
+2. telecharger les artefacts :
+   - `odysey-windows`
+   - `odysey-macos`
+   - `odysey-linux`
+
+
+4. Limites a connaitre
+----------------------
+
+Windows :
+- installateur et zip directement utilisables
+
+macOS :
+- pour une diffusion sans avertissement, il faudra ajouter plus tard :
+  - signature Apple
+  - notarization
+
+Linux :
+- les builds sont en general diffusables sans signature
+- `.deb` est cible Debian / Ubuntu
+- `AppImage` est le format le plus simple a distribuer

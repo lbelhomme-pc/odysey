@@ -1,0 +1,552 @@
+RESUME COMPLET DU PROJET ODYSEY
+Date de synthese : 2026-04-07
+================================
+
+
+1. IDENTITE DU PROJET
+---------------------
+
+Nom actuel :
+- Odysey
+
+Nature du projet :
+- application de lecture PDF adaptee aux besoins dys
+- version desktop Electron
+- version web / PWA en preparation avancee
+
+Objectif principal :
+- transformer un PDF en version de lecture plus lisible, plus stable et plus adaptable
+- reduire la charge cognitive de lecture
+- proposer une lecture personnalisee pour differents besoins : dyslexie, dyscalculie, attention, confort visuel, audio
+
+Public vise :
+- eleves
+- etudiants
+- adultes dys
+- enseignants
+- orthophonistes
+- accompagnants
+
+
+2. STACK TECHNIQUE
+------------------
+
+Desktop :
+- Electron
+- JavaScript modulaire ESM / CommonJS selon les fichiers
+- PDF.js
+- Web Speech API
+- Tesseract.js
+
+Web / PWA :
+- meme renderer reutilise
+- fallback navigateur deja integre
+- service worker
+- manifest web app
+- publication prevue sur GitHub Pages
+
+Dependances importantes :
+- electron
+- electron-builder
+- pdfjs-dist
+- tesseract.js
+- @tesseract.js-data/fra
+- @tesseract.js-data/eng
+- idb-keyval
+
+
+3. ARCHITECTURE GLOBALE
+-----------------------
+
+Racine du projet :
+- AGENTS.md
+- PROMPT_CODEX.md
+- ROADMAP.md
+- README.md
+- package.json
+
+Code principal :
+- src/main.js : processus principal Electron
+- src/preload.js : bridge securise Electron
+- src/index.html : interface renderer
+- src/app.mjs : orchestrateur principal
+- src/profiles.mjs : profils et preferences par defaut
+- src/pdf-processing.mjs : import et reconstruction PDF
+- src/styles.css : styles ecran
+- src/print.css : styles impression
+
+Modules coeur :
+- src/core/document/
+- src/core/reading/
+- src/core/ocr/
+- src/core/export/
+- src/core/accessibility/
+- src/core/support/
+- src/core/lexicon/
+- src/core/pwa/
+
+Tests :
+- tests/
+
+Scripts :
+- scripts/
+
+Documentation :
+- docs/
+
+Corpus manuel :
+- Test_pdf/
+
+
+4. FONCTIONNALITES PRINCIPALES DEJA EN PLACE
+--------------------------------------------
+
+4.1 Import PDF
+- ouverture locale d'un PDF
+- lecture du fichier via Electron ou navigateur
+- extraction texte native avec PDF.js
+- reconstruction des pages et blocs de lecture
+- nettoyage progressif des artefacts frequents
+- meilleure fusion des titres coupes
+- meilleure gestion de certains sommaires et repetitions
+
+4.2 Lecture adaptee
+- vue reflow en une colonne
+- largeur de lecture reglable
+- police configurable
+- taille du texte reglable
+- interligne reglable
+- espacement des lettres reglable
+- espacement des mots reglable
+- marges reglables
+- theme du PDF separe de l'application
+
+4.3 Aides de lecture
+- mise en evidence douce ou forte
+- focus paragraphe
+- mode immersion
+- reglette de lecture
+- fenetre de lecture
+- aide au decodage
+- mode syllabes
+- mode sons francais
+- lettres muettes attenuees selon le profil
+- verification des zones fragiles
+
+4.4 Audio
+- synthese vocale locale
+- choix de voix
+- vitesse audio reglee
+- pause entre phrases
+- phrase precedente / suivante
+- lecture depuis un bloc choisi
+- lecture de selection
+- reprise / pause ameliorees
+
+4.5 OCR
+- OCR local Tesseract.js
+- mode Electron avec donnees de langue embarquees
+- mode web avec chargement local depuis le site puis cache navigateur
+- progression OCR
+- annulation OCR
+- reconstruction de blocs OCR
+- analyse lexicale OCR
+- mode verification pour relire les zones douteuses
+
+4.6 Export / impression
+- impression de la vue adaptee
+- export PDF adapte
+- export texte des notes
+- feuille d'impression dediee
+
+4.7 Productivite
+- marque-pages persistants
+- surlignages persistants
+- export des notes
+- profils personnalises
+
+
+5. PROFILS PRINCIPAUX
+---------------------
+
+Profils visibles comme principaux :
+- Normal
+- Lecture visuelle allegee
+- Audio / Focus
+- Decodage renforce
+- Dyslexie
+
+Logique :
+- chaque profil est defini comme un paquet de reglages dans src/profiles.mjs
+- l'application applique ensuite ces reglages aux moteurs de lecture, audio, CSS et impression
+
+Calibration recente :
+- les profils principaux ont ete simplifes et clarifies
+- le comportement des profils a ete stabilise sur plusieurs PDF tests
+- les profils structurels ne sont plus surcharges sur les sommaires, auteurs et reperes editoriaux
+
+
+6. PROFILS AVANCES
+------------------
+
+Profils avances encore disponibles :
+- Comprehension simplifiee
+- Dyslexie renforcee
+- Dyscalculie
+- TDAH - Attention
+- Dyspraxie - Motricite
+- Enseignant / Ortho
+
+Documentation disponible :
+- docs/profiles/
+
+Chaque profil avance dispose de :
+- une fiche detaillee
+- un comparatif avance
+
+
+7. DECODAGE ET SYLLABES
+-----------------------
+
+Le moteur de decodage gere :
+- coloration pedagogique
+- coloration alternative
+- sons francais
+- syllabification legere ou renforcee
+- coupure syllabique configurable
+- attenuation des lettres muettes
+
+Le moteur syllabique :
+- est concu pour la lisibilite dys
+- pas pour une syllabation universitaire parfaite
+- utilise des exceptions
+- preserve des groupes de sons importants
+- est teste par unite
+
+Un dictionnaire local francais a ete integre pour :
+- renforcer l'analyse lexicale
+- aider l'OCR
+- aider a corriger mots colles ou degrades
+
+
+8. SUPPORT MATHEMATIQUE
+-----------------------
+
+Le projet contient un module dedie aux mathematiques :
+- normalisation des expressions
+- detection de densite mathematique
+- verbalisation pour la lecture audio
+- rendu specifique de certaines formes mathematiques
+
+Des corrections ont ete ajoutees pour limiter les faux positifs :
+- vocabulaire administratif
+- garanties
+- pourcentages simples
+- lignes de tableaux non mathematiques
+
+
+9. ACCESSIBILITE ET UX
+----------------------
+
+Deja en place :
+- navigation clavier
+- gestion ARIA
+- live regions
+- focus visible
+- zones cliquables genereuses
+- respects partiels de la logique dys-friendly
+- bouton de reset
+- application immediate des reglages
+- themes application separes du theme PDF
+
+Themes application :
+- clair
+- doux
+- sombre
+
+Themes PDF :
+- separes de l'interface globale
+- le PDF garde ses propres couleurs
+
+
+10. ANNOTATIONS ET MARQUE-PAGES
+-------------------------------
+
+Fonctions presentes :
+- marque-page rapide
+- liste des marque-pages par document
+- surlignage de selection
+- liste des passages surlignes
+- suppression d'une annotation
+- export texte des notes
+
+Stockage :
+- local
+- persistant par document
+
+
+11. ECRAN D'OUVERTURE ET IDENTITE VISUELLE
+-----------------------------------------
+
+Branding actuel :
+- Odysey
+
+Elements graphiques branches :
+- grand logo pour l'ecran d'ouverture
+- grand logo dans l'interface
+- petit logo pour l'icone
+
+Splash :
+- apparition au lancement
+- fondu progressif
+- disparition douce
+
+Icones Windows :
+- icone .ico multi-tailles generee
+- branchee dans le build
+- branchee pour la fenetre Electron
+
+
+12. SOUTIEN ET CONTACT
+----------------------
+
+Contact :
+- ludovic.belhomme@outlook.com
+
+Soutien :
+- bouton "Soutenir sur Tipeee"
+- lien direct :
+  https://fr.tipeee.com/odysey/
+
+
+13. PACKAGING DESKTOP
+---------------------
+
+Windows :
+- installateur .exe
+- archive .zip sans installation
+- dossier win-unpacked ouvrable directement
+
+Commandes :
+- npm run build:win:installer
+- npm run build:win:noinstall
+- npm run build:win:unpacked
+- npm run build:win
+
+Artefacts valides generes :
+- dist/Odysey-1.0.0-win-x64.exe
+- dist/Odysey-1.0.0-win-x64.zip
+- dist/win-unpacked/Odysey.exe
+
+Important :
+- la version sans installation existe bien
+- il suffit d'ouvrir Odysey.exe dans win-unpacked
+
+macOS :
+- configuration prete
+- build locale impossible sur Windows
+- build prevue via GitHub Actions macos-latest
+
+Linux :
+- configuration prete
+- build locale non fiable sur Windows
+- build prevue via GitHub Actions ubuntu-latest
+
+Documentation packaging :
+- docs/packaging/README.md
+- docs/packaging/COMMANDES_WINDOWS.txt
+- docs/packaging/MACOS_LINUX.txt
+- docs/packaging/GITHUB_ACTIONS.txt
+- docs/packaging/STATUT_BUILDS.txt
+
+
+14. VERSION WEB / PWA
+---------------------
+
+Base web deja mise en place :
+- manifest.webmanifest
+- service-worker.js
+- bouton d'installation web dans l'application
+- build statique
+- workflow GitHub Pages
+
+Commande de build web :
+- npm run build:web
+
+Sortie :
+- web-dist/
+
+Publication prevue :
+- GitHub Pages
+- workflow : .github/workflows/deploy-web-pwa.yml
+
+Fonctions reutilisees en web :
+- import PDF via navigateur
+- reflow
+- profils
+- reglage visuel
+- impression navigateur
+- OCR Tesseract.js dans le navigateur
+
+Limites web actuelles :
+- pas de bridge Electron
+- logique d'ouverture / export dependante des APIs web
+- experience OCR web plus dependante du cache et du chargement initial
+
+Documentation web :
+- docs/web/DEPLOIEMENT_WEB_PWA.txt
+
+
+15. TESTS ET VERIFICATIONS
+--------------------------
+
+Verification standard du projet :
+- npm run check
+
+Cette verification couvre :
+- syntaxe des fichiers principaux
+- tests syllabification
+- tests lexique
+- tests decoding-engine
+- tests math-support
+
+Etat actuel :
+- npm run check passe
+- npm run build:web passe
+- npm run build:win passe
+
+
+16. CORPUS ET RECETTE
+---------------------
+
+Le projet contient un corpus de PDF de test dans :
+- Test_pdf/
+
+Une checklist de recette existe dans docs/checklists/.
+
+Le projet a deja ete teste sur plusieurs familles de PDF :
+- texte simple
+- litterature
+- scolaire
+- math / physique
+- administratif
+- OCR scanne
+
+
+17. DOCUMENTATION DE PROFILS
+----------------------------
+
+Des fiches textes completent le projet pour comprendre les profils :
+- un comparatif des profils principaux
+- un comparatif des profils avances
+- une fiche detaillee par profil principal
+- une fiche detaillee par profil avance
+
+Emplacement :
+- docs/profiles/
+
+Utilite :
+- comprendre les fichiers qui impactent chaque profil
+- comprendre les parametres techniques
+- comprendre l'interet pedagogique de chaque profil
+
+
+18. LIMITES CONNUES
+-------------------
+
+Malgre les progres, il reste des limites :
+- certains PDF tres riches restent difficiles a reconstruire parfaitement
+- certains artefacts de texte peuvent subsister selon la qualite du PDF
+- l'OCR peut rester fragile sur des scans tres degradés
+- les tableaux complexes et documents tres composites ne sont pas toujours parfaits
+- macOS non signe affichera des avertissements
+- Linux et macOS doivent etre construits via les bonnes machines ou via CI
+
+
+19. POINTS FORTS ACTUELS
+------------------------
+
+Le projet est deja fort sur :
+- lecture adaptee reelle
+- profils multiples
+- OCR local
+- export adapte
+- personnalisation visuelle
+- decodage syllabique / phonemique
+- support mathematique
+- audio
+- accessibilite clavier
+- packaging Windows
+- base PWA / GitHub Pages
+
+
+20. PROCHAINES ETAPES POSSIBLES
+-------------------------------
+
+Pistes naturelles pour la suite :
+- finir la stabilisation profil par profil
+- ameliorer encore l'OCR web et desktop
+- ajouter un vrai pipeline de correction OCR assistee
+- pousser plus loin la lecture karaoke mot a mot
+- enrichir les exceptions syllabiques avec un corpus scolaire
+- finaliser la diffusion macOS et Linux via CI
+- publier la PWA sur GitHub Pages
+- ajouter plus tard la signature Windows et la notarization macOS
+
+
+21. FICHIERS STRATEGIQUES A CONNAITRE
+------------------------------------
+
+Application :
+- src/app.mjs
+- src/index.html
+- src/styles.css
+- src/print.css
+
+Profils :
+- src/profiles.mjs
+
+PDF :
+- src/pdf-processing.mjs
+
+OCR :
+- src/core/ocr/ocr-engine.mjs
+
+Lecture :
+- src/core/reading/decoding-engine.mjs
+- src/core/reading/syllabify-french.mjs
+- src/core/reading/audio-engine.mjs
+- src/core/reading/reading-guide.mjs
+- src/core/reading/math-support.mjs
+
+Accessibilite :
+- src/core/accessibility/keyboard-nav.mjs
+- src/core/accessibility/aria-manager.mjs
+
+Packaging :
+- package.json
+- .github/workflows/build-desktop.yml
+- .github/workflows/deploy-web-pwa.yml
+
+
+22. CONCLUSION
+--------------
+
+Odysey n'est plus un simple prototype de lecture PDF.
+
+Le projet dispose maintenant :
+- d'une application desktop Windows fonctionnelle
+- d'une base de packaging multi-plateforme serieuse
+- d'une version web/PWA deployable
+- d'un moteur de lecture adapte modulaire
+- d'une base OCR locale
+- d'une logique de profils documentee
+- d'une documentation projet devenue exploitable
+
+Le projet est deja utilisable, testable et diffusable en environnement Windows.
+La suite consiste surtout a :
+- consolider le comportement sur plus de PDF reels
+- calibrer encore les profils
+- diffuser proprement la version web
+- finaliser la chaine macOS / Linux
+
