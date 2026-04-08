@@ -40,7 +40,6 @@ jobs:
           if-no-files-found: error
           path: |
             dist/*.exe
-            dist/*.zip
             dist/win-unpacked/**
 
   build-macos:

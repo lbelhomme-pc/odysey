@@ -11,7 +11,7 @@ Resultat :
 - un installateur Windows `.exe` de type NSIS
 
 Fichier attendu :
-- dist\Odysey-1.0.0-win-x64.exe
+- dist\Odysey-1.0.1-win-x64.exe
 
 
 2. Sans installation
@@ -24,7 +24,7 @@ Resultat :
 - une archive ZIP a decompresser
 
 Fichier attendu :
-- dist\Odysey-1.0.0-win-x64.zip
+- dist\Odysey-1.0.1-win-x64.zip
 
 Usage :
 - tests terrain
@@ -58,8 +58,11 @@ Commande :
 
 Resultat :
 - installateur `.exe`
-- archive `.zip`
 - dossier `win-unpacked`
+
+Note :
+- le ZIP reste disponible via `npm run build:win:noinstall`
+- le build complet recommande surtout l'installateur et la version `unpacked`
 
 
 5. Format portable monofichier
@@ -78,5 +81,5 @@ Important :
 
 Ordre conseille :
 1. tester `dist\win-unpacked\Odysey.exe`
-2. envoyer ensuite `dist\Odysey-1.0.0-win-x64.zip` pour une version sans installation
-3. diffuser enfin `dist\Odysey-1.0.0-win-x64.exe` pour l'installation classique
+2. diffuser `dist\Odysey-1.0.1-win-x64.exe` pour l'installation classique
+3. proposer `dist\Odysey-1.0.1-win-x64.zip` seulement si une archive sans installation est necessaire

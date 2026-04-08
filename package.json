@@ -1,6 +1,6 @@
 {
   "name": "odysey-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Application desktop locale de lecture PDF adaptee aux besoins dys.",
   "main": "src/main.js",
   "type": "commonjs",
@@ -22,7 +22,7 @@
     "build:linux:noinstall": "electron-builder --linux AppImage",
     "build:linux:deb": "electron-builder --linux deb",
     "build:linux:unpacked": "electron-builder --linux dir",
-    "build:win": "electron-builder --win nsis zip dir",
+    "build:win": "npm run build:win:installer && npm run build:win:unpacked",
     "build:test-win": "electron-builder --win dir",
     "build:mac": "electron-builder --mac dmg dir",
     "build:linux": "electron-builder --linux AppImage deb dir",

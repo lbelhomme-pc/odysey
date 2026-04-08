@@ -1,4 +1,4 @@
-STATUT DES BUILDS - 2026-04-07
+STATUT DES BUILDS - 2026-04-08
 ==============================
 
 Verifications faites :
@@ -13,10 +13,10 @@ Verifications faites :
 ----------------------------
 
 Installateur :
-- dist\Odysey-1.0.0-win-x64.exe
+- dist\Odysey-1.0.1-win-x64.exe
 
 Version sans installation :
-- dist\Odysey-1.0.0-win-x64.zip
+- dist\Odysey-1.0.1-win-x64.zip
 
 Version ouvrable directement :
 - dist\win-unpacked\Odysey.exe
@@ -53,8 +53,8 @@ Solution retenue :
 ---------------------------
 
 A diffuser des maintenant :
-- Windows installateur : `dist\Odysey-1.0.0-win-x64.exe`
-- Windows sans installation : `dist\Odysey-1.0.0-win-x64.zip`
+- Windows installateur : `dist\Odysey-1.0.1-win-x64.exe`
+- Windows sans installation au besoin : `dist\Odysey-1.0.1-win-x64.zip`
 
 Pour le test local le plus direct :
 - lancer `dist\win-unpacked\Odysey.exe`
@@ -62,3 +62,8 @@ Pour le test local le plus direct :
 Pour macOS et Linux :
 - pousser le depot sur GitHub
 - lancer le workflow `.github/workflows/build-desktop.yml`
+
+Pour GitHub Actions Windows :
+- le workflow publie en priorite l'installateur `.exe`
+- il publie aussi le dossier `win-unpacked`
+- l'archive `.zip` reste un build local optionnel
