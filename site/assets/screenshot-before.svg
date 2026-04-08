@@ -1,21 +1,25 @@
 <svg width="960" height="720" viewBox="0 0 960 720" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="960" height="720" fill="#D8D3CD"/>
-  <rect x="70" y="56" width="820" height="608" rx="14" fill="#F4F1ED"/>
-  <rect x="112" y="112" width="370" height="16" rx="8" fill="#8C8781" opacity="0.45"/>
-  <rect x="112" y="154" width="736" height="14" rx="7" fill="#B2ADA8"/>
-  <rect x="112" y="182" width="704" height="14" rx="7" fill="#B9B4AE"/>
-  <rect x="112" y="210" width="724" height="14" rx="7" fill="#BBB5B0"/>
-  <rect x="112" y="238" width="668" height="14" rx="7" fill="#B7B1AB"/>
+  <rect x="68" y="50" width="824" height="620" rx="14" fill="#F4F1ED"/>
+  <text x="110" y="110" fill="#786F66" font-size="22" font-family="Arial, sans-serif" letter-spacing="2">PDF D'ORIGINE</text>
+  <text x="110" y="152" fill="#4C4540" font-size="42" font-family="Georgia, serif">Littérature | FABLE</text>
+  <text x="110" y="198" fill="#6D6660" font-size="27" font-family="Arial, sans-serif">Jean de La Fontaine | Livre XI - Fable 2 | page 3</text>
 
-  <rect x="112" y="304" width="736" height="14" rx="7" fill="#B4AFA9"/>
-  <rect x="112" y="332" width="698" height="14" rx="7" fill="#BBB5AF"/>
-  <rect x="112" y="360" width="714" height="14" rx="7" fill="#B8B2AC"/>
-  <rect x="112" y="388" width="682" height="14" rx="7" fill="#B4AEA8"/>
+  <line x1="110" y1="232" x2="846" y2="232" stroke="#C9C2BA" stroke-width="2"/>
 
-  <rect x="112" y="454" width="736" height="14" rx="7" fill="#B3ADA7"/>
-  <rect x="112" y="482" width="715" height="14" rx="7" fill="#B8B2AC"/>
-  <rect x="112" y="510" width="703" height="14" rx="7" fill="#BCB6B0"/>
-  <rect x="112" y="538" width="684" height="14" rx="7" fill="#B8B2AC"/>
+  <text x="110" y="292" fill="#2F2A26" font-size="23" font-family="Arial, sans-serif">
+    <tspan x="110" dy="0">Les dieux voulant instruire un fils de Jupiter</tspan>
+    <tspan x="110" dy="34">Jupiter eut un fils, qui, se sentant du lieu Dont il tirait</tspan>
+    <tspan x="110" dy="34">l'origine, Avait l'âme toute divine. L'enfance n'aime rien :</tspan>
+    <tspan x="110" dy="34">celle du jeune dieu Faisait sa principale affaire Des doux soins</tspan>
+    <tspan x="110" dy="34">d'aimer et de plaire. Le mettre à la raison C'était trop tôt ;</tspan>
+    <tspan x="110" dy="34">il fallait l'amuser. Tantôt on lui faisait entendre quelque fable,</tspan>
+    <tspan x="110" dy="34">tantôt quelque leçon que l'on croyait capable D'assouplir un</tspan>
+    <tspan x="110" dy="34">esprit si fier. Mais le texte restait serré, continu, peu aéré.</tspan>
+  </text>
 
-  <rect x="112" y="602" width="236" height="12" rx="6" fill="#8E8881" opacity="0.32"/>
+  <rect x="110" y="560" width="742" height="56" rx="10" fill="#ECE6DE"/>
+  <text x="132" y="595" fill="#756D65" font-size="22" font-family="Arial, sans-serif">
+    Marges faibles · structure dense · lecture peu guidée
+  </text>
 </svg>
