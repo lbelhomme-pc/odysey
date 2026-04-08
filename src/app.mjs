@@ -1784,8 +1784,14 @@ function updateLayoutVariables() {
   applyAppTheme();
   applyTheme();
   document.documentElement.style.setProperty("--dl-ui-bg", getComputedStyle(document.documentElement).getPropertyValue("--ui-page").trim());
-  document.documentElement.style.setProperty("--dl-ui-accent", "#a0344a");
-  document.documentElement.style.setProperty("--dl-ui-text", "#2d2a26");
+  document.documentElement.style.setProperty(
+    "--dl-ui-accent",
+    getComputedStyle(document.documentElement).getPropertyValue("--ui-accent").trim()
+  );
+  document.documentElement.style.setProperty(
+    "--dl-ui-text",
+    getComputedStyle(document.documentElement).getPropertyValue("--ui-text").trim()
+  );
   document.documentElement.style.setProperty("--dl-ui-border", getComputedStyle(document.documentElement).getPropertyValue("--ui-border").trim());
   document.documentElement.style.setProperty("--dl-bg-color", getComputedStyle(document.documentElement).getPropertyValue("--canvas").trim());
   document.documentElement.style.setProperty("--dl-text-color", "#3b3530");
