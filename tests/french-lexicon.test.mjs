@@ -4,6 +4,8 @@ import {
   analyzeFrenchLexiconText,
   normalizeCommonFrenchReadingArtifacts,
   normalizeFrenchLexiconWord,
+  repairExplodedFrenchText,
+  repairFrenchApostropheText,
   repairMergedFrenchText,
   repairSplitFrenchText
 } from "../src/core/lexicon/french-lexicon.mjs";
@@ -29,9 +31,30 @@ assert.equal(await repairSplitFrenchText("De finition et de mander."), "Definiti
 assert.equal(await repairSplitFrenchText("Sa la ires et au tres."), "Salaires et autres.");
 assert.equal(await repairSplitFrenchText("OPTIONNEL LES et Cyc le."), "OPTIONNELLES et Cycle.");
 assert.equal(
+  await repairExplodedFrenchText("L e l i o n L i v re X I - F a b le 1 pa g e 2"),
+  "Le lion Livre XI - Fable 1 page 2"
+);
+const middleDot = String.fromCodePoint(0xb7);
+assert.equal(
+  await repairExplodedFrenchText(`Li ${middleDot} v re I - Fable 8 | page 1 0`),
+  "Livre I - Fable 8 | page 1 0"
+);
+assert.equal(
+  await repairExplodedFrenchText("S u l · t a n L é · o · p a r d a u · t r e · f o i s"),
+  "Sultan Léopard autrefois"
+);
+assert.equal(await repairFrenchApostropheText("Donts'est"), "Dont s'est");
+assert.equal(await repairFrenchApostropheText("pudeurs'est"), "pudeur s'est");
+assert.equal(await repairFrenchApostropheText("quel'on"), "que l'on");
+assert.equal(
   normalizeCommonFrenchReadingArtifacts("Relier acide-baseavec un tampon pHet ci-des sous."),
   "Relier acide-base avec un tampon pH et ci-dessous."
 );
 assert.equal(normalizeCommonFrenchReadingArtifacts("Il vient às'en vouloir."), "Il vient à s'en vouloir.");
+
+assert.equal(
+  normalizeCommonFrenchReadingArtifacts("Livre I - Fable 8 | page 1 0"),
+  "Livre I - Fable 8 | page 10"
+);
 
 console.log("french-lexicon: ok");

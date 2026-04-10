@@ -171,6 +171,21 @@ export class ReadingGuide {
   }
 
   /**
+   * Place le guide sur un element plus fin qu'un bloc (phrase, ligne, mot).
+   * @param {HTMLElement | null} element
+   */
+  moveToElement(element) {
+    if (!this.container || !element) {
+      return;
+    }
+
+    const containerRect = this.container.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    const topInContent = elementRect.top - containerRect.top + this.container.scrollTop;
+    this.moveToContentTop(topInContent);
+  }
+
+  /**
    * Nettoie les listeners et l'overlay.
    */
   destroy() {

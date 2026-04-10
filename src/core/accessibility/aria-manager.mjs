@@ -1,24 +1,24 @@
 /**
- * Module de gestion ARIA et preferences systeme.
+ * Module de gestion ARIA et préférences système.
  */
 
 const BUTTON_LABELS = {
   openPdfButton: "Importer un PDF",
-  printButton: "Imprimer la version adaptee",
-  immersionButton: "Afficher ou masquer les reglages",
-  saveProfileButton: "Enregistrer le profil personnalise",
-  deleteProfileButton: "Supprimer le profil personnalise",
+  printButton: "Imprimer la version adaptée",
+  immersionButton: "Afficher ou masquer les réglages",
+  saveProfileButton: "Enregistrer le profil personnalisé",
+  deleteProfileButton: "Supprimer le profil personnalisé",
   openHeaderButton: "Importer un autre PDF",
-  resetSettingsButton: "Reinitialiser les reglages",
-  speechToggleButton: "Lancer ou arreter la lecture audio",
+  resetSettingsButton: "Réinitialiser les réglages",
+  speechToggleButton: "Lancer ou arrêter la lecture audio",
   speechStopButton: "Mettre en pause la lecture audio",
-  exportPdfButton: "Exporter le PDF adapte",
+  exportPdfButton: "Exporter le PDF adapté",
   openExternalButton: "Ouvrir le PDF original",
   bookmarkQuickButton: "Ajouter un marque-page rapide",
   exportNotesButton: "Exporter les notes et marque-pages",
   startOcrButton: "Lancer l'OCR local sur le document courant",
   cancelOcrButton: "Annuler l'OCR local en cours",
-  floatingSidebarButton: "Afficher les reglages",
+  floatingSidebarButton: "Afficher les réglages",
   supportDialogButton: "Ouvrir le panneau de soutien du projet",
   closeSupportDialogButton: "Fermer le panneau de soutien"
 };
@@ -42,7 +42,7 @@ export class AriaManager {
   }
 
   /**
-   * Initialise les attributs ARIA et les preferences systeme.
+   * Initialise les attributs ARIA et les préférences système.
    * @param {object} options
    */
   init({ controls = {}, elements = {} } = {}) {
@@ -59,7 +59,7 @@ export class AriaManager {
   }
 
   /**
-   * Met a jour l'etat expanse du panneau lateral.
+   * Met à jour l'état expansé du panneau latéral.
    * @param {boolean} isVisible
    */
   setSidebarExpanded(isVisible) {
@@ -71,7 +71,7 @@ export class AriaManager {
   }
 
   /**
-   * Met a jour les valeurs ARIA de tous les sliders.
+   * Met à jour les valeurs ARIA de tous les sliders.
    */
   refreshSliderValues() {
     Object.values(this.controls).forEach((control) => {
@@ -106,7 +106,7 @@ export class AriaManager {
     document.querySelector("#profilesList")?.setAttribute("aria-label", "Profils intégrés");
     document.querySelector("#customProfilesList")?.setAttribute("role", "navigation");
     document.querySelector("#customProfilesList")?.setAttribute("aria-label", "Profils personnalisés");
-    this.readArea?.setAttribute("aria-label", "Zone de lecture adaptee");
+    this.readArea?.setAttribute("aria-label", "Zone de lecture adaptée");
     this.readArea?.setAttribute("role", "region");
     this.readArea?.setAttribute("aria-describedby", "keyboardHint");
     this.readArea?.setAttribute("tabindex", "0");

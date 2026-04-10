@@ -210,6 +210,8 @@ export const DEFAULT_PREFERENCES = {
   focusMode: "none",
   colorationMode: "none",
   syllableLevel: "off",
+  syllabificationMode: "pedagogique",
+  syllableWordScope: "auto",
   soundColorMode: "soft",
   syllableBreakMode: "none",
   readingGuideMode: "off",
@@ -220,6 +222,8 @@ export const DEFAULT_PREFERENCES = {
   speechRate: 1,
   pauseBetweenSentences: 0,
   speechVoiceId: "",
+  localAiMode: "off",
+  localAiModel: "gemma3:4b",
   ocrLanguage: "fra",
   distractionFree: false
 };
@@ -498,8 +502,38 @@ export const BUILTIN_PROFILES = [
       colorationMode: "pedagogique",
       syllableLevel: "light",
       soundColorMode: "soft",
-      verificationMode: "markers",
-      readingGuideMode: "off"
+        verificationMode: "markers",
+        readingGuideMode: "off"
+      }
+    },
+    {
+      id: "mode-examen",
+      label: "Mode examen",
+      description: "Lecture tres sobre avec aides reduites, pensee pour une evaluation ou une passation calme.",
+      editable: true,
+      researchNotes:
+        "Profil volontairement epure pour limiter les aides visibles, garder une lecture confortable et permettre une impression propre en contexte d'examen.",
+      defaults: {
+        ...DEFAULT_PREFERENCES,
+        fontFamily: "\"Atkinson Hyperlegible\", \"Verdana\", sans-serif",
+        fontSize: 22,
+        lineHeight: 1.95,
+        letterSpacing: 0.12,
+        wordSpacing: 0.18,
+        maxLineLength: 68,
+        pagePadding: 34,
+        theme: "neutre",
+        overlayPreset: "none",
+        overlayOpacity: 0,
+        focusMode: "none",
+        highlightMode: "none",
+        colorationMode: "none",
+        syllableLevel: "off",
+        soundColorMode: "soft",
+        syllableBreakMode: "none",
+        readingGuideMode: "off",
+        verificationMode: "off",
+        distractionFree: false
+      }
     }
-  }
-];
+  ];

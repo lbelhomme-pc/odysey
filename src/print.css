@@ -150,11 +150,49 @@
     line-height: 1.5 !important;
   }
 
+  .math-greek {
+    color: #264f7d !important;
+    font-weight: 700 !important;
+  }
+
+  .math-variable {
+    color: #355d8a !important;
+    font-weight: 600 !important;
+  }
+
+  .math-unit {
+    color: #4f5f73 !important;
+    font-weight: 700 !important;
+  }
+
+  .math-function {
+    color: #4d6b88 !important;
+    font-weight: 700 !important;
+  }
+
+  .math-identifier {
+    color: #2f3d4d !important;
+  }
+
   .verification-note {
     margin-top: 2mm !important;
     padding-top: 2mm !important;
     border-top: 0.2mm solid #d8d1c4 !important;
     font-size: 9pt !important;
+  }
+
+  .legend-block {
+    display: grid !important;
+    gap: 2mm !important;
+  }
+
+  .legend-row {
+    display: grid !important;
+    grid-template-columns: minmax(28mm, 46mm) minmax(0, 1fr) !important;
+    gap: 2mm !important;
+    padding: 1.8mm 2mm !important;
+    border: 0.2mm solid #d6dfeb !important;
+    background: transparent !important;
   }
 
   .print-copyright {
@@ -179,6 +217,12 @@
   }
 
   .word-adapted.important {
+    box-shadow: none !important;
+  }
+
+  .word-select-target.is-word-selected,
+  .word-audio-track.is-word-selected {
+    background: transparent !important;
     box-shadow: none !important;
   }
 

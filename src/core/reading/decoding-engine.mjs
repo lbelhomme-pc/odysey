@@ -1,6 +1,8 @@
 import {
   analyzeFrenchWord,
+  normalizeSyllabificationMode,
   normalizeSyllableLevel,
+  normalizeSyllableWordScope,
   shouldDisplaySyllables
 } from "./syllabify-french.mjs";
 
@@ -401,6 +403,8 @@ function renderWordCore(
     soundColorMode = "soft",
     syllableBreakMode = "none",
     syllableLevel = "off",
+    syllabificationMode = "pedagogique",
+    syllableWordScope = "auto",
     blockAssistDisabled = false
   } = {}
 ) {
@@ -414,8 +418,11 @@ function renderWordCore(
     return escapeHtml(source);
   }
 
-  const analysis = analyzeFrenchWord(source);
-  const showSyllables = shouldDisplaySyllables(analysis, { level: syllableLevel });
+  const analysis = analyzeFrenchWord(source, { mode: syllabificationMode });
+  const showSyllables = shouldDisplaySyllables(analysis, {
+    level: syllableLevel,
+    wordScope: syllableWordScope
+  });
   const silentMarkup = analysis.silentEnding ? `<span class="muet">${escapeHtml(analysis.silentEnding)}</span>` : "";
 
   if (!showSyllables) {
@@ -454,6 +461,8 @@ function renderAdaptedWord(
     soundColorMode = "soft",
     syllableBreakMode = "none",
     syllableLevel = "off",
+    syllabificationMode = "pedagogique",
+    syllableWordScope = "auto",
     audioTracking = false,
     audioState = null,
     annotationRanges = [],
@@ -462,6 +471,7 @@ function renderAdaptedWord(
 ) {
   const word = token.value;
   const wordIndex = audioTracking && audioState ? audioState.index++ : null;
+  const lookupAttributes = `data-lookup-word="${escapeHtml(word)}" data-source-start="${token.start}" data-source-end="${token.end}"`;
   const parts = String(word).split(/(['\u2019])/u);
   const activeAnnotation = annotationRanges.find((range) => token.start < range.end && token.end > range.start);
   const annotationClass = activeAnnotation ? ` is-annotated text-annotation--${activeAnnotation.color}` : "";
@@ -487,6 +497,8 @@ function renderAdaptedWord(
         soundColorMode,
         syllableBreakMode,
         syllableLevel,
+        syllabificationMode,
+        syllableWordScope,
         blockAssistDisabled
       });
       return `<span class="word-adapted${importantClass}${annotationClass}">${inner}</span>`;
@@ -494,10 +506,10 @@ function renderAdaptedWord(
     .join("");
 
   if (!audioTracking) {
-    return content;
+    return `<span class="word-select-target" ${lookupAttributes}>${content}</span>`;
   }
 
-  return `<span class="word-audio-track${annotationClass}" data-audio-word-index="${wordIndex}" data-source-start="${token.start}" data-source-end="${token.end}">${content}</span>`;
+  return `<span class="word-audio-track word-select-target${annotationClass}" data-audio-word-index="${wordIndex}" ${lookupAttributes}>${content}</span>`;
 }
 
 export function renderAdaptedText(
@@ -507,6 +519,8 @@ export function renderAdaptedText(
     soundColorMode = "soft",
     syllableBreakMode = "none",
     syllableLevel = "off",
+    syllabificationMode = "pedagogique",
+    syllableWordScope = "auto",
     blockType = "paragraph",
     audioTracking = false,
     wordIndexOffset = 0,
@@ -515,6 +529,8 @@ export function renderAdaptedText(
 ) {
   const normalizedMode = normalizeColorationMode(colorationMode);
   const normalizedLevel = normalizeSyllableLevel(syllableLevel);
+  const normalizedSyllabificationMode = normalizeSyllabificationMode(syllabificationMode);
+  const normalizedSyllableWordScope = normalizeSyllableWordScope(syllableWordScope);
   const blockAssistDisabled = looksLikeAdministrativeBlock(text, blockType) || looksLikeStructuralBlock(text, blockType);
   const audioState = {
     index: wordIndexOffset
@@ -531,6 +547,8 @@ export function renderAdaptedText(
         soundColorMode,
         syllableBreakMode,
         syllableLevel: normalizedLevel,
+        syllabificationMode: normalizedSyllabificationMode,
+        syllableWordScope: normalizedSyllableWordScope,
         audioTracking,
         audioState,
         annotationRanges,

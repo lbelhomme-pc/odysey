@@ -4,7 +4,15 @@
 
 import * as pdfjsLib from "../../../node_modules/pdfjs-dist/legacy/build/pdf.mjs";
 import { set as setIdbValue } from "../../../node_modules/idb-keyval/dist/index.js";
-import { analyzeFrenchLexiconText } from "../lexicon/french-lexicon.mjs";
+import {
+  analyzeFrenchLexiconText,
+  normalizeCommonFrenchReadingArtifacts,
+  repairExplodedFrenchText,
+  repairFrenchApostropheText,
+  repairMergedFrenchText,
+  repairSplitFrenchText
+} from "../lexicon/french-lexicon.mjs";
+import { analyzeMathContent, normalizeMathNotation } from "../reading/math-support.mjs";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "../../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
@@ -228,6 +236,29 @@ function getParagraphText(paragraph) {
   return normalizeText(lineText);
 }
 
+function buildOcrBlock(text, pageNumber, bbox) {
+  const normalizedText = normalizeMathNotation(normalizeText(text));
+  const mathAnalysis = analyzeMathContent(normalizedText, {
+    lineHeight: Math.max(24, Number(bbox?.height) || 24)
+  });
+
+  return {
+    type: mathAnalysis.isFormulaCandidate ? "formula" : guessBlockType(normalizedText),
+    text: normalizedText,
+    readingText: normalizedText,
+    sourcePage: pageNumber,
+    bbox,
+    math: {
+      containsMath: mathAnalysis.containsMath,
+      mathScore: mathAnalysis.mathScore
+    },
+    verification: {
+      level: mathAnalysis.verificationLevel || "none",
+      reasons: [...(mathAnalysis.verificationReasons || [])]
+    }
+  };
+}
+
 function buildBlocksFromOcrPage(pageData, pageNumber, pageWidth, pageHeight) {
   const renderedBlocks = [];
   const sourceBlocks = Array.isArray(pageData?.blocks) ? pageData.blocks : [];
@@ -243,21 +274,8 @@ function buildBlocksFromOcrPage(pageData, pageNumber, pageWidth, pageHeight) {
         continue;
       }
 
-      renderedBlocks.push({
-        type: guessBlockType(text),
-        text,
-        readingText: text,
-        sourcePage: pageNumber,
-        bbox: getBoxRect(paragraph?.bbox || sourceBlock?.bbox, pageWidth, pageHeight, renderedBlocks.length),
-        math: {
-          containsMath: false,
-          mathScore: 0
-        },
-        verification: {
-          level: "none",
-          reasons: []
-        }
-      });
+      const bbox = getBoxRect(paragraph?.bbox || sourceBlock?.bbox, pageWidth, pageHeight, renderedBlocks.length);
+      renderedBlocks.push(buildOcrBlock(text, pageNumber, bbox));
     }
   }
 
@@ -279,26 +297,12 @@ function buildBlocksFromOcrPage(pageData, pageNumber, pageWidth, pageHeight) {
     .split(/\n{2,}/u)
     .map((part) => normalizeText(part.replace(/\n+/gu, " ")))
     .filter(Boolean)
-    .map((text, index, segments) => ({
-      type: guessBlockType(text),
-      text,
-      readingText: text,
-      sourcePage: pageNumber,
-      bbox: {
+    .map((text, index, segments) => buildOcrBlock(text, pageNumber, {
         x: 0,
         y: Math.round((pageHeight / Math.max(segments.length, 1)) * index),
         width: pageWidth,
         height: Math.max(32, Math.round(pageHeight / Math.max(segments.length, 1)))
-      },
-      math: {
-        containsMath: false,
-        mathScore: 0
-      },
-      verification: {
-        level: "none",
-        reasons: []
-      }
-    }));
+      }));
 }
 
 function mergeVerificationLevel(currentLevel = "none", nextLevel = "none") {
@@ -318,6 +322,16 @@ async function annotateBlocksWithLexicon(blocks) {
   let analyzedBlockCount = 0;
 
   for (const block of blocks) {
+    const repairedText = normalizeCommonFrenchReadingArtifacts(
+      await repairFrenchApostropheText(
+        await repairSplitFrenchText(await repairMergedFrenchText(await repairExplodedFrenchText(block.text)))
+      )
+    );
+    if (repairedText && repairedText !== block.text) {
+      block.text = repairedText;
+      block.readingText = repairedText;
+    }
+
     const lexicalQuality = await analyzeFrenchLexiconText(block.text);
     block.ocr = {
       ...(block.ocr || {}),

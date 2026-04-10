@@ -34,8 +34,29 @@ import {
   normalizeColorationMode as normalizeColorationPreference,
   renderAdaptedText
 } from "./core/reading/decoding-engine.mjs";
-import { normalizeSyllableLevel } from "./core/reading/syllabify-french.mjs";
-import { renderMathText, verbalizeMathText } from "./core/reading/math-support.mjs";
+import {
+  normalizeSyllabificationMode,
+  normalizeSyllableLevel,
+  normalizeSyllableWordScope
+} from "./core/reading/syllabify-french.mjs";
+import { analyzeMathContent, renderMathText, verbalizeMathText } from "./core/reading/math-support.mjs";
+import {
+  DEFAULT_LOCAL_AI_MODEL,
+  LOCAL_AI_INSTALL_URL,
+  buildLocalAiDefinitionRequest,
+  buildLocalAiReformulationRequest,
+  buildLocalAiSummaryRequest,
+  cleanLocalAiText,
+  normalizeLocalAiMode,
+  normalizeLocalAiModel
+} from "./core/ai/local-llm.mjs";
+import {
+  buildLocalWordInsight,
+  buildShortSummary,
+  buildSimpleReformulation,
+  lookupWordInsight,
+  sanitizeLookupWord
+} from "./core/reading/reading-assist.mjs";
 import { ReadingGuide } from "./core/reading/reading-guide.mjs";
 import { AudioEngine, mapUiSpeechRate, segmentTextIntoSentences } from "./core/reading/audio-engine.mjs";
 import { OcrEngine } from "./core/ocr/ocr-engine.mjs";
@@ -56,13 +77,20 @@ const appState = {
   recentFilesMeta: [],
   bookmarksByDocument: {},
   annotationsByDocument: {},
+  teacherNotesByDocument: {},
+  readingProgressByDocument: {},
   voices: [],
   speechAvailable: false,
   speechUtterance: null,
   speechQueue: [],
   speaking: false,
   audioPaused: false,
+  pendingAudioRestartTimerId: 0,
   audioResumeOverride: null,
+  preferredAudioStartContext: null,
+  currentAudioBlockKey: "",
+  currentSentenceIndex: -1,
+  currentWordIndex: -1,
   ocrState: {
     running: false,
     progress: 0,
@@ -74,7 +102,37 @@ const appState = {
   persistTimer: null,
   bookmarks: [],
   annotations: [],
-  selectionDraft: null
+  teacherNotes: "",
+  selectionDraft: null,
+  currentWordInsight: null,
+  currentWordSelection: null,
+  currentWordLookupId: 0,
+  selectionChangeFrameId: 0,
+  readerPointerState: {
+    active: false,
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    drag: false,
+    suppressNextClick: false
+  },
+  localAiStatus: {
+    available: false,
+    modelAvailable: false,
+    provider: "ollama",
+    selectedModel: DEFAULT_LOCAL_AI_MODEL,
+    installedModels: [],
+    checkedAt: "",
+    busy: false,
+    message: "IA locale non vérifiée pour le moment."
+  },
+  localAiCache: new Map(),
+  readingTimeTickStartedAt: 0,
+  readingTimeIntervalId: 0,
+  examBaseMinutes: 60,
+  examTimeRemainingSeconds: 0,
+  examTimerId: 0,
+  examTimerRunning: false
 };
 
 const IMPORTANT_PROFILE_IDS = new Set([
@@ -84,6 +142,8 @@ const IMPORTANT_PROFILE_IDS = new Set([
   "decodage-renforce",
   "audio"
 ]);
+
+const TEMP_CUSTOM_PROFILE_ID = "custom-live";
 
 const elements = {
   openButton: document.querySelector("#openPdfButton"),
@@ -108,10 +168,22 @@ const elements = {
   profilesList: document.querySelector("#profilesList"),
   advancedProfilesList: document.querySelector("#advancedProfilesList"),
   customProfilesList: document.querySelector("#customProfilesList"),
+  startAssistantButtons: document.querySelector("#startAssistantButtons"),
+  startAssistantSummary: document.querySelector("#startAssistantSummary"),
   profileSummaryButton: document.querySelector("#profileSummaryButton"),
   profileSummaryDialog: document.querySelector("#profileSummaryDialog"),
   closeProfileSummaryDialogButton: document.querySelector("#closeProfileSummaryDialogButton"),
   profileSummaryTable: document.querySelector("#profileSummaryTable"),
+  teacherModeSummary: document.querySelector("#teacherModeSummary"),
+  teacherActivateProfileButton: document.querySelector("#teacherActivateProfileButton"),
+  teacherCompareButton: document.querySelector("#teacherCompareButton"),
+  teacherExportButton: document.querySelector("#teacherExportButton"),
+  teacherNotesInput: document.querySelector("#teacherNotesInput"),
+  teacherCompareDialog: document.querySelector("#teacherCompareDialog"),
+  closeTeacherCompareDialogButton: document.querySelector("#closeTeacherCompareDialogButton"),
+  teacherCompareMeta: document.querySelector("#teacherCompareMeta"),
+  teacherCompareRaw: document.querySelector("#teacherCompareRaw"),
+  teacherCompareAdapted: document.querySelector("#teacherCompareAdapted"),
   profileNameInput: document.querySelector("#customProfileName"),
   saveProfileButton: document.querySelector("#saveProfileButton"),
   deleteProfileButton: document.querySelector("#deleteProfileButton"),
@@ -123,9 +195,32 @@ const elements = {
   speechStopButton: document.querySelector("#speechStopButton"),
   speechPrevButton: document.querySelector("#speechPrevButton"),
   speechNextButton: document.querySelector("#speechNextButton"),
+  wordInsightWord: document.querySelector("#wordInsightWord"),
+  wordInsightSyllables: document.querySelector("#wordInsightSyllables"),
+  wordInsightDefinition: document.querySelector("#wordInsightDefinition"),
+  wordInsightSource: document.querySelector("#wordInsightSource"),
+  wordInsightDomain: document.querySelector("#wordInsightDomain"),
+  wordSpeakButton: document.querySelector("#wordSpeakButton"),
+  refreshWordDefinitionButton: document.querySelector("#refreshWordDefinitionButton"),
+  blockSummaryButton: document.querySelector("#blockSummaryButton"),
+  blockReformulateButton: document.querySelector("#blockReformulateButton"),
+  blockAssistOutput: document.querySelector("#blockAssistOutput"),
+  localAiStatusText: document.querySelector("#localAiStatusText"),
+  localAiCheckButton: document.querySelector("#localAiCheckButton"),
+  localAiInstallButton: document.querySelector("#localAiInstallButton"),
   openExternalButton: document.querySelector("#openExternalButton"),
   bookmarkQuickButton: document.querySelector("#bookmarkQuickButton"),
   exportNotesButton: document.querySelector("#exportNotesButton"),
+  readingTrackingSummary: document.querySelector("#readingTrackingSummary"),
+  resumeReadingButton: document.querySelector("#resumeReadingButton"),
+  saveReadingCheckpointButton: document.querySelector("#saveReadingCheckpointButton"),
+  examModeButton: document.querySelector("#examModeButton"),
+  examPrintButton: document.querySelector("#examPrintButton"),
+  examBaseMinutes: document.querySelector("#examBaseMinutes"),
+  examThirdTimeOutput: document.querySelector("#examThirdTimeOutput"),
+  examTimerDisplay: document.querySelector("#examTimerDisplay"),
+  examToggleTimerButton: document.querySelector("#examToggleTimerButton"),
+  examResetTimerButton: document.querySelector("#examResetTimerButton"),
   startOcrButton: document.querySelector("#startOcrButton"),
   cancelOcrButton: document.querySelector("#cancelOcrButton"),
   ocrProgress: document.querySelector("#ocrProgress"),
@@ -144,7 +239,6 @@ const elements = {
   startupSplash: document.querySelector("#startupSplash"),
   statusLine: document.querySelector("#statusLine"),
   keyboardHint: document.querySelector("#keyboardHint"),
-  rulerOverlay: document.querySelector("#rulerOverlay"),
   recentList: document.querySelector("#recentList"),
   researchNotes: document.querySelector("#researchNotes"),
   selectionAssist: document.querySelector("#selectionAssist"),
@@ -174,11 +268,15 @@ const controlIds = [
   "readingGuideColor",
   "colorationMode",
   "syllableLevel",
+  "syllabificationMode",
+  "syllableWordScope",
   "soundColorMode",
   "syllableBreakMode",
   "verificationMode",
   "speechRate",
   "pauseBetweenSentences",
+  "localAiMode",
+  "localAiModel",
   "ocrLanguage"
 ];
 
@@ -266,6 +364,27 @@ function createBrowserApi() {
           reason: error?.message || "OCR_BUNDLED_LANGUAGE_UNAVAILABLE"
         };
       }
+    },
+    async getLocalAiStatus(model = DEFAULT_LOCAL_AI_MODEL) {
+      return {
+        ok: false,
+        provider: "ollama",
+        available: false,
+        endpoint: "",
+        selectedModel: normalizeLocalAiModel(model),
+        suggestedModel: DEFAULT_LOCAL_AI_MODEL,
+        modelAvailable: false,
+        installedModels: [],
+        reason: "LOCAL_AI_DESKTOP_ONLY"
+      };
+    },
+    async generateLocalAiText() {
+      return {
+        ok: false,
+        provider: "ollama",
+        text: "",
+        reason: "LOCAL_AI_DESKTOP_ONLY"
+      };
     },
     async loadSettings() {
       try {
@@ -378,12 +497,20 @@ const CONTROL_HELP_TEXTS = {
   readingGuideColor: "Choisit la couleur du contour de la réglette.",
   colorationMode: "Active une aide visuelle pour les sons ou une coloration douce. À utiliser seulement si elle aide vraiment.",
   syllableLevel: "Découpe les mots en syllabes de lecture. Léger reste discret, Renforcé aide davantage au décodage.",
+  syllabificationMode:
+    "Choisit entre la syllabation pédagogique, utile pour l'apprentissage, et une version typographique plus conservatrice pour comparer.",
+  syllableWordScope:
+    "Auto ne découpe que les mots les plus utiles. Tous les mots force l'affichage syllabique partout pour tester ou comparer.",
   soundColorMode: "Choisit des couleurs plus douces ou plus nettes pour les sons français.",
   syllableBreakMode: "Affiche un séparateur discret entre les syllabes quand le mode syllabes est actif.",
   verificationMode: "Aide à relire les passages potentiellement fragiles : maths, OCR incertain, tableaux ou blocs complexes.",
   speechVoiceId: "Choisit la voix système utilisée pour la lecture audio.",
   speechRate: "Règle la vitesse réelle de lecture audio. La valeur de base a été ralentie pour être plus confortable.",
   pauseBetweenSentences: "Ajoute une petite pause entre les phrases pour laisser le temps de suivre.",
+  localAiMode:
+    "Choisit si l'IA locale Gemma est désactivée, utilisée seulement à la demande, ou privilégiée automatiquement quand elle est disponible.",
+  localAiModel:
+    "Choisit le modèle local à utiliser avec Ollama. Gemma 3 4B est le meilleur compromis pour un usage quotidien.",
   ocrLanguage: "Choisit la langue utilisée par l'OCR pour reconstruire un PDF scanné."
 };
 
@@ -397,6 +524,75 @@ function findProfile(profileId) {
 
 function isCustomProfile(profileId) {
   return appState.customProfiles.some((profile) => profile.id === profileId);
+}
+
+function isTemporaryCustomProfile(profile) {
+  return Boolean(profile?.temporary) && profile.id === TEMP_CUSTOM_PROFILE_ID;
+}
+
+function getCustomizationSourceProfile(profile) {
+  if (!profile) {
+    return appState.builtinProfiles[0];
+  }
+
+  if (profile.sourceProfileId) {
+    return findProfile(profile.sourceProfileId) || appState.builtinProfiles[0];
+  }
+
+  return profile;
+}
+
+function buildTemporaryCustomProfile(sourceProfile) {
+  const safeSourceProfile = sourceProfile || appState.builtinProfiles[0];
+  const sourceLabel = repairUiText(safeSourceProfile.label || "profil actuel");
+  return {
+    id: TEMP_CUSTOM_PROFILE_ID,
+    label: "Réglages personnalisés",
+    description: `Version ajustable librement à partir de ${sourceLabel}.`,
+    editable: true,
+    temporary: true,
+    sourceProfileId: safeSourceProfile.id,
+    researchNotes: `Tu es sur une version personnalisée du profil ${sourceLabel}. Continue à ajuster les réglages librement, puis enregistre ce profil si tu veux le garder.`,
+    defaults: { ...appState.preferences }
+  };
+}
+
+function upsertCustomProfile(profile) {
+  appState.customProfiles = [profile, ...appState.customProfiles.filter((item) => item.id !== profile.id)];
+}
+
+function syncActiveEditableProfile({ announce = false } = {}) {
+  const activeProfile = findProfile(appState.activeProfileId);
+  if (!activeProfile) {
+    return false;
+  }
+
+  if (isCustomProfile(activeProfile.id)) {
+    const nextProfile = isTemporaryCustomProfile(activeProfile)
+      ? buildTemporaryCustomProfile(getCustomizationSourceProfile(activeProfile))
+      : {
+          ...activeProfile,
+          defaults: { ...appState.preferences }
+        };
+    upsertCustomProfile(nextProfile);
+    return false;
+  }
+
+  const draftProfile = buildTemporaryCustomProfile(activeProfile);
+  upsertCustomProfile(draftProfile);
+  appState.activeProfileId = draftProfile.id;
+  renderProfiles();
+
+  if (announce) {
+    setPanelFeedback(
+      elements.profileFeedback,
+      `Réglages personnalisés actifs à partir de ${repairUiText(activeProfile.label)}.`
+    );
+    elements.statusLine.textContent =
+      "Tu ajustes maintenant un profil personnalisé. Enregistre-le si tu veux le garder.";
+  }
+
+  return true;
 }
 
 function getFontLabel(fontFamily) {
@@ -432,6 +628,17 @@ function normalizeAppTheme(value) {
   return DEFAULT_PREFERENCES.appTheme;
 }
 
+function getLocalAiModeLabel(mode) {
+  switch (normalizeLocalAiMode(mode)) {
+    case "prefer-local":
+      return "Gemma prioritaire";
+    case "on-demand":
+      return "Gemma à la demande";
+    default:
+      return "IA locale désactivée";
+  }
+}
+
 function describeProfileDecoding(preferences) {
   const parts = [];
   const colorationMode = normalizeColorationPreference(preferences.colorationMode);
@@ -449,6 +656,17 @@ function describeProfileDecoding(preferences) {
     parts.push("syllabes légères");
   } else if (syllableLevel === "strong") {
     parts.push("syllabes renforcées");
+  }
+
+  if (syllableLevel !== "off") {
+    parts.push(
+      normalizeSyllabificationMode(preferences.syllabificationMode) === "typographique"
+        ? "syllabation typographique"
+        : "syllabation pédagogique"
+    );
+    if (normalizeSyllableWordScope(preferences.syllableWordScope) === "all") {
+      parts.push("tous les mots");
+    }
   }
 
   if (syllableLevel !== "off" && preferences.syllableBreakMode === "dot") {
@@ -521,6 +739,8 @@ function describeProfileAudience(profile) {
       return "Pour une lecture stable et des repères simples quand la fatigue motrice est importante.";
     case "enseignant":
       return "Pour analyser un document, repérer les zones fragiles et observer les aides activées.";
+    case "mode-examen":
+      return "Pour une passation très sobre, avec confort de lecture, tiers-temps et impression propre.";
     default:
       return "Pour un besoin spécifique ou un réglage personnalisé.";
   }
@@ -584,17 +804,16 @@ function buildProfilePreferences(profile) {
   const preserved = {
     appTheme: normalizeAppTheme(appState.preferences.appTheme),
     speechVoiceId: appState.preferences.speechVoiceId,
-    distractionFree: appState.preferences.distractionFree
+    localAiMode: normalizeLocalAiMode(appState.preferences.localAiMode),
+    localAiModel: normalizeLocalAiModel(appState.preferences.localAiModel)
   };
-
-  if (!isCustomProfile(profile.id)) {
-    preserved.theme = appState.preferences.theme;
-  }
 
   const nextPreferences = {
     ...profile.defaults,
     colorationMode: normalizeColorationPreference(profile.defaults?.colorationMode),
     syllableLevel: normalizeSyllableLevel(profile.defaults?.syllableLevel),
+    syllabificationMode: normalizeSyllabificationMode(profile.defaults?.syllabificationMode),
+    syllableWordScope: normalizeSyllableWordScope(profile.defaults?.syllableWordScope),
     verificationMode: normalizeVerificationMode(profile.defaults?.verificationMode),
     readingGuideMode: normalizeReadingGuideMode(profile.defaults?.readingGuideMode, profile.defaults?.focusMode),
     ...preserved
@@ -643,6 +862,9 @@ function activateProfile(profileId, { statusMessage } = {}) {
   applyTheme();
   setPanelFeedback(elements.profileFeedback, "");
   setPanelFeedback(elements.settingsFeedback, "");
+  if (appState.importedDocument) {
+    syncReadingProgressStorage({ updateVisitedAt: false });
+  }
   renderProfiles();
   renderDocument();
   debouncePersist();
@@ -713,6 +935,28 @@ function closeProfileSummaryDialog() {
   elements.profileSummaryDialog.close();
 }
 
+function openTeacherCompareDialog() {
+  if (!elements.teacherCompareDialog) {
+    return;
+  }
+
+  renderTeacherCompareDialog();
+  if (elements.teacherCompareDialog.open) {
+    return;
+  }
+
+  elements.teacherCompareDialog.showModal();
+  elements.closeTeacherCompareDialogButton?.focus();
+}
+
+function closeTeacherCompareDialog() {
+  if (!elements.teacherCompareDialog?.open) {
+    return;
+  }
+
+  elements.teacherCompareDialog.close();
+}
+
 async function openProjectSupportPage() {
   try {
     await runtimeApi.openExternalUrl(PROJECT_SUPPORT_URL);
@@ -765,9 +1009,11 @@ function getDocumentDiagnostics() {
     ? summarizeDocumentDiagnostics(appState.importedDocument)
     : {
         mathBlockCount: 0,
+        scienceBlockCount: 0,
         formulaBlockCount: 0,
         verificationBlockCount: 0,
         pagesWithMath: 0,
+        pagesWithScience: 0,
         pagesWithVerification: 0,
         verificationReasons: []
       };
@@ -852,16 +1098,33 @@ function syncAnnotationsStorage() {
   appState.annotationsByDocument[bookmarkDocumentKey] = normalizeAnnotations(appState.annotations);
 }
 
+function syncTeacherNotesStorage() {
+  if (!appState.currentPdfBlobUrl && !appState.importedDocument) {
+    return;
+  }
+
+  const bookmarkDocumentKey = buildBookmarkDocumentKey(appState.importedDocument);
+  if (!bookmarkDocumentKey) {
+    return;
+  }
+
+  appState.teacherNotesByDocument[bookmarkDocumentKey] = String(appState.teacherNotes || "").trim();
+}
+
 async function persistState() {
   syncBookmarksStorage();
   syncAnnotationsStorage();
+  syncTeacherNotesStorage();
   const payload = {
     savedProfiles: appState.customProfiles,
     lastUsedPreferences: getPersistablePreferences(),
-    activeProfileId: appState.activeProfileId,
-    recentFilesMeta: appState.recentFilesMeta.slice(0, 6),
-    bookmarksByDocument: appState.bookmarksByDocument,
-    annotationsByDocument: appState.annotationsByDocument
+      activeProfileId: appState.activeProfileId,
+      recentFilesMeta: appState.recentFilesMeta.slice(0, 6),
+      bookmarksByDocument: appState.bookmarksByDocument,
+      annotationsByDocument: appState.annotationsByDocument,
+      teacherNotesByDocument: appState.teacherNotesByDocument,
+      readingProgressByDocument: appState.readingProgressByDocument,
+      examBaseMinutes: appState.examBaseMinutes
   };
   await runtimeApi.saveSettings(payload);
 }
@@ -876,8 +1139,12 @@ async function loadPersistedState() {
           ...DEFAULT_PREFERENCES,
           ...profile.defaults,
           appTheme: normalizeAppTheme(profile.defaults?.appTheme),
+          localAiMode: normalizeLocalAiMode(profile.defaults?.localAiMode),
+          localAiModel: normalizeLocalAiModel(profile.defaults?.localAiModel),
           colorationMode: normalizeColorationPreference(profile.defaults?.colorationMode),
           syllableLevel: normalizeSyllableLevel(profile.defaults?.syllableLevel),
+          syllabificationMode: normalizeSyllabificationMode(profile.defaults?.syllabificationMode),
+          syllableWordScope: normalizeSyllableWordScope(profile.defaults?.syllableWordScope),
           verificationMode: normalizeVerificationMode(profile.defaults?.verificationMode),
           readingGuideMode: normalizeReadingGuideMode(profile.defaults?.readingGuideMode, profile.defaults?.focusMode)
         }
@@ -889,8 +1156,12 @@ async function loadPersistedState() {
         ...payload.lastUsedPreferences
       };
       appState.preferences.appTheme = normalizeAppTheme(appState.preferences.appTheme);
+      appState.preferences.localAiMode = normalizeLocalAiMode(appState.preferences.localAiMode);
+      appState.preferences.localAiModel = normalizeLocalAiModel(appState.preferences.localAiModel);
       appState.preferences.colorationMode = normalizeColorationPreference(appState.preferences.colorationMode);
       appState.preferences.syllableLevel = normalizeSyllableLevel(appState.preferences.syllableLevel);
+      appState.preferences.syllabificationMode = normalizeSyllabificationMode(appState.preferences.syllabificationMode);
+      appState.preferences.syllableWordScope = normalizeSyllableWordScope(appState.preferences.syllableWordScope);
       appState.preferences.verificationMode = normalizeVerificationMode(appState.preferences.verificationMode);
       appState.preferences.readingGuideMode = normalizeReadingGuideMode(
         appState.preferences.readingGuideMode,
@@ -919,6 +1190,32 @@ async function loadPersistedState() {
           normalizeAnnotations(Array.isArray(entries) ? entries : [])
         ])
       );
+    }
+    if (payload?.teacherNotesByDocument && typeof payload.teacherNotesByDocument === "object") {
+      appState.teacherNotesByDocument = Object.fromEntries(
+        Object.entries(payload.teacherNotesByDocument).map(([documentKey, value]) => [documentKey, String(value || "")])
+      );
+    }
+    if (payload?.readingProgressByDocument && typeof payload.readingProgressByDocument === "object") {
+      appState.readingProgressByDocument = Object.fromEntries(
+        Object.entries(payload.readingProgressByDocument).map(([documentKey, value]) => [
+          documentKey,
+          {
+            lastBlockKey: String(value?.lastBlockKey || ""),
+            lastBlockLabel: String(value?.lastBlockLabel || ""),
+            lastPageNumber: Math.max(0, Number(value?.lastPageNumber || 0)),
+            lastVisitedAt: String(value?.lastVisitedAt || ""),
+            totalReadingMs: Math.max(0, Number(value?.totalReadingMs || 0)),
+            lastProfileId:
+              value?.lastProfileId && findProfile(String(value.lastProfileId))
+                ? String(value.lastProfileId)
+                : BUILTIN_PROFILES[0].id
+          }
+        ])
+      );
+    }
+    if (payload?.examBaseMinutes) {
+      appState.examBaseMinutes = Math.max(10, Number(payload.examBaseMinutes || 60));
     }
     if (payload?.activeProfileId && findProfile(payload.activeProfileId)) {
       appState.activeProfileId = payload.activeProfileId;
@@ -1010,6 +1307,25 @@ function fillStaticControls() {
   ]
     .map((theme) => `<option value="${theme.value}">${theme.label}</option>`)
     .join("");
+
+  if (controls.localAiMode) {
+    controls.localAiMode.innerHTML = [
+      { value: "off", label: "Désactivée" },
+      { value: "on-demand", label: "À la demande" },
+      { value: "prefer-local", label: "Prioritaire" }
+    ]
+      .map((mode) => `<option value="${mode.value}">${mode.label}</option>`)
+      .join("");
+  }
+
+  if (controls.localAiModel) {
+    controls.localAiModel.innerHTML = [
+      { value: "gemma3:1b", label: "Gemma 3 1B" },
+      { value: "gemma3:4b", label: "Gemma 3 4B (recommandé)" }
+    ]
+      .map((model) => `<option value="${model.value}">${model.label}</option>`)
+      .join("");
+  }
 }
 
 function formatOutputValue(key, value) {
@@ -1094,6 +1410,9 @@ function getActiveModeLabel() {
   }
 
   if (modes.length === 0) {
+    if (appState.activeProfileId === "mode-examen") {
+      return "Mode examen";
+    }
     return appState.activeProfileId === "normal" ? "Mode normal" : "Lecture simple";
   }
 
@@ -1171,7 +1490,9 @@ function syncControlsWithState() {
 function renderProfiles() {
   const renderCard = (profile, isCustom = false) => {
     const activeClass = appState.activeProfileId === profile.id ? "is-active" : "";
-    const customBadge = isCustom ? "<span class=\"profile-badge\">Perso</span>" : "";
+    const customBadge = isCustom
+      ? `<span class="profile-badge">${isTemporaryCustomProfile(profile) ? "En cours" : "Perso"}</span>`
+      : "";
     const label = repairUiText(profile.label);
     const description = repairUiText(profile.description);
     return `
@@ -1198,8 +1519,11 @@ function renderProfiles() {
   const activeProfile = findProfile(appState.activeProfileId) || appState.builtinProfiles[0];
   elements.researchNotes.textContent = repairUiText(activeProfile?.researchNotes || "");
   renderProfileSummaryDialog();
+  renderStartAssistant();
+  renderTeacherTools();
   if (elements.profileNameInput) {
-    elements.profileNameInput.value = isCustomProfile(appState.activeProfileId) ? activeProfile.label : "";
+    elements.profileNameInput.value =
+      isCustomProfile(appState.activeProfileId) && !isTemporaryCustomProfile(activeProfile) ? activeProfile.label : "";
   }
   elements.deleteProfileButton.disabled = !appState.customProfiles.some(
     (profile) => profile.id === appState.activeProfileId
@@ -1250,6 +1574,987 @@ function loadAnnotationsForCurrentDocument() {
   appState.annotations = bookmarkDocumentKey
     ? normalizeAnnotations(appState.annotationsByDocument[bookmarkDocumentKey] || [])
     : [];
+}
+
+function loadTeacherNotesForCurrentDocument() {
+  const bookmarkDocumentKey = buildBookmarkDocumentKey(appState.importedDocument);
+  appState.teacherNotes = bookmarkDocumentKey ? String(appState.teacherNotesByDocument[bookmarkDocumentKey] || "") : "";
+  if (elements.teacherNotesInput) {
+    elements.teacherNotesInput.value = appState.teacherNotes;
+  }
+}
+
+function getReadingProgressDocumentKey() {
+  return buildBookmarkDocumentKey(appState.importedDocument);
+}
+
+function getCurrentReadingProgress() {
+  const documentKey = getReadingProgressDocumentKey();
+  if (!documentKey) {
+    return null;
+  }
+
+  if (!appState.readingProgressByDocument[documentKey]) {
+    appState.readingProgressByDocument[documentKey] = {
+      lastBlockKey: "",
+      lastBlockLabel: "",
+      lastPageNumber: 0,
+      lastVisitedAt: "",
+      totalReadingMs: 0,
+      lastProfileId: appState.activeProfileId
+    };
+  }
+
+  return appState.readingProgressByDocument[documentKey];
+}
+
+function buildCheckpointLabel(text) {
+  return String(text || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 96);
+}
+
+function syncReadingProgressStorage({ updateVisitedAt = true } = {}) {
+  if (!appState.importedDocument) {
+    return;
+  }
+
+  const progress = getCurrentReadingProgress();
+  if (!progress) {
+    return;
+  }
+
+  const selectedContext = getSelectedReadableBlockContext();
+  if (selectedContext) {
+    progress.lastBlockKey = selectedContext.blockKey;
+    progress.lastPageNumber = selectedContext.pageNumber;
+    progress.lastBlockLabel = buildCheckpointLabel(selectedContext.block?.text || "");
+  }
+
+  progress.lastProfileId = appState.activeProfileId;
+  if (updateVisitedAt) {
+    progress.lastVisitedAt = new Date().toISOString();
+  }
+}
+
+function loadReadingProgressForCurrentDocument() {
+  const documentKey = getReadingProgressDocumentKey();
+  return documentKey ? appState.readingProgressByDocument[documentKey] || null : null;
+}
+
+function formatReadingDuration(totalMs = 0) {
+  const totalMinutes = Math.max(0, Math.round(Number(totalMs || 0) / 60000));
+  if (totalMinutes < 1) {
+    return "moins d’une minute";
+  }
+  if (totalMinutes < 60) {
+    return `${totalMinutes} min`;
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes > 0 ? `${hours} h ${minutes} min` : `${hours} h`;
+}
+
+function formatProgressDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "jamais" : date.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function accumulateReadingTime() {
+  if (!appState.importedDocument || document.hidden) {
+    appState.readingTimeTickStartedAt = 0;
+    return;
+  }
+
+  const now = Date.now();
+  if (!appState.readingTimeTickStartedAt) {
+    appState.readingTimeTickStartedAt = now;
+    return;
+  }
+
+  const elapsed = Math.max(0, now - appState.readingTimeTickStartedAt);
+  if (elapsed < 1000) {
+    return;
+  }
+
+  const progress = getCurrentReadingProgress();
+  if (progress) {
+    progress.totalReadingMs = Number(progress.totalReadingMs || 0) + elapsed;
+    syncReadingProgressStorage({ updateVisitedAt: false });
+    renderReadingTracking();
+  }
+
+  appState.readingTimeTickStartedAt = now;
+}
+
+function startReadingTrackingLoop() {
+  if (appState.readingTimeIntervalId) {
+    window.clearInterval(appState.readingTimeIntervalId);
+  }
+  appState.readingTimeTickStartedAt = !document.hidden && appState.importedDocument ? Date.now() : 0;
+  appState.readingTimeIntervalId = window.setInterval(() => {
+    accumulateReadingTime();
+    debouncePersist();
+  }, 15000);
+}
+
+function handleVisibilityTracking() {
+  if (document.hidden) {
+    accumulateReadingTime();
+    appState.readingTimeTickStartedAt = 0;
+    debouncePersist();
+  } else if (appState.importedDocument) {
+    appState.readingTimeTickStartedAt = Date.now();
+  }
+}
+
+function renderReadingTracking() {
+  if (!elements.readingTrackingSummary) {
+    return;
+  }
+
+  if (!appState.importedDocument) {
+    elements.readingTrackingSummary.textContent =
+      "Ouvre un document pour enregistrer automatiquement ton repère, ton temps de lecture et le dernier profil utile.";
+    elements.resumeReadingButton?.setAttribute("disabled", "disabled");
+    elements.saveReadingCheckpointButton?.setAttribute("disabled", "disabled");
+    return;
+  }
+
+  const progress = getCurrentReadingProgress();
+  const profile = findProfile(progress?.lastProfileId || appState.activeProfileId);
+  const checkpointLine = progress?.lastBlockKey
+    ? `Dernier repère : page ${progress.lastPageNumber || "?"}, ${progress.lastBlockLabel || "bloc repéré"}.`
+    : "Aucun repère automatique enregistré pour ce document pour le moment.";
+  const timeLine = `Temps de lecture cumulé : ${formatReadingDuration(progress?.totalReadingMs || 0)}.`;
+  const profileLine = `Dernier profil utilisé : ${repairUiText(profile?.label || "Normal")}.`;
+  const dateLine = `Mise à jour : ${formatProgressDate(progress?.lastVisitedAt)}.`;
+
+  elements.readingTrackingSummary.innerHTML = `
+    <strong>${escapeHtml(appState.importedDocument.fileName || "Document")}</strong>
+    <p>${escapeHtml(checkpointLine)}</p>
+    <p>${escapeHtml(timeLine)}</p>
+    <p>${escapeHtml(profileLine)}</p>
+    <p>${escapeHtml(dateLine)}</p>
+  `;
+
+  elements.resumeReadingButton?.toggleAttribute("disabled", !progress?.lastBlockKey);
+  elements.saveReadingCheckpointButton?.toggleAttribute("disabled", !appState.selectedBlockKey);
+}
+
+function resumeReadingFromProgress() {
+  const progress = getCurrentReadingProgress();
+  if (!progress?.lastBlockKey) {
+    elements.statusLine.textContent = "Aucun repère de reprise n’est encore enregistré pour ce document.";
+    return;
+  }
+
+  const targetBlock = elements.pageList.querySelector(`[data-block-key="${progress.lastBlockKey}"]`);
+  if (!targetBlock) {
+    progress.lastBlockKey = "";
+    progress.lastBlockLabel = "";
+    progress.lastPageNumber = 0;
+    progress.lastVisitedAt = new Date().toISOString();
+    renderReadingTracking();
+    debouncePersist();
+    elements.statusLine.textContent = "L’ancien repère n’est plus disponible. Un nouveau repère sera créé à la prochaine lecture.";
+    return;
+  }
+
+  if (progress.lastProfileId && progress.lastProfileId !== appState.activeProfileId && findProfile(progress.lastProfileId)) {
+    activateProfile(progress.lastProfileId, {
+      statusMessage: `Profil restauré : ${repairUiText(findProfile(progress.lastProfileId)?.label || "Normal")}.`
+    });
+  }
+
+  setSelectedBlock(progress.lastBlockKey, { scroll: true });
+  elements.pageList.querySelector(`[data-block-key="${progress.lastBlockKey}"]`)?.focus({ preventScroll: true });
+  elements.statusLine.textContent = "Reprise effectuée au dernier repère automatique.";
+}
+
+function saveReadingCheckpoint() {
+  if (!appState.importedDocument || !appState.selectedBlockKey) {
+    elements.statusLine.textContent = "Choisis d’abord un bloc dans la zone de lecture.";
+    return;
+  }
+
+  syncReadingProgressStorage();
+  renderReadingTracking();
+  debouncePersist();
+  elements.statusLine.textContent = "Repère automatique mis à jour.";
+}
+
+function resetWordInsight() {
+  appState.currentWordInsight = null;
+  appState.currentWordSelection = null;
+  clearSelectedWordHighlight();
+  if (elements.wordInsightWord) {
+    elements.wordInsightWord.textContent = "Aucun mot sélectionné";
+  }
+  if (elements.wordInsightSyllables) {
+    elements.wordInsightSyllables.textContent = "Clique un mot dans le document pour afficher sa découpe syllabique.";
+  }
+    if (elements.wordInsightDefinition) {
+      elements.wordInsightDefinition.textContent =
+        "Une définition issue du dictionnaire local, puis si besoin du dictionnaire en ligne, s’affichera ici.";
+    }
+    if (elements.wordInsightSource) {
+      elements.wordInsightSource.textContent = "Source : aucune";
+    }
+    if (elements.wordInsightDomain) {
+      elements.wordInsightDomain.textContent = "Domaine : non déterminé";
+    }
+    elements.wordSpeakButton?.setAttribute("disabled", "disabled");
+  elements.refreshWordDefinitionButton?.setAttribute("disabled", "disabled");
+}
+
+function clearSelectedWordHighlight() {
+  elements.pageList
+    ?.querySelectorAll(".is-word-selected")
+    ?.forEach((node) => node.classList.remove("is-word-selected"));
+}
+
+function buildWordSelectionSnapshot(target) {
+  const block = target?.closest?.(".reader-block");
+  if (!target || !block?.dataset?.blockKey) {
+    return null;
+  }
+
+  const start = Number(target.dataset.sourceStart);
+  const end = Number(target.dataset.sourceEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    return null;
+  }
+
+  return {
+    blockKey: block.dataset.blockKey,
+    word: target.dataset.lookupWord || "",
+    start,
+    end
+  };
+}
+
+function findSelectedWordNode(selection = appState.currentWordSelection) {
+  if (!selection?.blockKey || !Number.isFinite(selection.start) || !Number.isFinite(selection.end)) {
+    return null;
+  }
+
+  const blockKey = window.CSS?.escape ? window.CSS.escape(selection.blockKey) : selection.blockKey;
+  return elements.pageList?.querySelector(
+    `[data-block-key="${blockKey}"] [data-lookup-word][data-source-start="${selection.start}"][data-source-end="${selection.end}"]`
+  );
+}
+
+function applySelectedWordHighlight(selection = appState.currentWordSelection) {
+  clearSelectedWordHighlight();
+  const target = findSelectedWordNode(selection);
+  target?.classList?.add("is-word-selected");
+  return target;
+}
+
+function isSameWordSelection(selection, word) {
+  if (!selection || !appState.currentWordSelection || !appState.currentWordInsight?.word) {
+    return false;
+  }
+
+  return (
+    selection.blockKey === appState.currentWordSelection.blockKey &&
+    selection.start === appState.currentWordSelection.start &&
+    selection.end === appState.currentWordSelection.end &&
+    sanitizeLookupWord(word) === appState.currentWordInsight.word
+  );
+}
+
+function buildLocalAiStatusMessage(status = appState.localAiStatus) {
+  const mode = normalizeLocalAiMode(appState.preferences.localAiMode);
+  if (runtimeApi.kind !== "electron") {
+    return "IA locale disponible uniquement dans l'application desktop. La version web garde les aides locales sans Gemma.";
+  }
+
+  if (mode === "off") {
+    return "IA locale désactivée. Odysey continue avec les définitions et reformulations locales déjà intégrées.";
+  }
+
+  if (status.busy) {
+    return "Vérification de l'IA locale en cours…";
+  }
+
+  if (!status.available) {
+    return "Ollama n'est pas détecté sur cet ordinateur. Installe Ollama puis le modèle Gemma 3 pour activer l'IA locale.";
+  }
+
+  if (!status.modelAvailable) {
+    return `Ollama est bien actif, mais le modèle ${normalizeLocalAiModel(appState.preferences.localAiModel)} n'est pas encore disponible. Lance par exemple : ollama pull ${normalizeLocalAiModel(appState.preferences.localAiModel)}.`;
+  }
+
+  const modelLabel = normalizeLocalAiModel(status.selectedModel || appState.preferences.localAiModel);
+  return `IA locale prête avec ${modelLabel}. Mode actuel : ${getLocalAiModeLabel(mode).toLowerCase()}. Les réponses restent sur cet ordinateur.`;
+}
+
+function renderLocalAiStatus() {
+  appState.localAiStatus.message = buildLocalAiStatusMessage(appState.localAiStatus);
+
+  if (elements.localAiStatusText) {
+    elements.localAiStatusText.textContent = appState.localAiStatus.message;
+  }
+
+  const canUseLocalAi =
+    runtimeApi.kind === "electron" &&
+    normalizeLocalAiMode(appState.preferences.localAiMode) !== "off" &&
+    appState.localAiStatus.available &&
+    appState.localAiStatus.modelAvailable;
+
+  if (elements.localAiCheckButton) {
+    elements.localAiCheckButton.disabled = appState.localAiStatus.busy;
+    elements.localAiCheckButton.textContent = appState.localAiStatus.busy ? "Vérification…" : "Vérifier Gemma locale";
+  }
+
+  if (elements.refreshWordDefinitionButton) {
+    const wantsLocalAi = normalizeLocalAiMode(appState.preferences.localAiMode) !== "off";
+    elements.refreshWordDefinitionButton.textContent = wantsLocalAi ? "Définition avancée" : "Actualiser la définition";
+    elements.refreshWordDefinitionButton.title = wantsLocalAi
+      ? "Utilise Gemma locale si elle est disponible, sinon garde la définition locale."
+      : "Relance l'analyse locale et le dictionnaire en ligne si disponible.";
+  }
+
+  if (elements.blockSummaryButton) {
+    elements.blockSummaryButton.title = canUseLocalAi
+      ? "Génère un résumé court avec Gemma locale, puis utilise le fallback local si besoin."
+      : "Génère un résumé court local, sans dépendre d'une IA installée.";
+  }
+
+  if (elements.blockReformulateButton) {
+    elements.blockReformulateButton.title = canUseLocalAi
+      ? "Génère une reformulation simple avec Gemma locale, puis utilise le fallback local si besoin."
+      : "Génère une reformulation simple locale, sans dépendre d'une IA installée.";
+  }
+}
+
+async function refreshLocalAiStatus({ silent = false } = {}) {
+  if (runtimeApi.kind !== "electron") {
+    renderLocalAiStatus();
+    return appState.localAiStatus;
+  }
+
+  appState.localAiStatus = {
+    ...appState.localAiStatus,
+    busy: true,
+    selectedModel: normalizeLocalAiModel(appState.preferences.localAiModel)
+  };
+  renderLocalAiStatus();
+
+  const status = await runtimeApi.getLocalAiStatus(normalizeLocalAiModel(appState.preferences.localAiModel));
+  appState.localAiStatus = {
+    available: Boolean(status?.available),
+    modelAvailable: Boolean(status?.modelAvailable),
+    provider: String(status?.provider || "ollama"),
+    selectedModel: normalizeLocalAiModel(status?.selectedModel || appState.preferences.localAiModel),
+    installedModels: Array.isArray(status?.installedModels) ? status.installedModels : [],
+    checkedAt: new Date().toISOString(),
+    busy: false,
+    message: ""
+  };
+  renderLocalAiStatus();
+
+  if (!silent) {
+    elements.statusLine.textContent = appState.localAiStatus.available
+      ? appState.localAiStatus.modelAvailable
+        ? `IA locale prête : ${appState.localAiStatus.selectedModel}.`
+        : `Ollama est actif, mais ${appState.localAiStatus.selectedModel} n'est pas encore installé.`
+      : "IA locale indisponible pour le moment.";
+  }
+
+  return appState.localAiStatus;
+}
+
+function canTryLocalAi({ force = false } = {}) {
+  const mode = normalizeLocalAiMode(appState.preferences.localAiMode);
+  if (runtimeApi.kind !== "electron" || mode === "off") {
+    return false;
+  }
+
+  if (!appState.localAiStatus.available || !appState.localAiStatus.modelAvailable) {
+    return false;
+  }
+
+  return force || mode === "prefer-local";
+}
+
+async function runLocalAiTask(taskType, request, { force = false } = {}) {
+  if (!request) {
+    return "";
+  }
+
+  if (
+    runtimeApi.kind === "electron" &&
+    normalizeLocalAiMode(appState.preferences.localAiMode) !== "off" &&
+    (!appState.localAiStatus.available || !appState.localAiStatus.modelAvailable)
+  ) {
+    await refreshLocalAiStatus({ silent: true });
+  }
+
+  if (!canTryLocalAi({ force })) {
+    return "";
+  }
+
+  const cacheKey = `${taskType}:${normalizeLocalAiModel(appState.preferences.localAiModel)}:${request.cacheKey}`;
+  if (!force && appState.localAiCache.has(cacheKey)) {
+    return appState.localAiCache.get(cacheKey) || "";
+  }
+
+  const response = await runtimeApi.generateLocalAiText({
+    model: normalizeLocalAiModel(appState.preferences.localAiModel),
+    system: request.system,
+    prompt: request.prompt,
+    maxTokens: request.maxLength,
+    temperature: taskType === "definition" ? 0.15 : 0.25
+  });
+
+  const cleaned = cleanLocalAiText(response?.text || "", { maxLength: request.maxLength });
+  if (cleaned) {
+    appState.localAiCache.set(cacheKey, cleaned);
+  }
+  return cleaned;
+}
+
+function renderWordInsight() {
+  const insight = appState.currentWordInsight;
+  if (!insight) {
+    resetWordInsight();
+    return;
+  }
+
+  if (elements.wordInsightWord) {
+    elements.wordInsightWord.textContent = insight.word;
+  }
+  if (elements.wordInsightSyllables) {
+    const modeLabel = insight.syllabificationMode === "typographique" ? "typographique" : "pédagogique";
+    if (insight.syllablesVisible && insight.syllableCount > 1) {
+      elements.wordInsightSyllables.textContent = `Découpe syllabique (${modeLabel}) : ${insight.syllableDisplay}`;
+    } else if (insight.syllableLevel === "off") {
+      elements.wordInsightSyllables.textContent = "Découpe syllabique désactivée dans les réglages.";
+    } else if (insight.syllableCount <= 1) {
+      elements.wordInsightSyllables.textContent = "Mot court : pas de découpe utile à afficher.";
+    } else if (insight.syllableWordScope === "auto") {
+      elements.wordInsightSyllables.textContent =
+        `Découpe syllabique (${modeLabel}) masquée avec le réglage Auto pour ce mot.`;
+    } else {
+      elements.wordInsightSyllables.textContent = `Découpe syllabique (${modeLabel}) indisponible pour ce mot.`;
+    }
+  }
+  if (elements.wordInsightDefinition) {
+    elements.wordInsightDefinition.textContent = insight.definition;
+  }
+    if (elements.wordInsightSource) {
+      const sourceLabel =
+        insight.definitionSource === "dictionnaire"
+          ? "dictionnaire en ligne"
+          : insight.definitionSource === "dictionnaire-local"
+            ? "dictionnaire local"
+          : insight.definitionSource === "ia-locale"
+            ? "Gemma locale"
+          : insight.definitionSource === "local"
+            ? "lexique local"
+            : insight.definitionSource === "heuristique"
+              ? "explication locale"
+              : "aide locale";
+      elements.wordInsightSource.textContent = `Source : ${sourceLabel}`;
+    }
+    if (elements.wordInsightDomain) {
+      const domainLabel =
+        insight.category === "literature"
+          ? "littérature"
+          : insight.category === "school"
+            ? "lecture et école"
+            : insight.category === "science"
+              ? "maths et sciences"
+              : insight.category === "admin"
+                ? "administratif et santé"
+                : "non déterminé";
+      elements.wordInsightDomain.textContent = `Domaine : ${domainLabel}`;
+    }
+    elements.wordSpeakButton?.removeAttribute("disabled");
+  elements.refreshWordDefinitionButton?.removeAttribute("disabled");
+}
+
+async function inspectWord(word, options = {}) {
+  const sanitizedWord = sanitizeLookupWord(word);
+  if (!sanitizedWord) {
+    return;
+  }
+
+  if (options.selection && isSameWordSelection(options.selection, sanitizedWord) && !options.forceAi) {
+    applySelectedWordHighlight(options.selection);
+    return;
+  }
+
+  if (options.selection) {
+    appState.currentWordSelection = options.selection;
+  }
+  applySelectedWordHighlight();
+
+  const syllableInsightOptions = {
+    mode: appState.preferences.syllabificationMode,
+    level: appState.preferences.syllableLevel,
+    wordScope: appState.preferences.syllableWordScope
+  };
+
+  const localInsight = buildLocalWordInsight(sanitizedWord, syllableInsightOptions);
+  if (!localInsight) {
+    return;
+  }
+
+  const requestId = ++appState.currentWordLookupId;
+  appState.currentWordInsight = {
+    ...localInsight,
+    selection: appState.currentWordSelection
+  };
+  renderWordInsight();
+  elements.statusLine.textContent = `Mot sélectionné : ${localInsight.word}.`;
+
+  const forceAi = Boolean(options.forceAi);
+  const contextText = String(options.contextText || "").replace(/\s+/g, " ").trim();
+  const wantsLocalAi = forceAi || normalizeLocalAiMode(appState.preferences.localAiMode) === "prefer-local";
+  const wantsRemoteDefinition = options.allowRemote !== false;
+
+  if (!wantsLocalAi && !wantsRemoteDefinition) {
+    return;
+  }
+
+  const insight = await lookupWordInsight(sanitizedWord, {
+    allowRemote: wantsRemoteDefinition,
+    ...syllableInsightOptions
+  });
+  if (requestId !== appState.currentWordLookupId || !insight) {
+    return;
+  }
+
+  let aiDefinition = "";
+  if (wantsLocalAi) {
+    const aiRequest = buildLocalAiDefinitionRequest({
+      word: sanitizedWord,
+      syllableDisplay: insight.syllableDisplay,
+      fallbackDefinition: insight.definition,
+      contextText
+    });
+    aiDefinition = await runLocalAiTask("definition", aiRequest, { force: forceAi });
+    if (requestId !== appState.currentWordLookupId) {
+      return;
+    }
+  }
+
+  appState.currentWordInsight = {
+    ...insight,
+    definition: aiDefinition || insight.definition,
+    definitionSource: aiDefinition ? "ia-locale" : insight.definitionSource,
+    selection: appState.currentWordSelection
+  };
+  renderWordInsight();
+  elements.statusLine.textContent = aiDefinition
+    ? `Mot analysé avec Gemma locale : ${insight.word}.`
+    : forceAi && normalizeLocalAiMode(appState.preferences.localAiMode) !== "off"
+      ? `Gemma locale indisponible pour ce mot. Définition locale affichée : ${insight.word}.`
+      : `Mot analysé : ${insight.word}.`;
+}
+
+function pronounceIsolatedWord() {
+  const word = appState.currentWordInsight?.word;
+  if (!word) {
+    elements.statusLine.textContent = "Choisis d’abord un mot dans le texte.";
+    return;
+  }
+
+  stopSpeech();
+  const utterance = new SpeechSynthesisUtterance(word);
+  const selectedVoice = appState.voices.find((voice) => voice.voiceURI === appState.preferences.speechVoiceId);
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+    utterance.lang = selectedVoice.lang || "fr-FR";
+  } else {
+    utterance.lang = "fr-FR";
+  }
+  utterance.rate = mapUiSpeechRate(appState.preferences.speechRate);
+  window.speechSynthesis?.cancel?.();
+  window.speechSynthesis?.speak?.(utterance);
+  elements.statusLine.textContent = `Prononciation du mot : ${word}.`;
+}
+
+function renderBlockAssistMessage(message) {
+  if (elements.blockAssistOutput) {
+    elements.blockAssistOutput.textContent = message;
+  }
+}
+
+function getSelectedBlockAssistText() {
+  const context = getSelectedReadableBlockContext();
+  const text = String(context?.block?.text || "").trim();
+  return text.length >= 20 ? text : "";
+}
+
+async function summarizeSelectedBlock() {
+  const text = getSelectedBlockAssistText();
+  if (!text) {
+    renderBlockAssistMessage("Choisis un paragraphe ou une consigne assez longue pour obtenir un résumé utile.");
+    return;
+  }
+
+  renderBlockAssistMessage("Génération du résumé en cours…");
+  const aiSummary = await runLocalAiTask("summary", buildLocalAiSummaryRequest(text), { force: true });
+  const summary = aiSummary || buildShortSummary(text);
+  renderBlockAssistMessage(summary || "Résumé indisponible pour ce bloc.");
+  elements.statusLine.textContent = aiSummary
+    ? "Résumé court généré avec Gemma locale."
+    : normalizeLocalAiMode(appState.preferences.localAiMode) !== "off"
+      ? "Gemma locale indisponible : résumé local affiché."
+      : "Résumé court généré pour le bloc sélectionné.";
+}
+
+async function reformulateSelectedBlock() {
+  const text = getSelectedBlockAssistText();
+  if (!text) {
+    renderBlockAssistMessage("Choisis un paragraphe ou une consigne assez longue pour obtenir une reformulation utile.");
+    return;
+  }
+
+  renderBlockAssistMessage("Reformulation en cours…");
+  const aiReformulation = await runLocalAiTask("reformulation", buildLocalAiReformulationRequest(text), { force: true });
+  const reformulation = aiReformulation || buildSimpleReformulation(text);
+  renderBlockAssistMessage(reformulation || "Reformulation indisponible pour ce bloc.");
+  elements.statusLine.textContent = aiReformulation
+    ? "Reformulation simple générée avec Gemma locale."
+    : normalizeLocalAiMode(appState.preferences.localAiMode) !== "off"
+      ? "Gemma locale indisponible : reformulation locale affichée."
+      : "Reformulation simple générée pour le bloc sélectionné.";
+}
+
+function getExamProfileLabel() {
+  return findProfile("mode-examen")?.label || "Mode examen";
+}
+
+function syncExamDurationOutput() {
+  const baseMinutes = Math.max(10, Number(appState.examBaseMinutes || 60));
+  if (elements.examBaseMinutes && Number(elements.examBaseMinutes.value || 0) !== baseMinutes) {
+    elements.examBaseMinutes.value = String(baseMinutes);
+  }
+  const thirdTimeMinutes = Math.round(baseMinutes * 4 / 3);
+  if (elements.examThirdTimeOutput) {
+    elements.examThirdTimeOutput.textContent = `Avec tiers-temps : ${thirdTimeMinutes} minutes.`;
+  }
+}
+
+function formatExamTimer(totalSeconds) {
+  const safe = Math.max(0, Number(totalSeconds || 0));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const seconds = safe % 60;
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
+}
+
+function updateExamTimerUi() {
+  if (elements.examTimerDisplay) {
+    elements.examTimerDisplay.textContent = `Timer : ${formatExamTimer(appState.examTimeRemainingSeconds)}`;
+  }
+  if (elements.examToggleTimerButton) {
+    elements.examToggleTimerButton.textContent = appState.examTimerRunning ? "Mettre en pause" : "Démarrer le timer";
+  }
+  if (elements.examModeButton) {
+    const isExamActive = appState.activeProfileId === "mode-examen";
+    elements.examModeButton.textContent = isExamActive ? "Mode examen actif" : "Activer le mode examen";
+    elements.examModeButton.classList.toggle("is-active", isExamActive);
+  }
+}
+
+function resetExamTimer() {
+  if (appState.examTimerId) {
+    window.clearInterval(appState.examTimerId);
+    appState.examTimerId = 0;
+  }
+  appState.examTimerRunning = false;
+  appState.examTimeRemainingSeconds = Math.round(Math.max(10, Number(appState.examBaseMinutes || 60)) * 4 / 3 * 60);
+  updateExamTimerUi();
+}
+
+function toggleExamTimer() {
+  if (!appState.examTimerRunning) {
+    if (!appState.examTimeRemainingSeconds) {
+      resetExamTimer();
+    }
+    appState.examTimerRunning = true;
+    appState.examTimerId = window.setInterval(() => {
+      appState.examTimeRemainingSeconds = Math.max(0, appState.examTimeRemainingSeconds - 1);
+      updateExamTimerUi();
+      if (appState.examTimeRemainingSeconds <= 0) {
+        window.clearInterval(appState.examTimerId);
+        appState.examTimerId = 0;
+        appState.examTimerRunning = false;
+        elements.statusLine.textContent = "Temps d’examen écoulé.";
+      }
+    }, 1000);
+    updateExamTimerUi();
+    return;
+  }
+
+  if (appState.examTimerId) {
+    window.clearInterval(appState.examTimerId);
+    appState.examTimerId = 0;
+  }
+  appState.examTimerRunning = false;
+  updateExamTimerUi();
+}
+
+function getSelectedReadableBlockContext() {
+  if (!appState.importedDocument?.pages?.length) {
+    return null;
+  }
+
+  const fallbackKey = appState.selectedBlockKey || getFirstReadableBlockKey(appState.importedDocument);
+  if (!fallbackKey) {
+    return null;
+  }
+
+  for (const page of appState.importedDocument.pages) {
+    for (const [blockIndex, block] of page.blocks.entries()) {
+      const blockKey = buildBlockKey(page.pageNumber, blockIndex);
+      if (blockKey === fallbackKey) {
+        return {
+          page,
+          pageNumber: page.pageNumber,
+          block,
+          blockIndex,
+          blockKey
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function getBlockTypeLabel(block) {
+  switch (block?.type) {
+    case "heading":
+      return "Titre";
+    case "list":
+      return "Liste";
+    case "formula":
+      return "Formule";
+    case "table":
+      return "Tableau";
+    default:
+      return "Paragraphe";
+  }
+}
+
+function getScienceLegendRows(text) {
+  const lines = String(text || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return [];
+  }
+
+  const parsedRows = lines
+    .map((line) => {
+      const separator = line.includes(":") ? ":" : line.includes("->") ? "->" : line.includes("=>") ? "=>" : "";
+      if (!separator) {
+        return null;
+      }
+
+      const [label, ...rest] = line.split(separator);
+      const value = rest.join(separator).trim();
+      const cleanLabel = String(label || "").trim();
+      if (!cleanLabel || !value || cleanLabel.length > 40 || value.length < 2) {
+        return null;
+      }
+
+      return {
+        label: cleanLabel,
+        value
+      };
+    })
+    .filter(Boolean);
+
+  return parsedRows.length >= 2 && parsedRows.length >= Math.ceil(lines.length / 2) ? parsedRows : [];
+}
+
+function formatTeacherDiagnostics(diagnostics) {
+  const parts = [
+    `${diagnostics.formulaBlockCount} formule(s)`,
+    `${diagnostics.mathBlockCount} bloc(s) maths/sciences`,
+    `${diagnostics.verificationBlockCount} bloc(s) a verifier`
+  ];
+
+  if (Number(diagnostics.scienceBlockCount || 0) > 0) {
+    parts.splice(1, 0, `${diagnostics.scienceBlockCount} bloc(s) sciences`);
+  }
+
+  return parts.join(" • ");
+}
+
+function renderStartAssistant() {
+  if (!elements.startAssistantButtons) {
+    return;
+  }
+
+  const activeNeed = getStartNeedFromProfile(appState.activeProfileId);
+  for (const button of elements.startAssistantButtons.querySelectorAll("[data-start-need]")) {
+    button.classList.toggle("is-active", button.dataset.startNeed === activeNeed);
+  }
+
+  if (elements.startAssistantSummary) {
+    elements.startAssistantSummary.textContent = getStartNeedSummary(activeNeed);
+  }
+}
+
+function renderTeacherTools() {
+  if (!elements.teacherModeSummary) {
+    return;
+  }
+
+  const diagnostics = getDocumentDiagnostics();
+  const selectedContext = getSelectedReadableBlockContext();
+  const activeProfile = findProfile(appState.activeProfileId);
+  const hasDocument = Boolean(appState.importedDocument);
+  const isTeacherProfile = appState.activeProfileId === "enseignant";
+
+  if (!hasDocument) {
+    elements.teacherModeSummary.innerHTML = `
+      <strong>Aucune fiche active</strong>
+      <p>Importe un PDF pour comparer le document brut avec la lecture adaptee et conserver des remarques.</p>
+    `;
+    if (elements.teacherActivateProfileButton) {
+      elements.teacherActivateProfileButton.disabled = false;
+      elements.teacherActivateProfileButton.textContent = "Activer le profil enseignant";
+      elements.teacherActivateProfileButton.classList.remove("is-active");
+    }
+    if (elements.teacherCompareButton) {
+      elements.teacherCompareButton.disabled = true;
+    }
+    if (elements.teacherExportButton) {
+      elements.teacherExportButton.disabled = true;
+    }
+    if (elements.teacherNotesInput) {
+      elements.teacherNotesInput.disabled = true;
+      elements.teacherNotesInput.value = "";
+    }
+    return;
+  }
+
+  const selectedLabel = selectedContext
+    ? `Bloc selectionne : page ${selectedContext.pageNumber}, ${getBlockTypeLabel(selectedContext.block).toLowerCase()}.`
+    : "Selectionne un bloc dans le texte pour comparer brut et adapte.";
+  const extractionLabel = getExtractionQualityLabel(appState.importedDocument.extractionQuality);
+  const reasonsLabel = diagnostics.verificationReasons.length
+    ? diagnostics.verificationReasons.slice(0, 2).join(" • ")
+    : "Aucun point critique majeur detecte pour l'instant.";
+
+  elements.teacherModeSummary.innerHTML = `
+    <strong>${escapeHtml(appState.importedDocument.fileName)}</strong>
+    <p>Profil actif : ${escapeHtml(repairUiText(activeProfile?.label || "Normal"))}.</p>
+    <p>${escapeHtml(`Extraction ${extractionLabel}. ${formatTeacherDiagnostics(diagnostics)}.`)}</p>
+    <p>${escapeHtml(selectedLabel)}</p>
+    <p>${escapeHtml(reasonsLabel)}</p>
+  `;
+
+  if (elements.teacherActivateProfileButton) {
+    elements.teacherActivateProfileButton.disabled = false;
+    elements.teacherActivateProfileButton.textContent = isTeacherProfile
+      ? "Profil enseignant actif"
+      : "Activer le profil enseignant";
+    elements.teacherActivateProfileButton.classList.toggle("is-active", isTeacherProfile);
+  }
+  if (elements.teacherCompareButton) {
+    elements.teacherCompareButton.disabled = !selectedContext;
+  }
+  if (elements.teacherExportButton) {
+    elements.teacherExportButton.disabled = false;
+  }
+  if (elements.teacherNotesInput) {
+    elements.teacherNotesInput.disabled = false;
+    if (elements.teacherNotesInput.value !== appState.teacherNotes) {
+      elements.teacherNotesInput.value = appState.teacherNotes;
+    }
+  }
+}
+
+function renderTeacherCompareDialog() {
+  if (!elements.teacherCompareRaw || !elements.teacherCompareAdapted || !elements.teacherCompareMeta) {
+    return;
+  }
+
+  const selectedContext = getSelectedReadableBlockContext();
+  if (!selectedContext) {
+    elements.teacherCompareMeta.textContent =
+      "Choisis un bloc dans la lecture adaptee pour comparer la version brute et la version retravaillee.";
+    elements.teacherCompareRaw.innerHTML = "<p class=\"support-copy\">Aucun bloc selectionne.</p>";
+    elements.teacherCompareAdapted.innerHTML = "<p class=\"support-copy\">Aucun bloc selectionne.</p>";
+    return;
+  }
+
+  const { block, blockKey, pageNumber } = selectedContext;
+  const verificationText =
+    block?.verification?.level && block.verification.level !== "none"
+      ? `Verification : ${block.verification.reasons.join(" • ")}.`
+      : "Aucun signal de verification sur ce bloc.";
+  const rawText = String(block.text || "").trim() || "Bloc vide.";
+
+  elements.teacherCompareMeta.textContent =
+    `Page ${pageNumber} • ${getBlockTypeLabel(block)} • ${verificationText}`;
+  elements.teacherCompareRaw.innerHTML = `<pre class="teacher-compare-raw">${escapeHtml(rawText)}</pre>`;
+  elements.teacherCompareAdapted.innerHTML = `
+    <article class="teacher-compare-preview reader-block reader-block--${escapeAttribute(block.type || "paragraph")}">
+      ${renderBlockBody(block, blockKey)}
+      ${renderVerificationNote(block)}
+    </article>
+  `;
+}
+
+function buildTeacherSheetText() {
+  const diagnostics = getDocumentDiagnostics();
+  const activeProfile = findProfile(appState.activeProfileId);
+  const selectedContext = getSelectedReadableBlockContext();
+  const lines = [
+    "Odysey - fiche enseignant / parent / ortho",
+    "",
+    `Document : ${appState.importedDocument?.fileName || "Sans titre"}`,
+    `Pages : ${appState.importedDocument?.pageCount || 0}`,
+    `Extraction : ${getExtractionQualityLabel(appState.importedDocument?.extractionQuality || "unknown")}`,
+    `Profil actif : ${repairUiText(activeProfile?.label || "Normal")}`,
+    `Diagnostics : ${formatTeacherDiagnostics(diagnostics)}`,
+    ""
+  ];
+
+  if (selectedContext) {
+    const adaptedText =
+      selectedContext.block.readingText ||
+      (selectedContext.block.type === "formula"
+        ? verbalizeMathText(selectedContext.block.text)
+        : String(selectedContext.block.text || ""));
+    lines.push(
+      `Bloc compare : page ${selectedContext.pageNumber} - ${getBlockTypeLabel(selectedContext.block)}`,
+      "",
+      "Document brut :",
+      String(selectedContext.block.text || "").trim() || "Bloc vide.",
+      "",
+      "Lecture adaptee :",
+      adaptedText.trim() || "Bloc vide.",
+      ""
+    );
+  }
+
+  lines.push(
+    "Remarques :",
+    appState.teacherNotes.trim() || "Aucune remarque pour l'instant."
+  );
+
+  if (diagnostics.verificationReasons.length) {
+    lines.push("", "Points de vigilance :", diagnostics.verificationReasons.join(" • "));
+  }
+
+  return lines.join("\n");
 }
 
 function renderBookmarks() {
@@ -1362,7 +2667,28 @@ function clearSelectionAssist() {
   }
 }
 
+function isSameSelectionDraft(nextDraft, currentDraft = appState.selectionDraft) {
+  if (!nextDraft && !currentDraft) {
+    return true;
+  }
+
+  if (!nextDraft || !currentDraft) {
+    return false;
+  }
+
+  return (
+    String(nextDraft.blockKey || "") === String(currentDraft.blockKey || "") &&
+    Number(nextDraft.start || 0) === Number(currentDraft.start || 0) &&
+    Number(nextDraft.end || 0) === Number(currentDraft.end || 0) &&
+    String(nextDraft.excerpt || "") === String(currentDraft.excerpt || "")
+  );
+}
+
 function updateSelectionAssist(draft) {
+  if (isSameSelectionDraft(draft)) {
+    return;
+  }
+
   appState.selectionDraft = draft;
   if (!elements.selectionAssist || !elements.selectionPreview) {
     return;
@@ -1377,7 +2703,7 @@ function updateSelectionAssist(draft) {
   elements.selectionAssist.hidden = false;
   elements.selectionSpeechButton?.removeAttribute("disabled");
   if (draft.blockKey) {
-    setSelectedBlock(draft.blockKey, { scroll: false });
+    setSelectedBlock(draft.blockKey, { scroll: false, persistProgress: false });
   }
 }
 
@@ -1566,7 +2892,9 @@ async function handleStartOcr() {
       appState.importedDocument = ocrDocument;
       loadBookmarksForCurrentDocument();
       loadAnnotationsForCurrentDocument();
-      appState.selectedBlockKey = getFirstReadableBlockKey(appState.importedDocument);
+      loadTeacherNotesForCurrentDocument();
+      const savedProgress = loadReadingProgressForCurrentDocument();
+      appState.selectedBlockKey = savedProgress?.lastBlockKey || getFirstReadableBlockKey(appState.importedDocument);
       rememberFileMeta(appState.importedDocument);
       renderDocument();
       debouncePersist();
@@ -1651,13 +2979,15 @@ function buildSelectionDraft() {
     return null;
   }
 
-  const wordNodes = [...block.querySelectorAll(".word-audio-track[data-source-start][data-source-end]")].filter((node) => {
-    try {
-      return range.intersectsNode(node);
-    } catch {
-      return false;
-    }
-  });
+  const wordNodes = [...block.querySelectorAll("[data-lookup-word][data-source-start][data-source-end]")]
+    .filter((node) => {
+      try {
+        return range.intersectsNode(node);
+      } catch {
+        return false;
+      }
+    })
+    .sort((first, second) => Number(first.dataset.sourceStart) - Number(second.dataset.sourceStart));
 
   if (wordNodes.length === 0) {
     return null;
@@ -1675,18 +3005,35 @@ function buildSelectionDraft() {
     return null;
   }
 
+  const firstWord = wordNodes[0];
+  const sentence = firstWord?.closest?.("[data-audio-sentence-index]");
+
   return {
     blockKey: block.dataset.blockKey,
     pageNumber: block.dataset.pageNumber || "",
     start,
     end,
-    excerpt
+    excerpt,
+    startSentenceIndex: Number(sentence?.dataset?.audioSentenceIndex) || 0,
+    startWordIndex: Number(firstWord?.dataset?.audioWordIndex) || 0
   };
 }
 
 function handleSelectionChange() {
-  const draft = buildSelectionDraft();
-  updateSelectionAssist(draft);
+  if (appState.selectionChangeFrameId) {
+    window.cancelAnimationFrame?.(appState.selectionChangeFrameId);
+    window.clearTimeout?.(appState.selectionChangeFrameId);
+  }
+
+  const schedule =
+    window.requestAnimationFrame?.bind(window) ||
+    ((callback) => window.setTimeout(callback, 16));
+
+  appState.selectionChangeFrameId = schedule(() => {
+    appState.selectionChangeFrameId = 0;
+    const draft = buildSelectionDraft();
+    updateSelectionAssist(draft);
+  });
 }
 
 function findSentenceIndexForRange(block, start, end) {
@@ -1728,11 +3075,14 @@ function getAudioStartContext({ preferSelection = true, requireSelection = false
   if (preferSelection && appState.selectionDraft?.blockKey) {
     const selectionBlock = elements.pageList.querySelector(`[data-block-key="${appState.selectionDraft.blockKey}"]`);
     if (selectionBlock) {
-      return {
+      return normalizeAudioStartContext({
         startKey: appState.selectionDraft.blockKey,
-        startSentenceIndex: findSentenceIndexForRange(selectionBlock, appState.selectionDraft.start, appState.selectionDraft.end),
+        startSentenceIndex:
+          Number(appState.selectionDraft.startSentenceIndex) ||
+          findSentenceIndexForRange(selectionBlock, appState.selectionDraft.start, appState.selectionDraft.end),
+        startWordIndex: Number(appState.selectionDraft.startWordIndex) || 0,
         source: "selection"
-      };
+      });
     }
   }
 
@@ -1740,15 +3090,23 @@ function getAudioStartContext({ preferSelection = true, requireSelection = false
     return null;
   }
 
+  if (
+    appState.preferredAudioStartContext?.startKey &&
+    blocks.some((block) => block.dataset.blockKey === appState.preferredAudioStartContext.startKey)
+  ) {
+    return normalizeAudioStartContext(appState.preferredAudioStartContext);
+  }
+
   const selectedBlock =
     blocks.find((block) => block.dataset.blockKey === appState.selectedBlockKey) ||
     blocks[0];
 
-  return {
+  return normalizeAudioStartContext({
     startKey: selectedBlock?.dataset.blockKey || "",
     startSentenceIndex: 0,
+    startWordIndex: 0,
     source: "block"
-  };
+  });
 }
 
 function addAnnotation(color) {
@@ -1886,22 +3244,75 @@ function getBlockSpeechText(block) {
   return block?.text || "";
 }
 
+const SCIENCE_UNIT_HINT_REGEX =
+  /\b(?:kg|g|mg|ug|µg|ng|km|cm|mm|m|s|min|h|L|mL|cL|dL|mol|mmol|A|V|W|J|N|Pa|Hz|kHz|MHz|ohm|Ω|°C|°F|mol\/L|g\/L|mg\/L|m\/s(?:2|²)?|m²|m3|m³|cm²|cm3|cm³)\b/iu;
+
+function isScienceHeavyValue(value) {
+  const source = String(value || "").trim();
+  if (!source) {
+    return false;
+  }
+
+  const analysis = analyzeMathContent(source);
+  return Boolean(
+    analysis.isFormulaCandidate ||
+      Number(analysis.stats?.unitCount || 0) > 0 ||
+      (SCIENCE_UNIT_HINT_REGEX.test(source) && /\d/u.test(source))
+  );
+}
+
+function getScienceLegendMarkup(text) {
+  const rows = getScienceLegendRows(text);
+  if (rows.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="legend-block">
+      ${rows
+        .map(
+          (row) => `
+            <div class="legend-row">
+              <span class="legend-label">${escapeHtml(row.label)}</span>
+              <span class="legend-value">${renderAudioReadyText(row.value, {
+                colorationMode: "none",
+                soundColorMode: appState.preferences.soundColorMode,
+                syllableLevel: "off",
+                syllableBreakMode: "none",
+                blockType: "legend",
+                annotationRanges: []
+              })}</span>
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function renderTableCell(cell, cellIndex) {
   const value = String(cell || "").trim();
   if (!value) {
     return "";
   }
 
-  return `
-    <span class="table-cell ${cellIndex === 0 ? "table-cell--label" : "table-cell--value"}">
-      ${renderAdaptedText(value, {
+  const isUnitCell = cellIndex > 0 && isScienceHeavyValue(value);
+  const content = isUnitCell
+    ? renderMathText(value)
+    : renderAdaptedText(value, {
         colorationMode: appState.preferences.colorationMode,
         soundColorMode: appState.preferences.soundColorMode,
         syllableLevel: "off",
+        syllabificationMode: appState.preferences.syllabificationMode,
+        syllableWordScope: appState.preferences.syllableWordScope,
         syllableBreakMode: "none",
         blockType: "table",
         annotationRanges: []
-      })}
+      });
+
+  return `
+    <span class="table-cell ${cellIndex === 0 ? "table-cell--label" : "table-cell--value"} ${isUnitCell ? "table-cell--unit" : ""}">
+      ${content}
     </span>
   `;
 }
@@ -1914,8 +3325,9 @@ function renderTableBlock(block) {
       .map((row) => row.split(/\s+\|\s+/u).filter((cell) => cell.trim().length > 0))
       .filter((row) => row.length > 0);
 
+  const scienceTableClass = isScienceHeavyValue(block.text || "") ? "table-block--science" : "";
   return `
-    <div class="table-block">
+    <div class="table-block ${scienceTableClass}">
       ${rows
         .map((row) => {
           const template =
@@ -1933,7 +3345,16 @@ function renderTableBlock(block) {
 
 function renderAudioReadyText(
   text,
-  { colorationMode, soundColorMode, syllableLevel, syllableBreakMode, blockType, annotationRanges = [] } = {}
+  {
+    colorationMode,
+    soundColorMode,
+    syllableLevel,
+    syllabificationMode,
+    syllableWordScope,
+    syllableBreakMode,
+    blockType,
+    annotationRanges = []
+  } = {}
 ) {
   const segments = segmentTextIntoSentences(text);
   if (segments.length === 0) {
@@ -1941,6 +3362,8 @@ function renderAudioReadyText(
       colorationMode,
       soundColorMode,
       syllableLevel,
+      syllabificationMode,
+      syllableWordScope,
       syllableBreakMode,
       blockType,
       audioTracking: true,
@@ -1959,6 +3382,8 @@ function renderAudioReadyText(
         colorationMode,
         soundColorMode,
         syllableLevel,
+        syllabificationMode,
+        syllableWordScope,
         syllableBreakMode,
         blockType,
         audioTracking: true,
@@ -1980,10 +3405,17 @@ function renderBlockBody(block, blockKey) {
     return renderTableBlock(block);
   }
 
+  const legendMarkup = getScienceLegendMarkup(block.text);
+  if (legendMarkup) {
+    return legendMarkup;
+  }
+
   return `<p>${renderAudioReadyText(block.text, {
     colorationMode: block.math?.containsMath ? "none" : appState.preferences.colorationMode,
     soundColorMode: appState.preferences.soundColorMode,
     syllableLevel: block.math?.containsMath ? "off" : appState.preferences.syllableLevel,
+    syllabificationMode: appState.preferences.syllabificationMode,
+    syllableWordScope: appState.preferences.syllableWordScope,
     syllableBreakMode: appState.preferences.syllableBreakMode,
     blockType: block.type,
     annotationRanges
@@ -2041,7 +3473,7 @@ function renderVerificationSummary() {
       : "Repères discrets : les blocs à contrôler restent visibles avec un signal léger dans la lecture.";
 
   const purposeLabel =
-    "La vérification sert à repérer les zones plus fragiles : formules, OCR incertain, tableaux réorganisés ou blocs complexes.";
+    "La vérification sert à repérer les zones plus fragiles : formules, unites, OCR incertain, tableaux reorganises ou schemas scientifiques.";
   const reasonsLabel = diagnostics.verificationReasons.length
     ? `Types détectés : ${diagnostics.verificationReasons.slice(0, 3).join(" · ")}.`
     : "Aucune zone particulièrement fragile n'a été détectée sur ce document.";
@@ -2054,6 +3486,7 @@ function renderVerificationSummary() {
   elements.verificationSummary.innerHTML = `
     <strong>Vérification maths / OCR</strong>
     <span>${diagnostics.formulaBlockCount} formule(s) détectée(s)</span>
+    <span>${diagnostics.scienceBlockCount} bloc(s) sciences repéré(s)</span>
     <span>${diagnostics.verificationBlockCount} bloc(s) à contrôler</span>
     <p>${escapeHtml(purposeLabel)}</p>
     <p>${escapeHtml(modeLabel)}</p>
@@ -2104,23 +3537,142 @@ function clearAudioHighlights() {
   elements.pageList.querySelectorAll(".is-audio-block").forEach((node) => node.classList.remove("is-audio-block"));
 }
 
+function normalizeAudioStartContext(startContext) {
+  if (!startContext?.startKey) {
+    return null;
+  }
+
+  return {
+    startKey: String(startContext.startKey),
+    startSentenceIndex: Math.max(0, Number(startContext.startSentenceIndex) || 0),
+    startWordIndex: Math.max(0, Number(startContext.startWordIndex) || 0),
+    source: ["block", "sentence", "word", "selection"].includes(startContext.source) ? startContext.source : "block"
+  };
+}
+
+function setCurrentAudioPosition({ startKey = "", startSentenceIndex = -1, startWordIndex = -1 } = {}) {
+  appState.currentAudioBlockKey = String(startKey || "");
+  appState.currentSentenceIndex = Number.isFinite(Number(startSentenceIndex)) ? Number(startSentenceIndex) : -1;
+  appState.currentWordIndex = Number.isFinite(Number(startWordIndex)) ? Number(startWordIndex) : -1;
+}
+
 function getCurrentAudioBlockKey() {
-  return elements.pageList.querySelector(".reader-block.is-audio-block")?.dataset?.blockKey || "";
+  return appState.currentAudioBlockKey || elements.pageList.querySelector(".reader-block.is-audio-block")?.dataset?.blockKey || "";
+}
+
+function getCurrentAudioContext() {
+  if (!getCurrentAudioBlockKey()) {
+    return null;
+  }
+
+  if (appState.currentSentenceIndex >= 0 && appState.currentWordIndex >= 0) {
+    return normalizeAudioStartContext({
+      startKey: getCurrentAudioBlockKey(),
+      startSentenceIndex: appState.currentSentenceIndex,
+      startWordIndex: appState.currentWordIndex,
+      source: "word"
+    });
+  }
+
+  if (appState.currentSentenceIndex >= 0) {
+    return normalizeAudioStartContext({
+      startKey: getCurrentAudioBlockKey(),
+      startSentenceIndex: appState.currentSentenceIndex,
+      source: "sentence"
+    });
+  }
+
+  return normalizeAudioStartContext({
+    startKey: getCurrentAudioBlockKey(),
+    source: "block"
+  });
+}
+
+function isSameAudioStartContext(firstContext, secondContext) {
+  const first = normalizeAudioStartContext(firstContext);
+  const second = normalizeAudioStartContext(secondContext);
+  if (!first || !second) {
+    return false;
+  }
+
+  if (
+    first.startKey !== second.startKey ||
+    first.startSentenceIndex !== second.startSentenceIndex ||
+    first.source !== second.source
+  ) {
+    return false;
+  }
+
+  if (first.source === "word" || second.source === "word" || first.source === "selection" || second.source === "selection") {
+    return first.startWordIndex === second.startWordIndex;
+  }
+
+  return true;
+}
+
+function getAudioContextSelectionMessage(startContext, { paused = false } = {}) {
+  const context = normalizeAudioStartContext(startContext);
+  if (!context) {
+    return paused ? "Lecture en pause. Utilise Lire pour reprendre au même endroit." : "";
+  }
+
+  if (paused) {
+    switch (context.source) {
+      case "word":
+        return "Mot choisi. Utilise Lire ici pour repartir exactement à partir de ce mot.";
+      case "sentence":
+        return "Phrase choisie. Utilise Lire ici pour repartir exactement depuis cette phrase.";
+      default:
+        return "Paragraphe choisi. Utilise Lire ici pour repartir depuis ce passage.";
+    }
+  }
+
+  switch (context.source) {
+    case "word":
+      return "Mot choisi. Utilise Lire pour commencer exactement à partir de ce mot, ou sélectionne un extrait pour lire seulement ce passage.";
+    case "sentence":
+      return "Phrase choisie. Utilise Lire pour commencer exactement ici, ou sélectionne un extrait pour lire seulement ce passage.";
+    default:
+      return "Bloc sélectionné. Utilise Lire pour commencer ici, ou sélectionne un passage pour lire seulement cet extrait.";
+  }
 }
 
 function setAudioResumeOverride(startContext) {
-  if (!startContext?.startKey) {
+  const normalizedContext = normalizeAudioStartContext(startContext);
+  if (!normalizedContext) {
     appState.audioResumeOverride = null;
     syncQuickActionButtons();
     return;
   }
 
-  appState.audioResumeOverride = {
-    startKey: startContext.startKey,
-    startSentenceIndex: Number(startContext.startSentenceIndex) || 0,
-    source: startContext.source || "block"
-  };
+  appState.audioResumeOverride = normalizedContext;
   syncQuickActionButtons();
+}
+
+function setPreferredAudioStartContext(startContext) {
+  const normalizedContext = normalizeAudioStartContext(startContext);
+  if (!normalizedContext) {
+    appState.preferredAudioStartContext = null;
+    return;
+  }
+
+  appState.preferredAudioStartContext = normalizedContext;
+}
+
+function buildAudioStartContextFromNode(node) {
+  const block = node?.closest?.(".reader-block");
+  if (!block?.dataset?.blockKey) {
+    return null;
+  }
+
+  const word = node?.closest?.("[data-lookup-word][data-source-start][data-source-end]");
+  const sentence = node?.closest?.("[data-audio-sentence-index]");
+  return normalizeAudioStartContext({
+    startKey: block.dataset.blockKey,
+    startSentenceIndex: Number(sentence?.dataset?.audioSentenceIndex) || 0,
+    startWordIndex: Number(word?.dataset?.audioWordIndex) || 0,
+    source: word ? "word" : sentence ? "sentence" : "block"
+  });
 }
 
 function highlightAudioSentence(blockKey, sentenceIndex) {
@@ -2130,10 +3682,66 @@ function highlightAudioSentence(blockKey, sentenceIndex) {
     return;
   }
 
+  setCurrentAudioPosition({
+    startKey: blockKey,
+    startSentenceIndex: sentenceIndex,
+    startWordIndex: -1
+  });
   block.classList.add("is-audio-block");
   const sentence = block.querySelector(`[data-audio-sentence-index="${sentenceIndex}"]`);
   if (sentence) {
     sentence.classList.add("is-audio-sentence");
+    readingGuide.moveToElement(sentence);
+  }
+}
+
+function getStartNeedFromProfile(profileId) {
+  switch (profileId) {
+    case "normal":
+    case "lecture-visuelle-allegee":
+    case "dyspraxie":
+      return "normal";
+    case "dyslexie-legere":
+    case "dyslexie-severe":
+    case "comprehension-simplifiee":
+      return "dyslexie";
+    case "audio":
+    case "tdah":
+      return "audio";
+    case "dyscalculie":
+      return "maths";
+    default:
+      return "";
+  }
+}
+
+function getStartNeedProfileId(needId) {
+  switch (needId) {
+    case "normal":
+      return "normal";
+    case "dyslexie":
+      return "dyslexie-legere";
+    case "audio":
+      return "audio";
+    case "maths":
+      return "dyscalculie";
+    default:
+      return "";
+  }
+}
+
+function getStartNeedSummary(needId) {
+  switch (needId) {
+    case "normal":
+      return "Besoin actif : lecture simple et stable, sans aide supplementaire inutile.";
+    case "dyslexie":
+      return "Besoin actif : aide au decodage moderee, avec plus de confort visuel et moins de friction de lecture.";
+    case "audio":
+      return "Besoin actif : suivi guide par la voix, le focus et les reperes de lecture.";
+    case "maths":
+      return "Besoin actif : lecture plus sure des formules, unites, exposants et tableaux scientifiques.";
+    default:
+      return "Choisis un besoin simple pour activer directement le profil le plus pertinent.";
   }
 }
 
@@ -2142,6 +3750,11 @@ function highlightAudioWord(blockKey, sentenceIndex, wordIndex) {
   const block = elements.pageList.querySelector(`[data-block-key="${blockKey}"]`);
   const sentence = block?.querySelector(`[data-audio-sentence-index="${sentenceIndex}"]`);
   const word = sentence?.querySelector(`[data-audio-word-index="${wordIndex}"]`);
+  setCurrentAudioPosition({
+    startKey: blockKey,
+    startSentenceIndex: sentenceIndex,
+    startWordIndex: wordIndex
+  });
   if (word) {
     word.classList.add("is-audio-word");
   }
@@ -2183,6 +3796,12 @@ function syncReadingGuide({ alignToSelection = true } = {}) {
   readingGuide.setLineHeight(getCurrentReaderLineHeightPx());
 
   if (!alignToSelection) {
+    return;
+  }
+
+  const activeSentence = elements.pageList.querySelector(".audio-sentence.is-audio-sentence");
+  if (activeSentence) {
+    readingGuide.moveToElement(activeSentence);
     return;
   }
 
@@ -2253,6 +3872,7 @@ function adjustZoom(step) {
   }
 
   appState.preferences.fontSize = nextSize;
+  syncActiveEditableProfile();
   syncControlsWithState();
   renderDocument();
   debouncePersist();
@@ -2319,6 +3939,12 @@ function renderDocument() {
   updateLayoutVariables();
   updateDocumentMeta();
   renderVerificationSummary();
+  renderTeacherTools();
+  renderReadingTracking();
+  renderWordInsight();
+  renderLocalAiStatus();
+  syncExamDurationOutput();
+  updateExamTimerUi();
 
   const documentLoaded = Boolean(appState.importedDocument);
   const canUseAdaptedView = documentLoaded && appState.importedDocument.extractionQuality !== "poor";
@@ -2329,6 +3955,11 @@ function renderDocument() {
   elements.exportPdfButton.disabled = !canUseAdaptedView;
   elements.bookmarkQuickButton.disabled = !documentLoaded;
   elements.exportNotesButton.disabled = !documentLoaded;
+  elements.examModeButton?.toggleAttribute("disabled", !canUseAdaptedView);
+  elements.examPrintButton?.toggleAttribute("disabled", !canUseAdaptedView);
+  elements.examBaseMinutes?.toggleAttribute("disabled", !documentLoaded);
+  elements.examToggleTimerButton?.toggleAttribute("disabled", !documentLoaded);
+  elements.examResetTimerButton?.toggleAttribute("disabled", !documentLoaded);
   renderBookmarks();
   renderAnnotations();
   updateOcrUi();
@@ -2345,6 +3976,9 @@ function renderDocument() {
     appState.ocrState.currentPage = 0;
     appState.ocrState.totalPages = 0;
     updateOcrUi();
+    resetWordInsight();
+    renderBlockAssistMessage("Sélectionne un bloc pour obtenir un résumé ou une reformulation simple.");
+    renderTeacherCompareDialog();
     return;
   }
 
@@ -2360,6 +3994,8 @@ function renderDocument() {
     elements.keyboardHint.textContent = "Ctrl+O permet aussi d'ouvrir rapidement un autre document.";
     elements.printSummary.innerHTML = "";
     readingGuide.setMode("off");
+    renderBlockAssistMessage("L’assistance détaillée sera disponible après reconstruction OCR.");
+    renderTeacherCompareDialog();
     return;
   }
 
@@ -2367,7 +4003,7 @@ function renderDocument() {
   const diagnostics = getDocumentDiagnostics();
   const verificationWarning =
     getEffectiveVerificationMode() !== "off" && diagnostics.verificationBlockCount > 0
-      ? `${diagnostics.verificationBlockCount} bloc(s) demandent une vérification mathématique.`
+      ? `${diagnostics.verificationBlockCount} bloc(s) demandent une vérification maths / sciences.`
       : "";
   setWarning(verificationWarning || warningMessage, Boolean(verificationWarning || warningMessage));
   elements.keyboardHint.textContent =
@@ -2414,9 +4050,14 @@ function renderDocument() {
   if (!elements.pageList.querySelector(`[data-block-key="${appState.selectedBlockKey}"]`)) {
     appState.selectedBlockKey = elements.pageList.querySelector(".reader-block")?.dataset.blockKey || "";
   }
+  applySelectedWordHighlight();
   renderPrintSummary(buildCurrentPrintManifest());
   highlightSelectedBlock();
   syncReadingGuide();
+  renderReadingTracking();
+  if (elements.teacherCompareDialog?.open) {
+    renderTeacherCompareDialog();
+  }
 }
 
 function rememberFileMeta(importedDocument) {
@@ -2435,6 +4076,7 @@ async function handlePdfOpen() {
     return;
   }
 
+  accumulateReadingTime();
   elements.statusLine.textContent = "Lecture du PDF en cours...";
   let nextPdfBlobUrl = "";
   try {
@@ -2455,6 +4097,22 @@ async function handlePdfOpen() {
     appState.importedDocument = importedDocument;
     loadBookmarksForCurrentDocument();
     loadAnnotationsForCurrentDocument();
+    loadTeacherNotesForCurrentDocument();
+    const savedProgress = loadReadingProgressForCurrentDocument();
+    const savedProfile =
+      savedProgress?.lastProfileId && findProfile(savedProgress.lastProfileId)
+        ? findProfile(savedProgress.lastProfileId)
+        : null;
+    if (savedProfile) {
+      appState.activeProfileId = savedProfile.id;
+      appState.preferences = buildProfilePreferences(savedProfile);
+      syncControlsWithState();
+      applyAppTheme();
+      applyTheme();
+      renderProfiles();
+    }
+    resetWordInsight();
+    renderBlockAssistMessage("Sélectionne un bloc pour obtenir un résumé ou une reformulation simple.");
     clearSelectionAssist();
     appState.ocrState = {
       running: false,
@@ -2471,10 +4129,13 @@ async function handlePdfOpen() {
       importedDocument.extractionQuality === "poor"
         ? "OCR recommande pour ce document scanne."
         : getIdleOcrStatus();
-    appState.selectedBlockKey = getFirstReadableBlockKey(appState.importedDocument);
+    appState.selectedBlockKey = savedProgress?.lastBlockKey || getFirstReadableBlockKey(appState.importedDocument);
+    appState.readingTimeTickStartedAt = document.hidden ? 0 : Date.now();
     renderDocument();
     rememberFileMeta(appState.importedDocument);
-    elements.statusLine.textContent = getImportStatusMessage(appState.importedDocument);
+    elements.statusLine.textContent = savedProgress?.lastBlockKey
+      ? `${getImportStatusMessage(appState.importedDocument)} Reprise disponible depuis le panneau de suivi.`
+      : getImportStatusMessage(appState.importedDocument);
   } catch (error) {
     if (nextPdfBlobUrl) {
       URL.revokeObjectURL(nextPdfBlobUrl);
@@ -2578,10 +4239,143 @@ async function handleExportNotes() {
   }
 }
 
-function setSelectedBlock(blockKey, { scroll = true } = {}) {
+async function handleExportTeacherSheet() {
+  if (!appState.importedDocument) {
+    elements.statusLine.textContent = "Importe un document avant d'exporter une fiche.";
+    return;
+  }
+
+  const baseName = String(appState.importedDocument.fileName || "document")
+    .replace(/\.pdf$/iu, "")
+    .replace(/[^\p{L}\d-]+/gu, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  try {
+    const result = await runtimeApi.saveTextFile({
+      defaultFileName: `${baseName || "document"}-fiche-enseignant.txt`,
+      content: buildTeacherSheetText(),
+      title: "Exporter une fiche enseignant / parent / ortho"
+    });
+
+    if (result?.canceled) {
+      elements.statusLine.textContent = "Export de la fiche annulé.";
+      return;
+    }
+
+    if (result?.ok === false) {
+      elements.statusLine.textContent = "L'export de la fiche a échoué.";
+      return;
+    }
+
+    elements.statusLine.textContent = result?.filePath
+      ? `Fiche exportee : ${result.filePath}`
+      : "Fiche enseignant exportee au format texte.";
+  } catch (error) {
+    console.error("Erreur pendant l'export de la fiche enseignant", error);
+    elements.statusLine.textContent = "Impossible d'exporter la fiche pour le moment.";
+  }
+}
+
+function setSelectedBlock(blockKey, { scroll = true, audioStartContext = null, persistProgress = true } = {}) {
+  const previousBlockKey = appState.selectedBlockKey;
+  const blockChanged = String(blockKey || "") !== String(previousBlockKey || "");
   appState.selectedBlockKey = blockKey;
-  highlightSelectedBlock(scroll);
-  syncReadingGuide();
+  if (blockKey) {
+    setPreferredAudioStartContext(
+      audioStartContext || {
+        startKey: blockKey,
+        startSentenceIndex: 0,
+        source: "block"
+      }
+    );
+  }
+
+  if (blockChanged || scroll) {
+    highlightSelectedBlock(scroll);
+    syncReadingGuide();
+    renderTeacherTools();
+  }
+
+  if (persistProgress && blockKey && blockChanged) {
+    syncReadingProgressStorage();
+    renderReadingTracking();
+    debouncePersist();
+  }
+
+  if (elements.teacherCompareDialog?.open && blockChanged) {
+    renderTeacherCompareDialog();
+  }
+}
+
+function handleReaderTargetInteraction(
+  target,
+  {
+    allowWordInspect = true,
+    updateAudioStatusLine = true,
+    persistProgress = true,
+    autoRestartWhenPaused = false
+  } = {}
+) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  const block = target.closest(".reader-block");
+  if (!block?.dataset?.blockKey) {
+    return false;
+  }
+
+  const clickedWord = allowWordInspect ? target.closest("[data-lookup-word]") : null;
+  const wordSelection = clickedWord ? buildWordSelectionSnapshot(clickedWord) : null;
+  if (clickedWord?.dataset?.lookupWord && wordSelection) {
+    clearSelectionAssist();
+    const parentBlock = clickedWord.closest(".reader-block");
+    const contextText = parentBlock?.dataset?.sourceText || parentBlock?.textContent || "";
+    void inspectWord(clickedWord.dataset.lookupWord, {
+      contextText,
+      selection: wordSelection
+    });
+  }
+
+  const startContext = buildAudioStartContextFromNode(target);
+  const shouldPersistProgress = Boolean(
+    persistProgress &&
+      block.dataset.blockKey &&
+      String(block.dataset.blockKey) !== String(appState.selectedBlockKey || "")
+  );
+  setSelectedBlock(block.dataset.blockKey, {
+    scroll: false,
+    audioStartContext: startContext,
+    persistProgress: shouldPersistProgress
+  });
+
+  if (appState.speechAvailable && appState.audioPaused) {
+    if (autoRestartWhenPaused) {
+      startAudioPlayback(startContext);
+      return true;
+    }
+
+    const isCurrentTarget = isSameAudioStartContext(getCurrentAudioContext(), startContext);
+    if (!isCurrentTarget) {
+      setAudioResumeOverride(startContext);
+      if (updateAudioStatusLine) {
+        elements.statusLine.textContent = getAudioContextSelectionMessage(startContext, { paused: true });
+      }
+    } else {
+      setAudioResumeOverride(null);
+      if (updateAudioStatusLine) {
+        elements.statusLine.textContent = "Lecture en pause. Utilise Lire pour reprendre au même endroit.";
+      }
+    }
+  } else if (appState.speechAvailable) {
+    setAudioResumeOverride(null);
+    if (updateAudioStatusLine) {
+      elements.statusLine.textContent = getAudioContextSelectionMessage(startContext, { paused: false });
+    }
+  }
+
+  return true;
 }
 
 function getNavigableBlocks() {
@@ -2624,15 +4418,24 @@ function getProfileLabelInput() {
     return typedLabel;
   }
 
+  const activeProfile = findProfile(appState.activeProfileId);
+  if (isTemporaryCustomProfile(activeProfile)) {
+    const sourceProfile = getCustomizationSourceProfile(activeProfile);
+    return `Copie de ${repairUiText(sourceProfile?.label || "profil actuel")}`;
+  }
+
   const activeLabel = getActiveProfileLabel();
   return isCustomProfile(appState.activeProfileId) ? activeLabel : `Copie de ${activeLabel}`;
 }
 
 function saveCurrentProfile() {
   const label = getProfileLabelInput();
-  const existingCustomProfile = isCustomProfile(appState.activeProfileId)
+  const activeCustomProfile = isCustomProfile(appState.activeProfileId)
     ? appState.customProfiles.find((profile) => profile.id === appState.activeProfileId)
     : null;
+  const existingCustomProfile =
+    activeCustomProfile && !isTemporaryCustomProfile(activeCustomProfile) ? activeCustomProfile : null;
+  const sourceProfile = getCustomizationSourceProfile(activeCustomProfile);
 
   const profile = {
     id: existingCustomProfile?.id || createCustomProfileId(label),
@@ -2640,12 +4443,15 @@ function saveCurrentProfile() {
     description: "Profil personnalisé enregistré à partir des réglages actuels.",
     editable: true,
     researchNotes: "Profil personnalisé. Tu peux le recharger puis continuer à l'ajuster.",
+    sourceProfileId: sourceProfile?.id || null,
     defaults: { ...appState.preferences }
   };
 
   appState.customProfiles = [
     profile,
-    ...appState.customProfiles.filter((item) => item.id !== profile.id && item.label !== profile.label)
+    ...appState.customProfiles.filter(
+      (item) => item.id !== profile.id && item.id !== TEMP_CUSTOM_PROFILE_ID && item.label !== profile.label
+    )
   ];
   appState.activeProfileId = profile.id;
   renderProfiles();
@@ -2662,14 +4468,26 @@ function deleteCurrentProfile() {
     return;
   }
 
+  const fallbackProfile = isTemporaryCustomProfile(profile)
+    ? getCustomizationSourceProfile(profile)
+    : findProfile(profile.sourceProfileId) || appState.builtinProfiles[0];
+
   appState.customProfiles = appState.customProfiles.filter((item) => item.id !== profile.id);
-  appState.activeProfileId = appState.builtinProfiles[0].id;
-  appState.preferences = buildProfilePreferences(appState.builtinProfiles[0]);
+  appState.activeProfileId = fallbackProfile.id;
+  appState.preferences = buildProfilePreferences(fallbackProfile);
   syncControlsWithState();
   renderProfiles();
   renderDocument();
   debouncePersist();
   setPanelFeedback(elements.settingsFeedback, "");
+  if (isTemporaryCustomProfile(profile)) {
+    setPanelFeedback(
+      elements.profileFeedback,
+      `Réglages personnalisés annulés. Retour au profil ${repairUiText(fallbackProfile.label)}.`
+    );
+    elements.statusLine.textContent = `Retour au profil ${repairUiText(fallbackProfile.label)}.`;
+    return;
+  }
   setPanelFeedback(elements.profileFeedback, `Profil supprimé : ${profile.label}.`);
   elements.statusLine.textContent = `Profil personnalisé supprimé : ${profile.label}.`;
 }
@@ -2677,6 +4495,21 @@ function deleteCurrentProfile() {
 function resetCurrentSettings() {
   const activeProfile = findProfile(appState.activeProfileId);
   if (!activeProfile) {
+    return;
+  }
+
+  if (isTemporaryCustomProfile(activeProfile)) {
+    const sourceProfile = getCustomizationSourceProfile(activeProfile);
+    appState.customProfiles = appState.customProfiles.filter((profile) => profile.id !== TEMP_CUSTOM_PROFILE_ID);
+    appState.activeProfileId = sourceProfile.id;
+    appState.preferences = buildProfilePreferences(sourceProfile);
+    syncControlsWithState();
+    renderProfiles();
+    renderDocument();
+    debouncePersist();
+    setPanelFeedback(elements.profileFeedback, "");
+    setPanelFeedback(elements.settingsFeedback, `Réglages restaurés depuis ${repairUiText(sourceProfile.label)}.`);
+    elements.statusLine.textContent = `Retour au profil ${repairUiText(sourceProfile.label)}.`;
     return;
   }
 
@@ -2751,12 +4584,17 @@ function stopSpeech({ silent = false } = {}) {
   if (!window.speechSynthesis) {
     return;
   }
+  if (appState.pendingAudioRestartTimerId) {
+    window.clearTimeout(appState.pendingAudioRestartTimerId);
+    appState.pendingAudioRestartTimerId = 0;
+  }
   audioEngine.stop();
   appState.speaking = false;
   appState.audioPaused = false;
   appState.audioResumeOverride = null;
   appState.speechQueue = [];
   appState.speechUtterance = null;
+  setCurrentAudioPosition();
   updateDocumentMeta();
   syncQuickActionButtons();
   clearAudioHighlights();
@@ -2830,7 +4668,7 @@ function pauseSpeech() {
   elements.statusLine.textContent = "Lecture audio en pause.";
 }
 
-function startAudioPlayback(startContext) {
+function launchAudioPlayback(startContext) {
   if (!appState.speechAvailable) {
     elements.statusLine.textContent = "Aucune voix système disponible pour la lecture audio.";
     return false;
@@ -2842,14 +4680,10 @@ function startAudioPlayback(startContext) {
     return false;
   }
 
-  const context = startContext || getAudioStartContext();
+  const context = normalizeAudioStartContext(startContext || getAudioStartContext());
   if (!context?.startKey) {
     elements.statusLine.textContent = "Sélectionne un bloc ou un passage lisible pour démarrer la lecture audio.";
     return false;
-  }
-
-  if (appState.speaking || appState.audioPaused) {
-    stopSpeech({ silent: true });
   }
 
   appState.audioResumeOverride = null;
@@ -2862,7 +4696,13 @@ function startAudioPlayback(startContext) {
   audioEngine.loadFromBlocks(blocks, {
     startKey: context.startKey,
     startSentenceIndex: context.startSentenceIndex || 0,
+    startWordIndex: context.startWordIndex || 0,
     onBlockStart: ({ blockKey }) => {
+      setCurrentAudioPosition({
+        startKey: blockKey,
+        startSentenceIndex: -1,
+        startWordIndex: -1
+      });
       setSelectedBlock(blockKey, { scroll: true });
       syncReadingGuide({ alignToSelection: true });
     },
@@ -2872,13 +4712,14 @@ function startAudioPlayback(startContext) {
     onWordBoundary: ({ blockKey, sentenceIndex, wordIndex }) => {
       highlightAudioWord(blockKey, sentenceIndex, wordIndex);
     },
-    onEnd: () => {
-      appState.speaking = false;
-      appState.audioPaused = false;
-      updateDocumentMeta();
-      syncQuickActionButtons();
-      clearAudioHighlights();
-      elements.statusLine.textContent = "Lecture audio terminée.";
+      onEnd: () => {
+        appState.speaking = false;
+        appState.audioPaused = false;
+        setCurrentAudioPosition();
+        updateDocumentMeta();
+        syncQuickActionButtons();
+        clearAudioHighlights();
+        elements.statusLine.textContent = "Lecture audio terminée.";
     },
     onError: () => {
       elements.statusLine.textContent = "La synthèse vocale a rencontré un problème.";
@@ -2893,13 +4734,43 @@ function startAudioPlayback(startContext) {
 
   appState.speaking = true;
   appState.audioPaused = false;
+  setPreferredAudioStartContext(context);
   updateDocumentMeta();
   syncQuickActionButtons();
   elements.statusLine.textContent =
     context.source === "selection"
       ? "Lecture audio démarrée à partir de la sélection."
-      : "Lecture audio démarrée à partir du bloc sélectionné.";
+      : context.source === "word"
+        ? "Lecture audio démarrée à partir du mot choisi."
+      : context.source === "sentence"
+        ? "Lecture audio démarrée à partir de la phrase choisie."
+        : "Lecture audio démarrée à partir du bloc sélectionné.";
   return true;
+}
+
+function startAudioPlayback(startContext) {
+  const context = normalizeAudioStartContext(startContext || getAudioStartContext());
+  if (!context?.startKey) {
+    elements.statusLine.textContent = "Sélectionne un bloc ou un passage lisible pour démarrer la lecture audio.";
+    return false;
+  }
+
+  if (appState.pendingAudioRestartTimerId) {
+    window.clearTimeout(appState.pendingAudioRestartTimerId);
+    appState.pendingAudioRestartTimerId = 0;
+  }
+
+  const needsRestartDelay = appState.speaking || appState.audioPaused;
+  if (needsRestartDelay) {
+    stopSpeech({ silent: true });
+    appState.pendingAudioRestartTimerId = window.setTimeout(() => {
+      appState.pendingAudioRestartTimerId = 0;
+      launchAudioPlayback(context);
+    }, 20);
+    return true;
+  }
+
+  return launchAudioPlayback(context);
 }
 
 function startSelectionSpeech() {
@@ -2992,10 +4863,14 @@ function bindControls() {
           "overlayCustomColor",
           "colorationMode",
           "syllableLevel",
+          "syllabificationMode",
+          "syllableWordScope",
           "soundColorMode",
           "syllableBreakMode",
           "verificationMode",
           "pauseBetweenSentences",
+          "localAiMode",
+          "localAiModel",
           "speechVoiceId",
           "ocrLanguage"
         ].includes(key)
@@ -3022,11 +4897,24 @@ function bindControls() {
       if (key === "pauseBetweenSentences") {
         audioEngine.setPauseBetweenSentences(appState.preferences.pauseBetweenSentences);
       }
-      updateLayoutVariables();
-      renderDocument();
-      ariaManager.refreshSliderValues();
-      debouncePersist();
-    });
+      if (key === "localAiMode" || key === "localAiModel") {
+        appState.preferences.localAiMode = normalizeLocalAiMode(appState.preferences.localAiMode);
+        appState.preferences.localAiModel = normalizeLocalAiModel(appState.preferences.localAiModel);
+        appState.localAiCache.clear();
+        void refreshLocalAiStatus({ silent: true });
+      }
+      if (key === "syllabificationMode") {
+        appState.preferences.syllabificationMode = normalizeSyllabificationMode(appState.preferences.syllabificationMode);
+      }
+        if (key === "syllableWordScope") {
+          appState.preferences.syllableWordScope = normalizeSyllableWordScope(appState.preferences.syllableWordScope);
+        }
+        syncActiveEditableProfile({ announce: true });
+        updateLayoutVariables();
+        renderDocument();
+        ariaManager.refreshSliderValues();
+        debouncePersist();
+      });
   });
 }
 
@@ -3061,44 +4949,98 @@ function bindReadingInteractions() {
     readingGuide.moveToContentTop(relativeY - guideHeight / 2);
   };
 
-  elements.pageList.addEventListener("click", (event) => {
-    const block = event.target.closest(".reader-block");
-    if (!block) {
+  const resetReaderPointerState = ({ keepSuppression = false } = {}) => {
+    appState.readerPointerState.active = false;
+    appState.readerPointerState.pointerId = -1;
+    appState.readerPointerState.startX = 0;
+    appState.readerPointerState.startY = 0;
+    appState.readerPointerState.drag = false;
+    if (!keepSuppression) {
+      appState.readerPointerState.suppressNextClick = false;
+    }
+  };
+
+  const hasExtendedSelection = () => {
+    const selection = window.getSelection?.();
+    const selectedText = selection?.toString?.().trim?.() || "";
+    return Boolean(selection && !selection.isCollapsed && selectedText.length > 1);
+  };
+
+  elements.pageList.addEventListener("pointerdown", (event) => {
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    if (!target?.closest?.(".reader-block")) {
+      resetReaderPointerState();
       return;
     }
-    setSelectedBlock(block.dataset.blockKey, { scroll: false });
-    if (appState.speechAvailable && appState.audioPaused && block.dataset.blockKey !== getCurrentAudioBlockKey()) {
-      setAudioResumeOverride({
-        startKey: block.dataset.blockKey,
-        startSentenceIndex: 0,
-        source: "block"
-      });
-      elements.statusLine.textContent =
-        "Paragraphe choisi. Utilise Lire ici pour repartir depuis ce passage.";
-    } else if (appState.speechAvailable) {
-      if (!appState.audioPaused || block.dataset.blockKey === getCurrentAudioBlockKey()) {
-        setAudioResumeOverride(null);
-      }
-      elements.statusLine.textContent =
-        "Bloc sélectionné. Utilise Lire pour commencer ici, ou sélectionne un passage pour lire seulement cet extrait.";
+
+    appState.readerPointerState.active = true;
+    appState.readerPointerState.pointerId = event.pointerId;
+    appState.readerPointerState.startX = event.clientX;
+    appState.readerPointerState.startY = event.clientY;
+    appState.readerPointerState.drag = false;
+    appState.readerPointerState.suppressNextClick = false;
+  });
+
+  elements.pageList.addEventListener("pointermove", (event) => {
+    if (!appState.readerPointerState.active || appState.readerPointerState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - appState.readerPointerState.startX;
+    const deltaY = event.clientY - appState.readerPointerState.startY;
+    if (Math.hypot(deltaX, deltaY) >= 6) {
+      appState.readerPointerState.drag = true;
     }
   });
 
-  elements.pageList.addEventListener("focusin", (event) => {
-    const block = event.target.closest(".reader-block");
-    if (!block) {
+  elements.pageList.addEventListener("pointerup", (event) => {
+    if (!appState.readerPointerState.active || appState.readerPointerState.pointerId !== event.pointerId) {
       return;
     }
-    setSelectedBlock(block.dataset.blockKey, { scroll: false });
-    if (appState.speechAvailable && appState.audioPaused && block.dataset.blockKey !== getCurrentAudioBlockKey()) {
-      setAudioResumeOverride({
-        startKey: block.dataset.blockKey,
-        startSentenceIndex: 0,
-        source: "block"
-      });
-    } else if (!appState.audioPaused || block.dataset.blockKey === getCurrentAudioBlockKey()) {
-      setAudioResumeOverride(null);
+
+    const shouldSuppressClick = appState.readerPointerState.drag;
+    resetReaderPointerState({ keepSuppression: true });
+
+    if (shouldSuppressClick || hasExtendedSelection()) {
+      appState.readerPointerState.suppressNextClick = shouldSuppressClick;
+      return;
     }
+
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const handled = handleReaderTargetInteraction(target, {
+      allowWordInspect: true,
+      updateAudioStatusLine: true,
+      persistProgress: true,
+      autoRestartWhenPaused: true
+    });
+    appState.readerPointerState.suppressNextClick = handled;
+  });
+
+  elements.pageList.addEventListener("pointercancel", () => {
+    resetReaderPointerState();
+  });
+
+  elements.pageList.addEventListener("click", (event) => {
+    if (appState.readerPointerState.suppressNextClick || hasExtendedSelection()) {
+      appState.readerPointerState.suppressNextClick = false;
+      return;
+    }
+
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    handleReaderTargetInteraction(target, {
+      allowWordInspect: true,
+      updateAudioStatusLine: true,
+      persistProgress: true,
+      autoRestartWhenPaused: true
+    });
+  });
+
+  elements.pageList.addEventListener("focusin", (event) => {
+    handleReaderTargetInteraction(event.target, {
+      allowWordInspect: false,
+      updateAudioStatusLine: false,
+      persistProgress: false
+    });
   });
 
   elements.pageList.addEventListener("keydown", (event) => {
@@ -3112,8 +5054,9 @@ function bindReadingInteractions() {
     }
 
     event.preventDefault();
-    setSelectedBlock(block.dataset.blockKey, { scroll: false });
-    startAudioPlayback(getAudioStartContext({ preferSelection: false }));
+    const startContext = buildAudioStartContextFromNode(event.target) || getAudioStartContext({ preferSelection: false });
+    setSelectedBlock(block.dataset.blockKey, { scroll: false, audioStartContext: startContext });
+    startAudioPlayback(startContext);
   });
 
   elements.readArea.addEventListener("pointerenter", (event) => updateGuideFromPointer(event.clientY));
@@ -3157,13 +5100,83 @@ function bindTopLevelActions() {
   elements.immersionButton.addEventListener("click", toggleImmersion);
   elements.speechToggleButton.addEventListener("click", toggleSpeech);
   elements.speechStopButton.addEventListener("click", () => stopSpeech());
-  elements.speechPrevButton.addEventListener("click", playPreviousSentence);
-  elements.speechNextButton.addEventListener("click", playNextSentence);
+  elements.speechPrevButton?.addEventListener("click", playPreviousSentence);
+  elements.speechNextButton?.addEventListener("click", playNextSentence);
   elements.openExternalButton.addEventListener("click", async () => {
     await runtimeApi.openPath(appState.importedDocument?.filePath || "");
   });
   elements.bookmarkQuickButton?.addEventListener("click", quickBookmark);
   elements.exportNotesButton?.addEventListener("click", handleExportNotes);
+  elements.wordSpeakButton?.addEventListener("click", pronounceIsolatedWord);
+  elements.refreshWordDefinitionButton?.addEventListener("click", () => {
+    if (appState.currentWordInsight?.word) {
+      void inspectWord(appState.currentWordInsight.word, { forceAi: true });
+    }
+  });
+  elements.blockSummaryButton?.addEventListener("click", summarizeSelectedBlock);
+  elements.blockReformulateButton?.addEventListener("click", reformulateSelectedBlock);
+  elements.localAiCheckButton?.addEventListener("click", () => {
+    void refreshLocalAiStatus();
+  });
+  elements.localAiInstallButton?.addEventListener("click", async () => {
+    await runtimeApi.openExternalUrl(LOCAL_AI_INSTALL_URL);
+    elements.statusLine.textContent = "La page d'installation d'Ollama a été ouverte dans votre navigateur.";
+  });
+  elements.resumeReadingButton?.addEventListener("click", resumeReadingFromProgress);
+  elements.saveReadingCheckpointButton?.addEventListener("click", saveReadingCheckpoint);
+  elements.startAssistantButtons?.addEventListener("click", (event) => {
+    const needButton = event.target.closest("[data-start-need]");
+    if (!needButton) {
+      return;
+    }
+
+    const profileId = getStartNeedProfileId(needButton.dataset.startNeed);
+    const profile = findProfile(profileId);
+    if (!profile) {
+      return;
+    }
+
+    activateProfile(profile.id, {
+      statusMessage: `Besoin applique : ${repairUiText(profile.label)}.`
+    });
+  });
+  elements.teacherActivateProfileButton?.addEventListener("click", () => {
+    activateProfile("enseignant", {
+      statusMessage: "Profil enseignant / ortho active."
+    });
+  });
+  elements.teacherCompareButton?.addEventListener("click", openTeacherCompareDialog);
+  elements.teacherExportButton?.addEventListener("click", handleExportTeacherSheet);
+  elements.teacherNotesInput?.addEventListener("input", () => {
+    appState.teacherNotes = String(elements.teacherNotesInput.value || "");
+    syncTeacherNotesStorage();
+    renderTeacherTools();
+    debouncePersist();
+  });
+  elements.examModeButton?.addEventListener("click", () => {
+    activateProfile("mode-examen", {
+      statusMessage: "Mode examen activé : lecture sobre, aides réduites et rendu d’impression propre."
+    });
+  });
+  elements.examPrintButton?.addEventListener("click", () => {
+    if (appState.activeProfileId !== "mode-examen") {
+      activateProfile("mode-examen", {
+        statusMessage: "Mode examen activé avant impression."
+      });
+    }
+    void handlePrint();
+  });
+  elements.examBaseMinutes?.addEventListener("input", () => {
+    appState.examBaseMinutes = Math.max(10, Number(elements.examBaseMinutes.value || 60));
+    syncExamDurationOutput();
+    resetExamTimer();
+    debouncePersist();
+  });
+  elements.examToggleTimerButton?.addEventListener("click", toggleExamTimer);
+  elements.examResetTimerButton?.addEventListener("click", () => {
+    resetExamTimer();
+    elements.statusLine.textContent = "Timer d’examen réinitialisé avec tiers-temps.";
+  });
   elements.startOcrButton?.addEventListener("click", handleStartOcr);
   elements.cancelOcrButton?.addEventListener("click", handleCancelOcr);
   elements.bookmarksList?.addEventListener("click", (event) => {
@@ -3224,6 +5237,40 @@ function bindTopLevelActions() {
   elements.profileSummaryDialog?.addEventListener("close", () => {
     elements.profileSummaryButton?.focus({ preventScroll: true });
   });
+  elements.teacherCompareDialog?.addEventListener("click", (event) => {
+    if (event.target === elements.teacherCompareDialog) {
+      closeTeacherCompareDialog();
+    }
+  });
+  elements.teacherCompareDialog?.addEventListener("close", () => {
+    elements.teacherCompareButton?.focus({ preventScroll: true });
+  });
+}
+
+function updatePanelToggleButton(button) {
+  const panel = button.closest(".panel-collapsible");
+  if (!panel) {
+    return;
+  }
+
+  const isCollapsed = panel.classList.contains("is-collapsed");
+  button.textContent = isCollapsed ? "Afficher" : "Masquer";
+  button.setAttribute("aria-expanded", String(!isCollapsed));
+}
+
+function bindPanelToggles() {
+  document.querySelectorAll("[data-panel-toggle]").forEach((button) => {
+    updatePanelToggleButton(button);
+    button.addEventListener("click", () => {
+      const panel = button.closest(".panel-collapsible");
+      if (!panel) {
+        return;
+      }
+
+      panel.classList.toggle("is-collapsed");
+      updatePanelToggleButton(button);
+    });
+  });
 }
 
 function init() {
@@ -3241,6 +5288,7 @@ function init() {
       audioEngine.init(elements.pageList);
       bindControls();
       bindTopLevelActions();
+      bindPanelToggles();
       bindRuntimeApiEvents();
       bindReadingInteractions();
       registerProfileEvents();
@@ -3260,17 +5308,31 @@ function init() {
         moveAudioCursor,
         isReadingTarget
       });
-      pwaManager?.init({
-        installButton: elements.installPwaButton,
-        statusLine: elements.statusLine
-      });
-      setVoices();
-      window.speechSynthesis?.addEventListener?.("voiceschanged", setVoices);
-      window.addEventListener("beforeunload", () => {
-        document.removeEventListener("selectionchange", handleSelectionChange);
-        audioEngine.stop();
-        ocrEngine.terminate();
-        readingGuide.destroy();
+        pwaManager?.init({
+          installButton: elements.installPwaButton,
+          statusLine: elements.statusLine
+        });
+        setVoices();
+        renderLocalAiStatus();
+        void refreshLocalAiStatus({ silent: true });
+        syncExamDurationOutput();
+        resetExamTimer();
+        startReadingTrackingLoop();
+        document.addEventListener("visibilitychange", handleVisibilityTracking);
+        window.speechSynthesis?.addEventListener?.("voiceschanged", setVoices);
+        window.addEventListener("beforeunload", () => {
+          accumulateReadingTime();
+          document.removeEventListener("selectionchange", handleSelectionChange);
+          document.removeEventListener("visibilitychange", handleVisibilityTracking);
+          if (appState.readingTimeIntervalId) {
+            window.clearInterval(appState.readingTimeIntervalId);
+          }
+          if (appState.examTimerId) {
+            window.clearInterval(appState.examTimerId);
+          }
+          audioEngine.stop();
+          ocrEngine.terminate();
+          readingGuide.destroy();
         keyboardNav.destroy();
         ariaManager.destroy();
         runtimeSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe?.());

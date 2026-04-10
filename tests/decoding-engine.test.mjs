@@ -31,6 +31,35 @@ assert.ok(
   "Le texte de lecture courant doit conserver la découpe syllabique."
 );
 
+const forcedAllWordsMarkup = renderAdaptedText("table", {
+  colorationMode: "none",
+  syllableLevel: "light",
+  syllabificationMode: "pedagogique",
+  syllableWordScope: "all",
+  syllableBreakMode: "dot",
+  blockType: "paragraph"
+});
+
+assert.ok(
+  forcedAllWordsMarkup.includes("syllable-chunk") && forcedAllWordsMarkup.includes("syllable-separator"),
+  "Le mode tous les mots doit forcer la découpe syllabique sur les mots courts multisyllabiques."
+);
+
+const typographicModeMarkup = renderAdaptedText("numéro", {
+  colorationMode: "none",
+  syllableLevel: "strong",
+  syllabificationMode: "typographique",
+  syllableWordScope: "all",
+  syllableBreakMode: "hyphen",
+  blockType: "paragraph"
+});
+
+assert.match(
+  typographicModeMarkup,
+  /numé[\s\S]*syllable-separator[\s\S]*ro/u,
+  "Le mode typographique doit utiliser la syllabation conservatrice dans le rendu adapté."
+);
+
 const normalMarkup = renderAdaptedText("différentes formes de comique", {
   colorationMode: "none",
   syllableLevel: "off",

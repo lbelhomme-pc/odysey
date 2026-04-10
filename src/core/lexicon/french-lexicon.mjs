@@ -28,6 +28,8 @@ const MERGED_WORD_CONNECTORS = new Set([
   "une"
 ]);
 const MORPHOLOGICAL_JOIN_PREFIXES = new Set(["au", "co", "de", "et", "pre", "re", "sa"]);
+const APOSTROPHE_CLITICS = ["qu", "l", "s", "t", "m", "n", "d", "j", "c"];
+const EXPLODED_WORD_EXCEPTIONS = new Set(["autrefois"]);
 
 function normalizeFrenchWord(value) {
   return String(value || "")
@@ -320,6 +322,73 @@ function isWhitespaceToken(token) {
   return /^\s+$/u.test(String(token || ""));
 }
 
+function isExplodedFragmentWord(token) {
+  return /^[\p{L}\p{M}]{1,2}$/u.test(String(token || ""));
+}
+
+function isExplodedJoinSeparator(token) {
+  return /^\s+$|^[·⋅•]+$/u.test(String(token || ""));
+}
+
+function isRomanNumeralWord(token) {
+  return /^[IVXLCDM]{2,8}$/u.test(String(token || ""));
+}
+
+function isSingleRomanNumeralFragment(token) {
+  return /^[IVXLCDM]$/u.test(String(token || ""));
+}
+
+function scoreExplodedWordCandidate(word, lexicon) {
+  const normalized = normalizeFrenchWord(word);
+  if (!normalized) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  if (hasFrenchWordInLexicon(word, lexicon)) {
+    return normalized.length * normalized.length;
+  }
+
+  if (EXPLODED_WORD_EXCEPTIONS.has(normalized)) {
+    return 70 + normalized.length * normalized.length;
+  }
+
+  if (isRomanNumeralWord(word)) {
+    return 40 + word.length * word.length;
+  }
+
+  return Number.NEGATIVE_INFINITY;
+}
+
+function segmentExplodedFragments(fragments, lexicon) {
+  const safeFragments = Array.isArray(fragments) ? fragments : [];
+  if (safeFragments.length < 2) {
+    return null;
+  }
+
+  const scores = new Array(safeFragments.length + 1).fill(Number.NEGATIVE_INFINITY);
+  const paths = new Array(safeFragments.length + 1).fill(null);
+  scores[safeFragments.length] = 0;
+  paths[safeFragments.length] = [];
+
+  for (let index = safeFragments.length - 1; index >= 0; index -= 1) {
+    for (let endIndex = index + 1; endIndex <= Math.min(safeFragments.length, index + 12); endIndex += 1) {
+      const candidate = safeFragments.slice(index, endIndex).join("");
+      const candidateScore = scoreExplodedWordCandidate(candidate, lexicon);
+      if (!Number.isFinite(candidateScore) || !Number.isFinite(scores[endIndex])) {
+        continue;
+      }
+
+      const totalScore = candidateScore + scores[endIndex];
+      if (totalScore > scores[index]) {
+        scores[index] = totalScore;
+        paths[index] = [candidate, ...paths[endIndex]];
+      }
+    }
+  }
+
+  return Number.isFinite(scores[0]) ? paths[0] : null;
+}
+
 function tryJoinWordSequence(words, lexicon) {
   const compact = words.join("");
   if (hasFrenchWordInLexicon(compact, lexicon)) {
@@ -331,6 +400,43 @@ function tryJoinWordSequence(words, lexicon) {
   }
 
   return null;
+}
+
+function repairApostropheToken(token, lexicon) {
+  const source = String(token || "");
+  if (!source || !/['’]/u.test(source)) {
+    return source;
+  }
+
+  const match = source.match(/^([\p{L}\p{M}]+)(['’])([\p{L}\p{M}]+)$/u);
+  if (!match) {
+    return source;
+  }
+
+  const [, left, apostrophe, right] = match;
+  for (const clitic of APOSTROPHE_CLITICS) {
+    if (!normalizeFrenchWord(left).endsWith(clitic)) {
+      continue;
+    }
+
+    const stem = left.slice(0, left.length - clitic.length);
+    if (normalizeFrenchWord(stem).length < 2) {
+      continue;
+    }
+
+    const cliticExpression = `${clitic}${apostrophe}${right}`;
+    if (!hasFrenchWordInLexicon(stem, lexicon) || !hasFrenchWordInLexicon(cliticExpression, lexicon)) {
+      continue;
+    }
+
+    return `${stem} ${cliticExpression}`;
+  }
+
+  if (hasFrenchWordInLexicon(source, lexicon)) {
+    return source;
+  }
+
+  return source;
 }
 
 export function normalizeFrenchLexiconWord(value) {
@@ -426,6 +532,74 @@ export async function repairSplitFrenchText(text) {
   return output.join("");
 }
 
+export async function repairExplodedFrenchText(text) {
+  const lexicon = await loadFrenchLexicon();
+  const tokens = String(text || "").match(/[\p{L}\p{M}]+|[·⋅•]+|\s+|[^\p{L}\p{M}\s·⋅•]+/gu) || [];
+  const output = [];
+
+  for (let index = 0; index < tokens.length; ) {
+    const current = tokens[index];
+    if (!isExplodedFragmentWord(current)) {
+      output.push(current);
+      index += 1;
+      continue;
+    }
+
+    const fragments = [current];
+    let cursor = index + 1;
+    let consumedIndex = index + 1;
+
+    while (cursor < tokens.length) {
+      if (!isExplodedJoinSeparator(tokens[cursor])) {
+        break;
+      }
+
+      let separatorCursor = cursor;
+      while (separatorCursor < tokens.length && isExplodedJoinSeparator(tokens[separatorCursor])) {
+        separatorCursor += 1;
+      }
+
+      if (separatorCursor >= tokens.length || !isExplodedFragmentWord(tokens[separatorCursor])) {
+        break;
+      }
+
+      if (fragments.length >= 2 && isSingleRomanNumeralFragment(tokens[separatorCursor])) {
+        break;
+      }
+
+      fragments.push(tokens[separatorCursor]);
+      consumedIndex = separatorCursor + 1;
+      cursor = separatorCursor + 1;
+    }
+
+    const shouldAttemptRepair =
+      fragments.length >= 2 && fragments.some((fragment) => normalizeFrenchWord(fragment).length === 1);
+
+    if (!shouldAttemptRepair) {
+      output.push(current);
+      index += 1;
+      continue;
+    }
+
+    const reconstructedParts = segmentExplodedFragments(fragments, lexicon);
+    if (reconstructedParts && reconstructedParts.join(" ") !== fragments.join(" ")) {
+      output.push(reconstructedParts.join(" "));
+      index = consumedIndex;
+      continue;
+    }
+
+    output.push(current);
+    index += 1;
+  }
+
+  return output.join("");
+}
+
+export async function repairFrenchApostropheText(text) {
+  const lexicon = await loadFrenchLexicon();
+  return String(text || "").replace(/[\p{L}\p{M}]+['’][\p{L}\p{M}]+/gu, (token) => repairApostropheToken(token, lexicon));
+}
+
 export function normalizeCommonFrenchReadingArtifacts(text) {
   return String(text || "")
     .replace(
@@ -441,6 +615,10 @@ export function normalizeCommonFrenchReadingArtifacts(text) {
     .replace(/\bci\s+des\s+sous\b/giu, "ci-dessous")
     .replace(/(^|[\s([{«])às['’](?=\p{L})/gu, "$1à s'")
     .replace(/(^|[\s([{«])Às['’](?=\p{L})/gu, "$1À s'")
+    .replace(/\b(page|fable|chapitre|cycle|tome|partie)\s+((?:\d\s+){1,4}\d)\b/giu, (match, label, digits) => {
+      const compactDigits = String(digits).replace(/\s+/gu, "");
+      return `${label} ${compactDigits}`;
+    })
     .replace(/\s{2,}/gu, " ")
     .trim();
 }

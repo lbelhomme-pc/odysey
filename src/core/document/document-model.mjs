@@ -15,15 +15,25 @@ export function summarizeDocumentDiagnostics(importedDocument) {
   return (importedDocument?.pages || []).reduce(
     (summary, page) => {
       let pageHasMath = false;
+      let pageHasScience = false;
       let pageHasVerification = false;
 
       for (const block of page.blocks) {
         const isMathBlock = block.type === "formula" || Boolean(block?.math?.containsMath);
+        const isScienceBlock =
+          Boolean(block?.math?.stats?.unitCount) ||
+          Boolean(block?.math?.stats?.greekLetterCount) ||
+          Boolean(block?.math?.stats?.functionCount);
         const needsVerification = Boolean(block?.verification?.level && block.verification.level !== "none");
 
         if (isMathBlock) {
           summary.mathBlockCount += 1;
           pageHasMath = true;
+        }
+
+        if (isScienceBlock) {
+          summary.scienceBlockCount += 1;
+          pageHasScience = true;
         }
 
         if (block.type === "formula") {
@@ -45,6 +55,10 @@ export function summarizeDocumentDiagnostics(importedDocument) {
         summary.pagesWithMath += 1;
       }
 
+      if (pageHasScience) {
+        summary.pagesWithScience += 1;
+      }
+
       if (pageHasVerification) {
         summary.pagesWithVerification += 1;
       }
@@ -53,9 +67,11 @@ export function summarizeDocumentDiagnostics(importedDocument) {
     },
     {
       mathBlockCount: 0,
+      scienceBlockCount: 0,
       formulaBlockCount: 0,
       verificationBlockCount: 0,
       pagesWithMath: 0,
+      pagesWithScience: 0,
       pagesWithVerification: 0,
       verificationReasons: []
     }

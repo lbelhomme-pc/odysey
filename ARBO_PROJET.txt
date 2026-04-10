@@ -1,0 +1,172 @@
+ARBORESCENCE PROJET ODYSEY
+Date : 2026-04-09
+
+Note :
+- arborescence de maintenance et de comprehension du projet
+- les dossiers generes ou tres volumineux sont resumes
+- l'ancien fichier `arbo.txt` est conserve tel quel
+
+C:\Users\ludov\Documents\Projet_Appli_Maths_Dys\test
+|
+├── .github/
+│   └── workflows/
+│       ├── build-desktop.yml
+│       └── deploy-site.yml
+|
+├── backups/
+│   └── (snapshots, zips, patches et sauvegardes de reference)
+|
+├── data/
+│   └── lexicon/
+│       └── Dictionnaire.md
+|
+├── dist/
+│   └── (artefacts desktop generes : installateur, zip, win-unpacked, etc.)
+|
+├── docs/
+│   ├── audits/
+│   │   ├── AUDIT.md
+│   │   ├── AUDIT_ACCESSIBILITE.md
+│   │   └── AUDIT_DYS_CORE.md
+│   ├── checklists/
+│   │   ├── checklist-par-pdf.html
+│   │   ├── checklist-recette.css
+│   │   ├── checklist-recette.html
+│   │   └── checklist-recette.js
+│   ├── packaging/
+│   │   ├── ANTIVIRUS_WINDOWS.txt
+│   │   ├── COMMANDES_WINDOWS.txt
+│   │   ├── GITHUB_ACTIONS.txt
+│   │   ├── MACOS_LINUX.txt
+│   │   ├── README.md
+│   │   └── STATUT_BUILDS.txt
+│   ├── profiles/
+│   │   ├── COMPARATIF_PROFILS_AVANCES.txt
+│   │   ├── COMPARATIF_PROFILS_PRINCIPAUX.txt
+│   │   ├── FICHE_PROFIL_AUDIO_FOCUS.txt
+│   │   ├── FICHE_PROFIL_COMPREHENSION_SIMPLIFIEE.txt
+│   │   ├── FICHE_PROFIL_DECODAGE_RENFORCE.txt
+│   │   ├── FICHE_PROFIL_DYSCALCULIE.txt
+│   │   ├── FICHE_PROFIL_DYSLEXIE.txt
+│   │   ├── FICHE_PROFIL_DYSLEXIE_RENFORCEE.txt
+│   │   ├── FICHE_PROFIL_DYSPRAXIE_MOTRICITE.txt
+│   │   ├── FICHE_PROFIL_ENSEIGNANT_ORTHO.txt
+│   │   ├── FICHE_PROFIL_LECTURE_VISUELLE_ALLEGEE.txt
+│   │   ├── FICHE_PROFIL_NORMAL.txt
+│   │   ├── FICHE_PROFIL_TDAH_ATTENTION.txt
+│   │   └── TABLEAU_PROFILS.txt
+│   ├── reports/
+│   │   └── CHECKUP_TEST_PDF.md
+│   ├── screenshots/
+│   │   └── (captures de validation et de bugs)
+│   ├── web/
+│   │   └── DEPLOIEMENT_WEB_PWA.txt
+│   ├── DEPLOIEMENT_PLATEFORMES.txt
+│   └── README.md
+|
+├── packaging/
+│   └── build-resources/
+│       ├── icon.ico
+│       ├── icon.png
+│       └── README.md
+|
+├── scripts/
+│   ├── build-french-lexicon.mjs
+│   ├── build-web-static.mjs
+│   └── ocr-ui-harness.js
+|
+├── site/
+│   ├── assets/
+│   │   └── (branding, hero, visuels vitrine, captures de demonstration)
+│   ├── index.html
+│   └── styles.css
+|
+├── src/
+│   ├── assets/
+│   │   ├── odysey-brand.png
+│   │   ├── odysey-icon.ico
+│   │   ├── odysey-icon.png
+│   │   ├── odysey-splash.png
+│   │   ├── pwa-icon-192.png
+│   │   ├── pwa-icon-512.png
+│   │   └── pwa-icon-maskable-512.png
+│   ├── core/
+│   │   ├── accessibility/
+│   │   │   ├── aria-manager.mjs
+│   │   │   └── keyboard-nav.mjs
+│   │   ├── ai/
+│   │   │   └── local-llm.mjs
+│   │   ├── document/
+│   │   │   ├── annotation-store.mjs
+│   │   │   ├── bookmark-store.mjs
+│   │   │   ├── document-model.mjs
+│   │   │   └── document-report.mjs
+│   │   ├── export/
+│   │   │   └── print-manifest.mjs
+│   │   ├── lexicon/
+│   │   │   ├── french-lexicon.generated.mjs
+│   │   │   └── french-lexicon.mjs
+│   │   ├── ocr/
+│   │   │   └── ocr-engine.mjs
+│   │   ├── pwa/
+│   │   │   └── pwa-manager.mjs
+│   │   ├── reading/
+│   │   │   ├── audio-engine.mjs
+│   │   │   ├── decoding-engine.mjs
+│   │   │   ├── math-support.mjs
+│   │   │   ├── reading-assist.mjs
+│   │   │   ├── reading-guide.mjs
+│   │   │   ├── syllabify-french.exceptions.mjs
+│   │   │   └── syllabify-french.mjs
+│   │   └── support/
+│   │       └── support-links.mjs
+│   ├── app.mjs
+│   ├── index.html
+│   ├── main.js
+│   ├── pdf-processing.mjs
+│   ├── preload.js
+│   ├── print.css
+│   ├── profiles.mjs
+│   └── styles.css
+|
+├── tests/
+│   ├── audio-engine.test.mjs
+│   ├── decoding-engine.test.mjs
+│   ├── french-lexicon.test.mjs
+│   ├── local-llm.test.mjs
+│   ├── math-support.test.mjs
+│   ├── reading-assist.test.mjs
+│   └── syllabify-french.test.mjs
+|
+├── Test_pdf/
+│   └── (corpus de test manuel PDF)
+|
+├── web-dist/
+│   └── (build web/PWA genere)
+|
+├── .gitignore
+├── AGENTS.md
+├── arbo.txt
+├── index-web.html
+├── index.html
+├── manifest.webmanifest
+├── MEMOIRE_PROJET_ODYSEY.md
+├── package-lock.json
+├── package.json
+├── README.md
+├── RESUME_PROJET_COMPLET.txt
+├── ROADMAP.md
+└── service-worker.js
+
+LEGENDE RAPIDE
+
+- `src/` : code source principal de l'application desktop et du renderer
+- `site/` : vitrine web premium
+- `docs/` : documentation de maintenance, profils, packaging, web, audits
+- `tests/` : tests unitaires et de validation technique
+- `scripts/` : scripts utilitaires de build et de generation
+- `packaging/` : ressources de packaging desktop
+- `data/lexicon/` : donnees lexicales sources
+- `Test_pdf/` : corpus de validation manuelle
+- `dist/` et `web-dist/` : sorties de build generees
+

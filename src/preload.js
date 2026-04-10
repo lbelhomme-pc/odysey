@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld("dysReaderApi", {
   openPdfDialog: () => ipcRenderer.invoke("dialog:open-pdf"),
   readPdfFile: (filePath) => ipcRenderer.invoke("file:read-pdf", filePath),
   readOcrLanguageData: (language) => ipcRenderer.invoke("ocr:read-language-data", language),
+  getLocalAiStatus: (model) => ipcRenderer.invoke("local-ai:status", model),
+  generateLocalAiText: (payload) => ipcRenderer.invoke("local-ai:generate", payload),
   loadSettings: () => ipcRenderer.invoke("storage:load-settings"),
   saveSettings: (payload) => ipcRenderer.invoke("storage:save-settings", payload),
   openPath: (targetPath) => ipcRenderer.invoke("shell:open-path", targetPath),

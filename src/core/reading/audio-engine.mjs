@@ -56,6 +56,45 @@ function normaliseSpeechText(text, isMath = false) {
   return isMath ? verbalizeMathText(text) : String(text || "");
 }
 
+function buildQueueTokens(tokens, startWordIndex = 0) {
+  const safeTokens = Array.isArray(tokens) ? tokens : [];
+  if (safeTokens.length === 0) {
+    return [];
+  }
+
+  const normalizedStart = Math.min(Math.max(Number(startWordIndex) || 0, 0), safeTokens.length - 1);
+  const firstToken = safeTokens[normalizedStart];
+
+  return safeTokens.slice(normalizedStart).map((token, offset) => ({
+    text: token.text,
+    index: token.index - firstToken.index,
+    originalWordIndex: normalizedStart + offset
+  }));
+}
+
+function buildQueueItem(blockKey, sentenceIndex, text, startWordIndex = 0) {
+  const sourceText = String(text || "");
+  const tokens = tokenizeAudioWords(sourceText);
+  if (tokens.length === 0) {
+    return {
+      blockKey,
+      sentenceIndex,
+      text: sourceText,
+      tokens: []
+    };
+  }
+
+  const normalizedStart = Math.min(Math.max(Number(startWordIndex) || 0, 0), tokens.length - 1);
+  const firstToken = tokens[normalizedStart];
+
+  return {
+    blockKey,
+    sentenceIndex,
+    text: sourceText.slice(firstToken.index),
+    tokens: buildQueueTokens(tokens, normalizedStart)
+  };
+}
+
 export class AudioEngine {
   constructor({ synthesis = globalThis.speechSynthesis } = {}) {
     this.synthesis = synthesis || null;
@@ -113,6 +152,7 @@ export class AudioEngine {
   loadFromBlocks(blocks, options = {}) {
     const startKey = options.startKey || "";
     const startSentenceIndex = Math.max(0, Number(options.startSentenceIndex) || 0);
+    const startWordIndex = Math.max(0, Number(options.startWordIndex) || 0);
     const safeBlocks = Array.isArray(blocks) ? blocks : [];
     const startIndex = Math.max(
       0,
@@ -135,12 +175,14 @@ export class AudioEngine {
         const sourceText = block?.dataset?.speechText || block?.textContent || "";
         const isMath = block?.classList?.contains("has-math") || block?.dataset?.math === "true";
         const speechText = normaliseSpeechText(sourceText, isMath);
-        const items = segmentTextIntoSentences(speechText).map((segment, sentenceIndex) => ({
-          blockKey,
-          sentenceIndex,
-          text: segment.speechText,
-          tokens: tokenizeAudioWords(segment.speechText)
-        }));
+        const items = segmentTextIntoSentences(speechText).map((segment, sentenceIndex) =>
+          buildQueueItem(
+            blockKey,
+            sentenceIndex,
+            segment.speechText,
+            relativeBlockIndex === 0 && sentenceIndex === startSentenceIndex ? startWordIndex : 0
+          )
+        );
         return relativeBlockIndex === 0 ? items.slice(startSentenceIndex) : items;
       })
       .filter((item) => item.text.trim().length > 0);
@@ -160,7 +202,7 @@ export class AudioEngine {
       return false;
     }
 
-     if (this.pauseTimer) {
+    if (this.pauseTimer) {
       this.clearPauseTimer();
       this.isPaused = false;
       this.isStopped = false;
@@ -169,11 +211,15 @@ export class AudioEngine {
       return true;
     }
 
-    if (this.synthesis.paused) {
+    if (this.synthesis.paused && this.currentUtterance) {
       this.isPaused = false;
       this.isStopped = false;
       this.synthesis.resume();
       return true;
+    }
+
+    if (this.synthesis.paused) {
+      this.synthesis.resume?.();
     }
 
     if (this.currentUtterance) {
@@ -215,6 +261,9 @@ export class AudioEngine {
     this.isStopped = true;
     this.isPaused = false;
     this.clearPauseTimer();
+    if (this.synthesis?.paused) {
+      this.synthesis.resume?.();
+    }
     this.synthesis?.cancel();
     this.currentUtterance = null;
   }
@@ -287,11 +336,12 @@ export class AudioEngine {
         const end = next ? next.index : Number.MAX_SAFE_INTEGER;
         return event.charIndex >= start && event.charIndex < end;
       });
+      const resolvedToken = item.tokens[Math.max(wordIndex, 0)];
 
       this.callbacks.onWordBoundary?.({
         ...item,
         charIndex: event.charIndex,
-        wordIndex: Math.max(wordIndex, 0)
+        wordIndex: resolvedToken?.originalWordIndex ?? Math.max(wordIndex, 0)
       });
     };
 

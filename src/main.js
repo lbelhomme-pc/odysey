@@ -12,8 +12,135 @@ const OCR_LANGUAGE_FILES = {
   fra: ["node_modules", "@tesseract.js-data", "fra", "4.0.0_best_int", "fra.traineddata.gz"],
   eng: ["node_modules", "@tesseract.js-data", "eng", "4.0.0_best_int", "eng.traineddata.gz"]
 };
+const LOCAL_AI_BASE_URL = "http://127.0.0.1:11434";
+const LOCAL_AI_DEFAULT_MODEL = "gemma3:4b";
 
 let mainWindow = null;
+
+function normalizeLocalAiModel(model) {
+  const normalized = String(model || "").trim().toLowerCase();
+  return normalized || LOCAL_AI_DEFAULT_MODEL;
+}
+
+async function requestLocalAiJson(endpoint, options = {}) {
+  const controller = new AbortController();
+  const timeoutMs = Math.max(1500, Number(options.timeoutMs || 12000));
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(`${LOCAL_AI_BASE_URL}${endpoint}`, {
+      method: options.method || "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal
+    });
+
+    const raw = await response.text();
+    if (!response.ok) {
+      throw new Error(raw || `HTTP_${response.status}`);
+    }
+
+    return raw ? JSON.parse(raw) : {};
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function getLocalAiStatus(selectedModel) {
+  const model = normalizeLocalAiModel(selectedModel);
+
+  try {
+    const payload = await requestLocalAiJson("/api/tags", {
+      timeoutMs: 2500
+    });
+
+    const installedModels = Array.isArray(payload?.models)
+      ? payload.models
+          .map((entry) => String(entry?.name || "").trim())
+          .filter(Boolean)
+      : [];
+
+    const selectedBaseName = model.split(":")[0];
+    const modelAvailable =
+      installedModels.includes(model) || installedModels.some((entry) => entry.split(":")[0] === selectedBaseName);
+
+    return {
+      ok: true,
+      provider: "ollama",
+      available: true,
+      endpoint: LOCAL_AI_BASE_URL,
+      selectedModel: model,
+      suggestedModel: LOCAL_AI_DEFAULT_MODEL,
+      modelAvailable,
+      installedModels
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      provider: "ollama",
+      available: false,
+      endpoint: LOCAL_AI_BASE_URL,
+      selectedModel: model,
+      suggestedModel: LOCAL_AI_DEFAULT_MODEL,
+      modelAvailable: false,
+      installedModels: [],
+      reason: error?.name === "AbortError" ? "LOCAL_AI_TIMEOUT" : String(error?.message || "LOCAL_AI_UNAVAILABLE")
+    };
+  }
+}
+
+async function generateLocalAiText(payload = {}) {
+  const model = normalizeLocalAiModel(payload.model);
+  const prompt = String(payload.prompt || "").trim();
+  const system = String(payload.system || "").trim();
+  const temperature = Number.isFinite(Number(payload.temperature)) ? Number(payload.temperature) : 0.2;
+  const maxTokens = Math.max(80, Number(payload.maxTokens || 280));
+
+  if (!prompt) {
+    return {
+      ok: false,
+      provider: "ollama",
+      model,
+      text: "",
+      reason: "LOCAL_AI_EMPTY_PROMPT"
+    };
+  }
+
+  try {
+    const response = await requestLocalAiJson("/api/generate", {
+      method: "POST",
+      timeoutMs: 45000,
+      body: {
+        model,
+        system,
+        prompt,
+        stream: false,
+        options: {
+          temperature,
+          num_predict: maxTokens
+        }
+      }
+    });
+
+    return {
+      ok: true,
+      provider: "ollama",
+      model,
+      text: String(response?.response || "").trim()
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      provider: "ollama",
+      model,
+      text: "",
+      reason: error?.name === "AbortError" ? "LOCAL_AI_TIMEOUT" : String(error?.message || "LOCAL_AI_GENERATION_FAILED")
+    };
+  }
+}
 
 function getSettingsPath() {
   return path.join(app.getPath("userData"), SETTINGS_FILE);
@@ -266,6 +393,8 @@ ipcMain.handle("file:read-pdf", async (_event, filePath) => {
 });
 
 ipcMain.handle("ocr:read-language-data", async (_event, language) => readBundledOcrLanguage(language));
+ipcMain.handle("local-ai:status", async (_event, model) => getLocalAiStatus(model));
+ipcMain.handle("local-ai:generate", async (_event, payload) => generateLocalAiText(payload));
 
 ipcMain.handle("storage:load-settings", async () => loadSettings());
 

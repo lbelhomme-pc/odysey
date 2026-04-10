@@ -4,6 +4,8 @@
 import * as pdfjsLib from "../node_modules/pdfjs-dist/legacy/build/pdf.mjs";
 import {
   normalizeCommonFrenchReadingArtifacts,
+  repairExplodedFrenchText,
+  repairFrenchApostropheText,
   repairMergedFrenchText,
   repairSplitFrenchText
 } from "./core/lexicon/french-lexicon.mjs";
@@ -15,10 +17,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 const STANDARD_FONT_DATA_URL = new URL("../node_modules/pdfjs-dist/standard_fonts/", import.meta.url).toString();
 
-const INLINE_OPERATOR_REGEX = /^[=+\-−*/×÷±≈<>≤≥]$/u;
+const INLINE_OPERATOR_REGEX = /^[=+\-−*/×÷·⋅±≈<>≤≥→↔∝]$/u;
 const NO_SPACE_BEFORE_REGEX = /^[),.;:%!?}\]²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]/u;
 const NO_SPACE_AFTER_REGEX = /[(\[{_^]$/u;
-const SUPER_OR_SUBSCRIPT_TEXT_REGEX = /^[A-Za-z0-9()+\-]+$/u;
+const SUPER_OR_SUBSCRIPT_TEXT_REGEX = /^[A-Za-z0-9()+\-µΑ-Ωα-ωϑϕϖϱϵ]+$/u;
 const TABLE_CELL_SEPARATOR = " | ";
 
 function isDecorativeHeading(text) {
@@ -55,27 +57,52 @@ function normalizeFragment(text) {
 }
 
 async function repairBlockMergedWords(block) {
-  if (!block || !["heading", "paragraph", "list"].includes(block.type)) {
+  if (!block || block.type === "table") {
     return block;
   }
 
   const originalText = String(block.text || "");
   const originalReadingText = String(block.readingText || originalText);
   const repairedText = normalizeCommonFrenchReadingArtifacts(
-    await repairSplitFrenchText(await repairMergedFrenchText(originalText))
+    await repairFrenchApostropheText(
+      await repairSplitFrenchText(await repairMergedFrenchText(await repairExplodedFrenchText(originalText)))
+    )
   );
   const repairedReadingText = normalizeCommonFrenchReadingArtifacts(
-    await repairSplitFrenchText(await repairMergedFrenchText(originalReadingText))
+    await repairFrenchApostropheText(
+      await repairSplitFrenchText(await repairMergedFrenchText(await repairExplodedFrenchText(originalReadingText)))
+    )
   );
 
-  if (repairedText === originalText && repairedReadingText === originalReadingText) {
+  if (
+    repairedText === originalText &&
+    repairedReadingText === originalReadingText &&
+    block.type !== "formula"
+  ) {
     return block;
+  }
+
+  const repairedMath = analyzeMathContent(repairedText);
+  let nextType = block.type;
+  if (block.type === "formula" && !repairedMath.isFormulaCandidate) {
+    nextType = "paragraph";
+  } else if (block.type !== "table" && repairedMath.isFormulaCandidate) {
+    nextType = "formula";
   }
 
   return {
     ...block,
+    type: nextType,
     text: repairedText,
-    readingText: repairedReadingText
+    readingText: nextType === "formula" ? repairedMath.speechText : repairedReadingText,
+    math: {
+      containsMath: repairedMath.containsMath,
+      mathScore: repairedMath.mathScore
+    },
+    verification: {
+      level: repairedMath.verificationLevel,
+      reasons: [...repairedMath.verificationReasons]
+    }
   };
 }
 
@@ -869,6 +896,7 @@ export async function importPdfFromBytes(bytes, fileName) {
   let totalChars = 0;
   let formulaBlockCount = 0;
   let verificationBlockCount = 0;
+  let tableReorganizationBlockCount = 0;
 
   for (const pageModel of cleanedPageModels) {
     const repairedBlocks = [];
@@ -878,11 +906,19 @@ export async function importPdfFromBytes(bytes, fileName) {
 
     const charCount = repairedBlocks.reduce((sum, block) => sum + block.text.length, 0);
     const pageFormulaBlockCount = repairedBlocks.filter((block) => block.type === "formula").length;
-    const pageVerificationBlockCount = repairedBlocks.filter((block) => block?.verification?.level !== "none").length;
+    const pageVerificationBlockCount = repairedBlocks.filter((block) => {
+      const reasons = block?.verification?.reasons || [];
+      return (block?.verification?.level || "none") !== "none" && reasons.some((reason) => reason !== "Tableau réorganisé pour la lecture");
+    }).length;
+    const pageTableReorganizationBlockCount = repairedBlocks.filter((block) => {
+      const reasons = block?.verification?.reasons || [];
+      return reasons.includes("Tableau réorganisé pour la lecture");
+    }).length;
 
     totalChars += charCount;
     formulaBlockCount += pageFormulaBlockCount;
     verificationBlockCount += pageVerificationBlockCount;
+    tableReorganizationBlockCount += pageTableReorganizationBlockCount;
 
     if (charCount < 35 || pageModel.itemCount < 8) {
       poorPages += 1;
@@ -915,7 +951,11 @@ export async function importPdfFromBytes(bytes, fileName) {
   }
 
   if (verificationBlockCount > 0) {
-    warnings.push("Certaines expressions mathématiques demandent une vérification visuelle.");
+    warnings.push("Certaines zones reconstruites automatiquement méritent une relecture visuelle.");
+  }
+
+  if (tableReorganizationBlockCount > 0 && formulaBlockCount === 0 && verificationBlockCount === 0) {
+    warnings.push("Certains tableaux ont été réorganisés pour la lecture.");
   }
 
   return {

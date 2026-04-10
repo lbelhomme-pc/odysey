@@ -63,332 +63,109 @@
             </div>
           </div>
 
-          <div class="sidebar-primary-actions">
-            <button id="openPdfButton" class="primary-action wide" type="button">Importer un PDF</button>
-            <button id="printButton" class="ghost-action wide" type="button">Imprimer version adaptée</button>
-            <button id="immersionButton" class="ghost-action wide" type="button">Masquer les réglages</button>
-          </div>
         </section>
 
-        <section class="panel">
+        <section class="panel start-assistant-panel panel-collapsible is-collapsed" aria-labelledby="startAssistantTitle">
           <div class="section-head">
-            <h2>Profils</h2>
+            <h2 id="startAssistantTitle">Démarrage rapide</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
           </div>
-
-          <div class="control-grid">
-            <label class="control">
-              <span>Nom du profil personnalisé</span>
-              <input
-                id="customProfileName"
-                type="text"
-                maxlength="60"
-                placeholder="Exemple : Mon profil maths calme"
-                autocomplete="off"
-              />
-            </label>
+          <p class="support-copy">
+            Commence par un besoin simple. Odysey active ensuite directement le profil le plus utile, sans faire
+            apparaître tous les réglages à la fois.
+          </p>
+          <div id="startAssistantButtons" class="assistant-grid">
+            <button class="quick-action assistant-need" type="button" data-start-need="normal">
+              <strong>Lecture simple</strong>
+              <span>Le PDF recomposé reste sobre, sans aide visuelle supplémentaire.</span>
+            </button>
+            <button class="quick-action assistant-need" type="button" data-start-need="dyslexie">
+              <strong>Je lis difficilement</strong>
+              <span>Active directement un profil Dyslexie avec appuis utiles et sans surcharge.</span>
+            </button>
+            <button class="quick-action assistant-need" type="button" data-start-need="audio">
+              <strong>Je veux être guidé</strong>
+              <span>Prépare Audio / Focus pour suivre le texte avec la voix et le repère visuel.</span>
+            </button>
+            <button class="quick-action assistant-need" type="button" data-start-need="maths">
+              <strong>J'ai des maths / sciences</strong>
+              <span>Oriente vers un profil adapté aux formules, unités, exposants et tableaux.</span>
+            </button>
           </div>
+          <p id="startAssistantSummary" class="support-copy assistant-summary"></p>
 
-          <div class="quick-actions-grid profile-actions-grid">
-            <button id="saveProfileButton" class="ghost-action subtle" type="button">Enregistrer ce profil</button>
-            <button id="deleteProfileButton" class="ghost-action danger subtle" type="button">Supprimer le profil</button>
-          </div>
-
-          <p id="profileFeedback" class="inline-feedback" hidden></p>
-
-          <div class="section-head compact">
-            <h3>Importants</h3>
-          </div>
-          <div id="profilesList" class="profiles-grid"></div>
-          <details class="profiles-advanced">
-            <summary>Profils avancés</summary>
-            <p class="support-copy">
-              Réglages plus spécialisés pour des besoins précis : maths, attention, motricité ou analyse.
-            </p>
-            <div id="advancedProfilesList" class="profiles-grid"></div>
-          </details>
-          <div class="section-head compact">
-            <h3>Personnalisés</h3>
-          </div>
-          <div id="customProfilesList" class="profiles-grid"></div>
-          <p id="researchNotes" class="support-copy"></p>
-          <button id="profileSummaryButton" class="ghost-action subtle wide" type="button">Voir le tableau des profils</button>
-        </section>
-
-        <section class="panel controls-panel">
-          <div class="section-head">
-            <h2>Lecture visuelle</h2>
-            <div class="audio-actions">
-              <button id="openHeaderButton" class="ghost-action subtle" type="button">Importer un autre PDF</button>
-              <button id="resetSettingsButton" class="ghost-action subtle" type="button">Réinitialiser</button>
+          <details class="panel-subgroup">
+            <summary>Afficher les profils</summary>
+            <div class="section-head compact">
+              <h3>Profils importants</h3>
             </div>
-          </div>
+            <div id="profilesList" class="profiles-grid"></div>
 
-          <p class="support-copy help-intro">
-            Survole un réglage marqué d’un ? pour afficher une explication rapide.
-          </p>
+            <details class="panel-subgroup profiles-advanced">
+              <summary>Plus de profils et personnalisation</summary>
+              <p class="support-copy">
+                Réglages plus spécialisés pour des besoins précis : maths, attention, motricité ou analyse.
+              </p>
+              <div id="advancedProfilesList" class="profiles-grid"></div>
 
-          <div class="control-grid">
-            <label class="control">
-              <span>Police</span>
-              <select id="fontFamily"></select>
-            </label>
+              <div class="section-head compact">
+                <h3>Créer un profil</h3>
+              </div>
 
-            <label class="control">
-              <span>Taille du texte <output data-output-for="fontSize"></output></span>
-              <input id="fontSize" type="range" min="16" max="34" step="1" />
-            </label>
+              <div class="control-grid">
+                <label class="control">
+                  <span>Nom du profil personnalisé</span>
+                  <input
+                    id="customProfileName"
+                    type="text"
+                    maxlength="60"
+                    placeholder="Exemple : Mon profil maths calme"
+                    autocomplete="off"
+                  />
+                </label>
+              </div>
 
-            <label class="control">
-              <span>Interligne <output data-output-for="lineHeight"></output></span>
-              <input id="lineHeight" type="range" min="1.6" max="2.8" step="0.05" />
-            </label>
+              <div class="quick-actions-grid profile-actions-grid">
+                <button id="saveProfileButton" class="ghost-action subtle" type="button">Enregistrer ce profil</button>
+                <button id="deleteProfileButton" class="ghost-action danger subtle" type="button">Supprimer le profil</button>
+              </div>
 
-            <label class="control">
-              <span>Espacement des lettres <output data-output-for="letterSpacing"></output></span>
-              <input id="letterSpacing" type="range" min="0.05" max="0.25" step="0.005" />
-            </label>
+              <p id="profileFeedback" class="inline-feedback" hidden></p>
 
-            <label class="control">
-              <span>Espacement des mots <output data-output-for="wordSpacing"></output></span>
-              <input id="wordSpacing" type="range" min="0.1" max="0.5" step="0.01" />
-            </label>
+              <div class="section-head compact">
+                <h3>Personnalisés</h3>
+              </div>
+              <div id="customProfilesList" class="profiles-grid"></div>
+              <p id="researchNotes" class="support-copy"></p>
+              <button id="profileSummaryButton" class="ghost-action subtle wide" type="button">Voir le tableau des profils</button>
+            </details>
+          </details>
 
-            <label class="control">
-              <span>Largeur de lecture <output data-output-for="maxLineLength"></output></span>
-              <input id="maxLineLength" type="range" min="42" max="90" step="1" />
-            </label>
-
-            <label class="control">
-              <span>Marges <output data-output-for="pagePadding"></output></span>
-              <input id="pagePadding" type="range" min="14" max="64" step="2" />
-            </label>
-
-            <label class="control">
-              <span>Thème de l'application</span>
-              <select id="appTheme"></select>
-            </label>
-
-            <label class="control">
-              <span>Thème du PDF</span>
-              <select id="theme"></select>
-            </label>
-
-            <label class="control">
-              <span>Filtre visuel</span>
-              <select id="overlayPreset">
-                <option value="none">Aucun</option>
-                <option value="creme">Crème</option>
-                <option value="blue">Bleu pâle</option>
-                <option value="green">Vert pâle</option>
-                <option value="rose">Rose pâle</option>
-                <option value="yellow">Jaune doux</option>
-                <option value="grey">Gris</option>
-                <option value="custom">Couleur personnalisée</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Opacité du filtre <output data-output-for="overlayOpacity"></output></span>
-              <input id="overlayOpacity" type="range" min="0" max="0.3" step="0.01" />
-            </label>
-
-            <label class="control">
-              <span>Couleur du filtre</span>
-              <input id="overlayCustomColor" type="color" value="#dbeafe" />
-            </label>
-          </div>
-
-          <p id="settingsFeedback" class="inline-feedback" hidden></p>
+          <ul id="recentList" class="recent-list" aria-live="polite" hidden aria-hidden="true">
+            <li>Aucun document récent.</li>
+          </ul>
         </section>
 
-        <section class="panel controls-panel">
+        <section class="panel support-panel panel-collapsible is-collapsed" aria-labelledby="documentActionsTitle">
           <div class="section-head">
-            <h2>Assistances de lecture</h2>
-          </div>
-
-          <p class="support-copy">
-            Ajoute seulement l’aide utile : focus, réglette, syllabes, sons ou vérification peuvent être utilisés séparément.
-          </p>
-
-          <div class="control-grid">
-            <label class="control">
-              <span>Mise en évidence</span>
-              <select id="highlightMode">
-                <option value="none">Aucune</option>
-                <option value="soft">Douce</option>
-                <option value="strong">Forte</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Mode focus</span>
-              <select id="focusMode">
-                <option value="none">Libre</option>
-                <option value="paragraph">Focus paragraphe</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Réglette de lecture</span>
-              <select id="readingGuideMode">
-                <option value="off">Désactivée</option>
-                <option value="ruler">Réglette</option>
-                <option value="window">Fenêtre</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Lignes visibles <output data-output-for="readingGuideLines"></output></span>
-              <input id="readingGuideLines" type="range" min="1" max="3" step="1" />
-            </label>
-
-            <label class="control">
-              <span>Opacité de la réglette <output data-output-for="readingGuideOpacity"></output></span>
-              <input id="readingGuideOpacity" type="range" min="0.05" max="0.3" step="0.01" />
-            </label>
-
-            <label class="control">
-              <span>Couleur de la réglette</span>
-              <input id="readingGuideColor" type="color" value="#a0344a" />
-            </label>
-
-            <label class="control">
-              <span>Mode dys</span>
-              <select id="colorationMode">
-                <option value="none">Aucun</option>
-                <option value="pedagogique">Coloration douce</option>
-                <option value="pedagogiqueAlt">Coloration alternative</option>
-                <option value="sonsFrancais">Sons français</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Mode syllabes</span>
-              <select id="syllableLevel">
-                <option value="off">D&eacute;sactiv&eacute;</option>
-                <option value="light">L&eacute;ger</option>
-                <option value="strong">Renforc&eacute;</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Couleurs des sons</span>
-              <select id="soundColorMode">
-                <option value="soft">Douces</option>
-                <option value="strong">Nettes</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Coupure syllabique</span>
-              <select id="syllableBreakMode">
-                <option value="none">Aucune</option>
-                <option value="dot">Point médian</option>
-                <option value="hyphen">Tiret discret</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Vérification</span>
-              <select id="verificationMode">
-                <option value="off">Aucune</option>
-                <option value="markers">Repères discrets</option>
-                <option value="review">Relecture ciblée</option>
-              </select>
-            </label>
-          </div>
-
-          <div id="verificationSummary" class="verification-summary" hidden></div>
-
-          <p class="support-copy">
-            La vérification sert à relire les zones les plus fragiles du document sans surcharger tout le reste.
-          </p>
-        </section>
-
-        <section class="panel controls-panel">
-          <div class="section-head">
-            <h2>Lecture audio</h2>
-          </div>
-
-          <p class="support-copy">
-            La vitesse de base a été ralentie pour rendre le suivi plus confortable en lecture assistée.
-          </p>
-
-          <p class="support-copy">
-            Clique un bloc puis utilise Lire pour démarrer ici, ou sélectionne un passage puis utilise le bouton dédié.
-            Au clavier, Entrée ou Espace sur un bloc lancent aussi la lecture depuis cet endroit.
-          </p>
-
-          <div class="audio-actions">
-            <button id="speechPrevButton" class="ghost-action subtle" type="button">Phrase précédente</button>
-            <button id="speechToggleButton" class="ghost-action subtle" type="button">Lire</button>
-            <button id="speechStopButton" class="ghost-action subtle" type="button">Arrêter</button>
-            <button id="speechNextButton" class="ghost-action subtle" type="button">Phrase suivante</button>
-          </div>
-
-          <div class="control-grid">
-            <label class="control">
-              <span>Voix</span>
-              <select id="speechVoiceId"></select>
-            </label>
-
-            <label class="control">
-              <span>Vitesse audio réelle <output data-output-for="speechRate"></output></span>
-              <input id="speechRate" type="range" min="0.7" max="1.4" step="0.05" />
-            </label>
-
-            <label class="control">
-              <span>Pause entre les phrases</span>
-              <select id="pauseBetweenSentences">
-                <option value="0">Aucune</option>
-                <option value="500">0,5 seconde</option>
-                <option value="1000">1 seconde</option>
-                <option value="2000">2 secondes</option>
-              </select>
-            </label>
-          </div>
-
-          <p class="support-copy">
-            Les réglages audio restent locaux, stables, et s’appliquent immédiatement sans rechargement.
-          </p>
-        </section>
-
-        <section class="panel support-panel">
-          <div class="section-head">
-            <h2>Documents et export</h2>
+            <h2 id="documentActionsTitle">Document et actions</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
           </div>
           <p class="support-copy">
-            Retrouve ici les actions utiles sur le document en cours : impression, export, marque-pages et passages surlignés.
+            Toutes les actions liées au document sont ici : ouverture, immersion, impression, export et OCR.
           </p>
           <div class="quick-actions-grid">
+            <button id="openPdfButton" class="primary-action" type="button">Importer un PDF</button>
+            <button id="immersionButton" class="ghost-action" type="button">Masquer les réglages</button>
+            <button id="printButton" class="ghost-action" type="button">Imprimer version adaptée</button>
             <button id="exportPdfButton" class="quick-action" type="button">Exporter en PDF</button>
             <button id="openExternalButton" class="quick-action" type="button">PDF original</button>
-            <button id="bookmarkQuickButton" class="quick-action" type="button">Marque-page rapide</button>
-            <button id="exportNotesButton" class="quick-action" type="button">Exporter mes notes</button>
-          </div>
-          <div class="section-head compact">
-            <h3>Marque-pages</h3>
-          </div>
-          <ul id="bookmarksList" class="bookmark-list"></ul>
-          <p id="bookmarksEmpty" class="support-copy bookmark-empty">Aucun repère enregistré pour ce document.</p>
-          <div class="section-head compact">
-            <h3>Passages surlignés</h3>
-          </div>
-          <ul id="annotationsList" class="annotation-list"></ul>
-          <p id="annotationsEmpty" class="support-copy annotation-empty">Aucun passage surligné pour ce document.</p>
-          <p class="support-copy copyright-note">© Ludovic Belhomme</p>
-        </section>
-
-        <section class="panel controls-panel">
-          <div class="section-head">
-            <h2>OCR local</h2>
+            <button id="startOcrButton" class="quick-action" type="button">Lancer l'OCR</button>
           </div>
 
-          <p class="support-copy">
-            L’OCR sert à reconstruire du texte lisible quand le PDF est un scan, une photo ou un document mal extrait.
-          </p>
-
-          <div class="control-grid">
+          <details class="panel-subgroup">
+            <summary>Afficher les réglages OCR</summary>
+            <div class="control-grid">
               <label class="control">
                 <span>Langue OCR</span>
                 <select id="ocrLanguage">
@@ -399,7 +176,6 @@
             </div>
 
             <div class="quick-actions-grid">
-              <button id="startOcrButton" class="quick-action" type="button">Lancer l'OCR</button>
               <button id="cancelOcrButton" class="quick-action" type="button">Annuler l'OCR</button>
             </div>
 
@@ -414,7 +190,432 @@
             <p id="ocrHint" class="support-copy">
               Recommand&eacute; pour les PDF scann&eacute;s ou quand le texte adapt&eacute; n'appara&icirc;t pas correctement.
             </p>
-          </section>
+          </details>
+        </section>
+
+        <section class="panel controls-panel essential-controls-panel panel-collapsible is-collapsed" aria-labelledby="essentialReadingTitle">
+          <div class="section-head">
+            <h2 id="essentialReadingTitle">Lecture essentielle</h2>
+            <div class="section-actions">
+              <button id="openHeaderButton" class="ghost-action subtle" type="button" hidden>Importer un autre PDF</button>
+              <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
+            </div>
+          </div>
+
+          <p class="support-copy help-intro">
+            Commence ici : police, taille, respiration et thème du PDF. Les réglages plus fins sont rangés juste dessous.
+          </p>
+
+          <div class="quick-actions-grid">
+            <button id="resetSettingsButton" class="ghost-action subtle" type="button">Réinitialiser</button>
+          </div>
+
+          <div class="control-grid">
+            <label class="control">
+              <span>Police</span>
+              <select id="fontFamily"></select>
+            </label>
+
+            <label class="control">
+              <span>Taille du texte <output data-output-for="fontSize"></output></span>
+              <input id="fontSize" type="range" min="16" max="34" step="1" />
+            </label>
+
+            <label class="control">
+              <span>Thème de l'application</span>
+              <select id="appTheme"></select>
+            </label>
+
+            <label class="control">
+              <span>Thème du PDF</span>
+              <select id="theme"></select>
+            </label>
+          </div>
+
+          <details class="panel-subgroup">
+            <summary>Afficher les réglages de lisibilité</summary>
+            <div class="control-grid">
+              <label class="control">
+                <span>Interligne <output data-output-for="lineHeight"></output></span>
+                <input id="lineHeight" type="range" min="1.6" max="2.8" step="0.05" />
+              </label>
+
+              <label class="control">
+                <span>Espacement des lettres <output data-output-for="letterSpacing"></output></span>
+                <input id="letterSpacing" type="range" min="0.05" max="0.25" step="0.005" />
+              </label>
+
+              <label class="control">
+                <span>Espacement des mots <output data-output-for="wordSpacing"></output></span>
+                <input id="wordSpacing" type="range" min="0.1" max="0.5" step="0.01" />
+              </label>
+
+              <label class="control">
+                <span>Largeur de lecture <output data-output-for="maxLineLength"></output></span>
+                <input id="maxLineLength" type="range" min="42" max="90" step="1" />
+              </label>
+            </div>
+          </details>
+
+          <details class="panel-subgroup">
+            <summary>Afficher les aides avancées</summary>
+            <p class="support-copy">
+              Utilise seulement les aides vraiment utiles : filtre visuel, réglette, syllabes, sons ou vérification ciblée.
+            </p>
+
+            <div class="control-grid">
+              <label class="control">
+                <span>Marges <output data-output-for="pagePadding"></output></span>
+                <input id="pagePadding" type="range" min="14" max="64" step="2" />
+              </label>
+
+              <label class="control">
+                <span>Filtre visuel</span>
+                <select id="overlayPreset">
+                  <option value="none">Aucun</option>
+                  <option value="creme">Crème</option>
+                  <option value="blue">Bleu pâle</option>
+                  <option value="green">Vert pâle</option>
+                  <option value="rose">Rose pâle</option>
+                  <option value="yellow">Jaune doux</option>
+                  <option value="grey">Gris</option>
+                  <option value="custom">Couleur personnalisée</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Opacité du filtre <output data-output-for="overlayOpacity"></output></span>
+                <input id="overlayOpacity" type="range" min="0" max="0.3" step="0.01" />
+              </label>
+
+              <label class="control">
+                <span>Couleur du filtre</span>
+                <input id="overlayCustomColor" type="color" value="#dbeafe" />
+              </label>
+
+              <label class="control">
+                <span>Mise en évidence</span>
+                <select id="highlightMode">
+                  <option value="none">Aucune</option>
+                  <option value="soft">Douce</option>
+                  <option value="strong">Forte</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Mode focus</span>
+                <select id="focusMode">
+                  <option value="none">Libre</option>
+                  <option value="paragraph">Focus paragraphe</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Réglette de lecture</span>
+                <select id="readingGuideMode">
+                  <option value="off">Désactivée</option>
+                  <option value="ruler">Réglette</option>
+                  <option value="window">Fenêtre</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Lignes visibles <output data-output-for="readingGuideLines"></output></span>
+                <input id="readingGuideLines" type="range" min="1" max="3" step="1" />
+              </label>
+
+              <label class="control">
+                <span>Opacité de la réglette <output data-output-for="readingGuideOpacity"></output></span>
+                <input id="readingGuideOpacity" type="range" min="0.05" max="0.3" step="0.01" />
+              </label>
+
+              <label class="control">
+                <span>Couleur de la réglette</span>
+                <input id="readingGuideColor" type="color" value="#a0344a" />
+              </label>
+
+              <label class="control">
+                <span>Mode dys</span>
+                <select id="colorationMode">
+                  <option value="none">Aucun</option>
+                  <option value="pedagogique">Coloration douce</option>
+                  <option value="pedagogiqueAlt">Coloration alternative</option>
+                  <option value="sonsFrancais">Sons français</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Mode syllabes</span>
+                <select id="syllableLevel">
+                  <option value="off">Désactivé</option>
+                  <option value="light">Léger</option>
+                  <option value="strong">Renforcé</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Mode de syllabation</span>
+                <select id="syllabificationMode">
+                  <option value="pedagogique">Pédagogique</option>
+                  <option value="typographique">Typographique (test)</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Étendue des syllabes</span>
+                <select id="syllableWordScope">
+                  <option value="auto">Auto</option>
+                  <option value="all">Tous les mots</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Couleurs des sons</span>
+                <select id="soundColorMode">
+                  <option value="soft">Douces</option>
+                  <option value="strong">Nettes</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Coupure syllabique</span>
+                <select id="syllableBreakMode">
+                  <option value="none">Aucune</option>
+                  <option value="dot">Point médian</option>
+                  <option value="hyphen">Tiret discret</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Vérification</span>
+                <select id="verificationMode">
+                  <option value="off">Aucune</option>
+                  <option value="markers">Repères discrets</option>
+                  <option value="review">Relecture ciblée</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="verificationSummary" class="verification-summary" hidden></div>
+          </details>
+
+          <p id="settingsFeedback" class="inline-feedback" hidden></p>
+        </section>
+
+        <section class="panel controls-panel panel-collapsible is-collapsed">
+          <div class="section-head">
+            <h2>Lecture audio</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
+          </div>
+
+          <p class="support-copy">
+            La vitesse de base a été ralentie pour rendre le suivi plus confortable en lecture assistée.
+          </p>
+
+          <p class="support-copy">
+            Clique un bloc puis utilise Lire pour démarrer ici, ou sélectionne un passage puis utilise le bouton dédié.
+            Au clavier, Entrée ou Espace sur un bloc lancent aussi la lecture depuis cet endroit.
+          </p>
+
+          <div class="audio-actions">
+            <button id="speechToggleButton" class="ghost-action subtle" type="button">Lire</button>
+            <button id="speechStopButton" class="ghost-action subtle" type="button">Arrêter</button>
+          </div>
+
+          <details class="panel-subgroup">
+            <summary>Afficher les réglages audio</summary>
+            <div class="control-grid">
+              <label class="control">
+                <span>Voix</span>
+                <select id="speechVoiceId"></select>
+              </label>
+
+              <label class="control">
+                <span>Vitesse audio réelle <output data-output-for="speechRate"></output></span>
+                <input id="speechRate" type="range" min="0.7" max="1.4" step="0.05" />
+              </label>
+
+              <label class="control">
+                <span>Pause entre les phrases</span>
+                <select id="pauseBetweenSentences">
+                  <option value="0">Aucune</option>
+                  <option value="500">0,5 seconde</option>
+                  <option value="1000">1 seconde</option>
+                  <option value="2000">2 secondes</option>
+                </select>
+              </label>
+            </div>
+
+            <p class="support-copy">
+              Les réglages audio restent locaux, stables, et s’appliquent immédiatement sans rechargement.
+            </p>
+          </details>
+        </section>
+
+        <section class="panel reading-tools-panel panel-collapsible is-collapsed" aria-labelledby="readingToolsTitle">
+          <div class="section-head">
+            <h2 id="readingToolsTitle">Compréhension et vocabulaire</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
+          </div>
+
+          <p class="support-copy">
+            Clique un mot dans le texte pour afficher une aide rapide. Sélectionne aussi un paragraphe ou un bloc pour
+            demander une reformulation simple ou un résumé court.
+          </p>
+
+          <div class="reading-tools-card">
+            <p class="eyebrow">Mot sélectionné</p>
+              <strong id="wordInsightWord">Aucun mot sélectionné</strong>
+              <p id="wordInsightSyllables" class="support-copy">Clique un mot dans le document pour afficher sa découpe syllabique.</p>
+              <p id="wordInsightDefinition" class="support-copy">
+                Une définition issue du dictionnaire local, puis si besoin du dictionnaire en ligne, s’affichera ici.
+              </p>
+              <p id="wordInsightSource" class="support-copy subtle-note">Source : aucune</p>
+              <p id="wordInsightDomain" class="support-copy subtle-note">Domaine : non déterminé</p>
+              <div class="quick-actions-grid">
+                <button id="wordSpeakButton" class="quick-action" type="button">Prononcer le mot</button>
+                <button id="refreshWordDefinitionButton" class="quick-action" type="button">Actualiser la définition</button>
+              </div>
+          </div>
+
+          <div class="reading-tools-card">
+            <p class="eyebrow">Paragraphe sélectionné</p>
+            <p id="blockAssistOutput" class="support-copy">
+              Choisis un bloc dans la zone de lecture pour obtenir une reformulation simple ou un résumé court.
+            </p>
+            <div class="quick-actions-grid">
+              <button id="blockSummaryButton" class="quick-action" type="button">Résumé court</button>
+              <button id="blockReformulateButton" class="quick-action" type="button">Reformulation simple</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel reading-tools-panel panel-collapsible is-collapsed" aria-labelledby="localAiTitle">
+          <div class="section-head">
+            <h2 id="localAiTitle">IA locale Gemma</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
+          </div>
+
+          <p class="support-copy">
+            Cette aide reste optionnelle. Sur desktop, Odysey peut utiliser Gemma en local via Ollama pour mieux
+            définir un mot, résumer un paragraphe ou reformuler un passage difficile.
+          </p>
+
+          <details class="panel-subgroup">
+            <summary>Afficher les réglages IA locale</summary>
+            <div class="control-grid">
+              <label class="control">
+                <span>Mode IA locale</span>
+                <select id="localAiMode"></select>
+              </label>
+
+              <label class="control">
+                <span>Modèle local</span>
+                <select id="localAiModel"></select>
+              </label>
+            </div>
+
+            <div class="quick-actions-grid">
+              <button id="localAiCheckButton" class="quick-action" type="button">Vérifier Gemma locale</button>
+              <button id="localAiInstallButton" class="quick-action" type="button">Installer Ollama</button>
+            </div>
+
+            <p id="localAiStatusText" class="support-copy subtle-note">
+              IA locale non vérifiée pour le moment.
+            </p>
+          </details>
+        </section>
+
+        <section class="panel support-panel panel-collapsible is-collapsed">
+          <div class="section-head">
+            <h2>Repères et suivi</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
+          </div>
+          <p class="support-copy">
+            Retrouve ici les repères utiles sur le document en cours : suivi de lecture, marque-pages, surlignages et notes.
+          </p>
+          <div class="quick-actions-grid">
+            <button id="bookmarkQuickButton" class="quick-action" type="button">Marque-page rapide</button>
+            <button id="exportNotesButton" class="quick-action" type="button">Exporter mes notes</button>
+            <button id="resumeReadingButton" class="quick-action" type="button">Reprendre au dernier repère</button>
+            <button id="saveReadingCheckpointButton" class="quick-action" type="button">Mettre à jour le repère</button>
+          </div>
+          <p id="readingTrackingSummary" class="support-copy">
+            Ouvre un document pour enregistrer automatiquement ton repère, ton temps de lecture et le dernier profil utile.
+          </p>
+          <details class="panel-subgroup">
+            <summary>Afficher les repères et surlignages</summary>
+            <div class="section-head compact">
+              <h3>Marque-pages</h3>
+            </div>
+            <ul id="bookmarksList" class="bookmark-list"></ul>
+            <p id="bookmarksEmpty" class="support-copy bookmark-empty">Aucun repère enregistré pour ce document.</p>
+            <div class="section-head compact">
+              <h3>Passages surlignés</h3>
+            </div>
+            <ul id="annotationsList" class="annotation-list"></ul>
+            <p id="annotationsEmpty" class="support-copy annotation-empty">Aucun passage surligné pour ce document.</p>
+          </details>
+          <p class="support-copy copyright-note">© Ludovic Belhomme</p>
+        </section>
+
+        <section class="panel teacher-panel panel-collapsible is-collapsed" aria-labelledby="teacherToolsTitle">
+          <div class="section-head">
+            <h2 id="teacherToolsTitle">Mode enseignant / parent / ortho</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
+          </div>
+          <p class="support-copy">
+            Compare le document brut et la lecture adaptee, note ce qui aide ou ce qui coince, puis exporte une
+            fiche simple partageable.
+          </p>
+          <details class="panel-subgroup">
+            <summary>Afficher les outils d'analyse</summary>
+            <div id="teacherModeSummary" class="teacher-summary"></div>
+            <div class="quick-actions-grid teacher-actions">
+              <button id="teacherActivateProfileButton" class="quick-action" type="button">Activer le profil enseignant</button>
+              <button id="teacherCompareButton" class="quick-action" type="button">Comparer brut / adapte</button>
+              <button id="teacherExportButton" class="quick-action" type="button">Exporter une fiche</button>
+            </div>
+            <label class="control">
+              <span>Remarques</span>
+              <textarea
+                id="teacherNotesInput"
+                rows="5"
+                placeholder="Observations, adaptations utiles, points de vigilance, remarques pour la suite..."
+              ></textarea>
+            </label>
+          </details>
+        </section>
+
+        <section class="panel exam-panel panel-collapsible is-collapsed" aria-labelledby="examModeTitle">
+          <div class="section-head">
+            <h2 id="examModeTitle">Mode examen</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
+          </div>
+          <p class="support-copy">
+            Active un rendu très sobre, prévois le tiers-temps et imprime une version propre avec les aides réduites.
+          </p>
+          <details class="panel-subgroup">
+            <summary>Afficher les réglages d'examen</summary>
+            <div class="quick-actions-grid">
+              <button id="examModeButton" class="quick-action" type="button">Activer le mode examen</button>
+              <button id="examPrintButton" class="quick-action" type="button">Imprimer en mode examen</button>
+            </div>
+            <div class="control-grid">
+              <label class="control">
+                <span>Durée prévue (minutes)</span>
+                <input id="examBaseMinutes" type="number" min="10" max="300" step="5" value="60" />
+              </label>
+            </div>
+            <p id="examThirdTimeOutput" class="support-copy">Avec tiers-temps : 80 minutes.</p>
+            <p id="examTimerDisplay" class="support-copy exam-timer">Timer : 00:00:00</p>
+            <div class="quick-actions-grid">
+              <button id="examToggleTimerButton" class="quick-action" type="button">Démarrer le timer</button>
+              <button id="examResetTimerButton" class="quick-action" type="button">Réinitialiser le timer</button>
+            </div>
+          </details>
+        </section>
+
       </aside>
 
       <main class="main-stage">
@@ -520,6 +721,34 @@
           </p>
 
           <div id="profileSummaryTable" class="profile-summary-table-wrap" aria-label="Tableau comparatif des profils"></div>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="teacherCompareDialog" class="dl-profile-dialog" aria-labelledby="teacherCompareDialogTitle" aria-modal="true">
+      <form method="dialog" class="dl-profile-dialog__surface">
+        <div class="dl-profile-dialog__header">
+          <div>
+            <p class="eyebrow">Comparaison de lecture</p>
+            <h2 id="teacherCompareDialogTitle">Document brut / document adapte</h2>
+          </div>
+          <button id="closeTeacherCompareDialogButton" type="submit" class="ghost-action subtle">Fermer</button>
+        </div>
+
+        <div class="dl-profile-dialog__body teacher-compare-dialog__body">
+          <p id="teacherCompareMeta" class="support-copy">
+            Choisis un bloc dans la lecture adaptee pour comparer la version brute et la version retravaillee.
+          </p>
+          <div class="teacher-compare-grid">
+            <section class="teacher-compare-card">
+              <p class="eyebrow">Document brut</p>
+              <div id="teacherCompareRaw" class="teacher-compare-content teacher-compare-content--raw"></div>
+            </section>
+            <section class="teacher-compare-card">
+              <p class="eyebrow">Lecture adaptee</p>
+              <div id="teacherCompareAdapted" class="teacher-compare-content"></div>
+            </section>
+          </div>
         </div>
       </form>
     </dialog>

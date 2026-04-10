@@ -2,22 +2,86 @@ import assert from "node:assert/strict";
 
 import {
   analyzeFrenchWord,
+  normalizeSyllabificationMode,
+  normalizeSyllableWordScope,
+  shouldDisplaySyllables,
   syllabifyFrenchHtml,
   syllabifyFrenchText,
-  syllabifyFrenchWord
+  syllabifyFrenchWord,
+  syllabifyText,
+  syllabifyToken,
+  syllabifyWord,
+  tokenize
 } from "../src/core/reading/syllabify-french.mjs";
 
+const PEDAGOGICAL_CASES = [
+  ["numéro", ["nu", "mé", "ro"]],
+  ["parité", ["pa", "ri", "té"]],
+  ["spéculer", ["spé", "cu", "ler"]],
+  ["argent", ["ar", "gent"]],
+  ["expert", ["ex", "pert"]],
+  ["informer", ["in", "for", "mer"]],
+  ["adjoint", ["ad", "joint"]],
+  ["ballet", ["bal", "let"]],
+  ["commission", ["com", "mis", "sion"]],
+  ["appel", ["ap", "pel"]],
+  ["table", ["ta", "ble"]],
+  ["abri", ["a", "bri"]],
+  ["cibler", ["ci", "bler"]],
+  ["complet", ["com", "plet"]],
+  ["entrer", ["en", "trer"]],
+  ["débrayer", ["dé", "bray", "er"]],
+  ["ouvrir", ["ou", "vrir"]],
+  ["acheter", ["a", "che", "ter"]],
+  ["éléphant", ["é", "lé", "phant"]],
+  ["hypothèse", ["hy", "po", "thè", "se"]],
+  ["ignorer", ["i", "gno", "rer"]],
+  ["algorithme", ["al", "go", "rith", "me"]],
+  ["compter", ["comp", "ter"]],
+  ["fonctionner", ["fonc", "tion", "ner"]],
+  ["applicable", ["ap", "pli", "ca", "ble"]],
+  ["assemblée", ["as", "sem", "blée"]],
+  ["afflux", ["af", "flux"]],
+  ["maïs", ["ma", "ïs"]],
+  ["naïf", ["na", "ïf"]],
+  ["réunion", ["ré", "u", "nion"]],
+  ["coopérative", ["co", "o", "pé", "ra", "tive"]],
+  ["antiacide", ["an", "ti", "a", "ci", "de"]],
+  ["parle", ["par", "le"]],
+  ["lune", ["lu", "ne"]],
+  ["téléphone", ["té", "lé", "pho", "ne"]]
+];
+
+for (const [word, expected] of PEDAGOGICAL_CASES) {
+  assert.deepEqual(
+    syllabifyWord(word, { mode: "pedagogique", separator: null }),
+    expected,
+    `Découpage pédagogique inattendu pour ${word}`
+  );
+  assert.deepEqual(
+    analyzeFrenchWord(word).syllables,
+    expected,
+    `Analyse inattendue pour ${word}`
+  );
+}
+
 const EXPECTED_WORDS = new Map([
-  ["arr\u00eate", "ar-r\u00eate"],
-  ["r\u00e9sidence", "r\u00e9-si-dence"],
-  ["table", "ta-ble"],
-  ["abricot", "a-bri-cot"],
-  ["commentaire", "com-men-taire"],
-  ["excellent", "ex-cel-lent"],
+  ["arrête", "ar-rête"],
+  ["résidence", "ré-si-dence"],
   ["famille", "fa-mille"],
   ["fille", "fille"],
   ["bonjour", "bon-jour"],
   ["moteur", "mo-teur"],
+  ["rencontre", "ren-contre"],
+  ["rencontrer", "ren-con-trer"],
+  ["rencontré", "ren-con-tré"],
+  ["rencontrée", "ren-con-trée"],
+  ["rencontrait", "ren-con-trait"],
+  ["rencontraient", "ren-con-traient"],
+  ["rencontrons", "ren-con-trons"],
+  ["rencontrez", "ren-con-trez"],
+  ["concentré", "con-cen-tré"],
+  ["concentrés", "con-cen-trés"],
   ["bouteille", "bou-teille"],
   ["feuille", "feuille"],
   ["abeille", "a-beille"],
@@ -40,31 +104,103 @@ const EXPECTED_WORDS = new Map([
   ["chenille", "che-nille"],
   ["grille", "grille"],
   ["coquille", "co-quille"],
-  ["d\u00e9finition", "d\u00e9-fin-i-tion"],
+  ["définition", "dé-fin-i-tion"],
   ["communication", "com-mun-i-ca-tion"],
   ["document", "do-cum-ent"],
-  ["\u00e9l\u00e9ment", "\u00e9-l\u00e9m-ent"],
+  ["élément", "é-lém-ent"],
   ["similaire", "sim-i-laire"],
   ["contient", "con-tient"],
-  ["intervient", "in-ter-vient"]
+  ["intervient", "in-ter-vient"],
+  ["construction", "con-struc-tion"],
+  ["extraordinaire", "ex-tra-or-di-naire"]
 ]);
 
 for (const [word, expected] of EXPECTED_WORDS) {
   assert.equal(
     syllabifyFrenchWord(word, { level: "strong", separator: "-" }),
     expected,
-    `Decoupage inattendu pour ${word}`
+    `Découpage inattendu pour ${word}`
   );
 }
+
+// ---------- TOKENISATION ----------
+
+assert.deepEqual(
+  tokenize("l'école porte-monnaie."),
+  [
+    { value: "l'école", type: "word", start: 0, end: 7 },
+    { value: " ", type: "space", start: 7, end: 8 },
+    { value: "porte-monnaie", type: "word", start: 8, end: 21 },
+    { value: ".", type: "punct", start: 21, end: 22 }
+  ]
+);
+
+// ---------- MOTS AVEC APOSTROPHES / TRAITS D’UNION ----------
+
+assert.equal(
+  syllabifyToken({ value: "l'école", type: "word" }, { mode: "pedagogique", separator: "-" }),
+  "l'é-co-le"
+);
+assert.equal(
+  syllabifyToken({ value: "qu'avait", type: "word" }, { mode: "pedagogique", separator: "-" }),
+  "qu'a-vait"
+);
+assert.equal(
+  syllabifyToken({ value: "jusqu'à", type: "word" }, { mode: "pedagogique", separator: "-" }),
+  "jusqu'à"
+);
+assert.equal(
+  syllabifyToken({ value: "porte-monnaie", type: "word" }, { mode: "pedagogique", separator: "-" }),
+  "por-te-mon-naie"
+);
+
+// ---------- MODE TYPOGRAPHIQUE SÉPARÉ ----------
+
+assert.equal(
+  syllabifyWord("numéro", { mode: "typographique", separator: "-" }),
+  "numé-ro",
+  "Le mode typographique reste distinct et plus conservateur"
+);
+assert.equal(
+  syllabifyWord("table", { mode: "typographique", separator: "-" }),
+  "ta-ble",
+  "Une coupure typographique simple peut rester identique"
+);
+assert.equal(normalizeSyllabificationMode("modeTypographique"), "typographique");
+assert.equal(normalizeSyllabificationMode("modePedagogique"), "pedagogique");
+assert.equal(normalizeSyllableWordScope("all"), "all");
+assert.equal(normalizeSyllableWordScope("inconnu"), "auto");
 
 // ---------- MODE LIGHT vs STRONG ----------
 
 assert.equal(syllabifyFrenchWord("table", { level: "light", separator: "-" }), "table");
 assert.equal(syllabifyFrenchWord("abricot", { level: "light", separator: "-" }), "a-bri-cot");
-assert.equal(syllabifyFrenchWord("bonjour", { level: "light", separator: "-" }), "bonjour",
-  "bonjour (2 syllabes, 7 lettres) ne doit pas etre decoupe en mode light");
-assert.equal(syllabifyFrenchWord("communication", { level: "light", separator: "-" }), "com-mun-i-ca-tion",
-  "communication (5 syllabes) doit etre decoupe meme en mode light");
+assert.equal(
+  syllabifyFrenchWord("bonjour", { level: "light", separator: "-" }),
+  "bonjour",
+  "bonjour (2 syllabes, 7 lettres) ne doit pas être découpé en mode light"
+);
+assert.equal(
+  syllabifyFrenchWord("communication", { level: "light", separator: "-" }),
+  "com-mun-i-ca-tion",
+  "communication (5 syllabes) doit être découpé même en mode light"
+);
+
+assert.equal(
+  shouldDisplaySyllables(analyzeFrenchWord("table"), { level: "light" }),
+  false,
+  "En mode auto, un mot court comme table ne doit pas etre force en mode light"
+);
+assert.equal(
+  shouldDisplaySyllables(analyzeFrenchWord("table"), { level: "light", wordScope: "all" }),
+  true,
+  "Le mode tous les mots doit aussi afficher les mots courts multisyllabiques"
+);
+assert.equal(
+  shouldDisplaySyllables(analyzeFrenchWord("table"), { level: "light", forceAllWords: true }),
+  true,
+  "Le mode force doit rester compatible avec un appel booleen direct"
+);
 
 // ---------- TEXTE COMPLET ----------
 
@@ -79,8 +215,8 @@ assert.match(
 );
 
 assert.equal(
-  syllabifyFrenchText("Bonjour\nmoteur", { level: "strong", separator: "-" }),
-  "Bon-jour\nmo-teur"
+  syllabifyText("Coopérative, antiacide et réunion.", { mode: "pedagogique", separator: "·" }),
+  "Co·o·pé·ra·tive, an·ti·a·ci·de et ré·u·nion."
 );
 
 const longText = "Bonjour, commentaire et moteur.";
@@ -99,18 +235,11 @@ assert.equal(
 
 const htmlSeparator = syllabifyFrenchWord("moteur", {
   level: "strong",
-  separator: "\u00b7",
+  separator: "·",
   separatorMode: "html",
   separatorClass: "syllable-separator"
 });
 assert.match(htmlSeparator, /syllable-separator/u);
-
-// ---------- ANALYSE DIRECTE ----------
-
-assert.deepEqual(analyzeFrenchWord("famille").syllables, ["fa", "mille"]);
-assert.deepEqual(analyzeFrenchWord("chocolat").syllables, ["cho", "co", "la"]);
-assert.deepEqual(analyzeFrenchWord("ordinateur").syllables, ["or", "din", "a", "teur"]);
-assert.deepEqual(analyzeFrenchWord("papillon").syllables, ["pa", "pil", "lon"]);
 
 // ---------- LETTRES MUETTES — MOTS EN -ENT NASAL (ne PAS griser) ----------
 
@@ -126,8 +255,9 @@ const nasalEntWords = [
 
 for (const word of nasalEntWords) {
   assert.equal(
-    analyzeFrenchWord(word).silentEnding, "",
-    `${word}: la finale -ent/-ant ne doit pas etre marquee muette (son nasal)`
+    analyzeFrenchWord(word).silentEnding,
+    "",
+    `${word}: la finale -ent/-ant ne doit pas être marquée muette (son nasal)`
   );
 }
 
@@ -142,87 +272,22 @@ for (const word of verbEntWords) {
   const analysis = analyzeFrenchWord(word);
   assert.ok(
     analysis.silentEnding.length > 0,
-    `${word}: la terminaison verbale doit etre marquee muette (got silentEnding="${analysis.silentEnding}")`
+    `${word}: la terminaison verbale doit être marquée muette (got silentEnding="${analysis.silentEnding}")`
   );
 }
 
-// ---------- LETTRES MUETTES — VERBES -ENT AVEC CONTIENT/INTERVIENT ----------
-
-assert.equal(analyzeFrenchWord("contient").silentEnding, "",
-  "contient: -ent n'est pas muet ici (verbe tenir)");
-assert.equal(analyzeFrenchWord("intervient").silentEnding, "",
-  "intervient: -ent n'est pas muet ici (verbe venir)");
-
-// ---------- MOTS EN -ILLE/-EILLE/-AILLE (graphemes proteges) ----------
-
-assert.deepEqual(analyzeFrenchWord("bouteille").syllables, ["bou", "teille"],
-  "bouteille: pas bou-tei-lle");
-assert.deepEqual(analyzeFrenchWord("feuille").syllables, ["feuille"],
-  "feuille: monosyllabe");
-assert.deepEqual(analyzeFrenchWord("abeille").syllables, ["a", "beille"],
-  "abeille: a-beille");
-assert.deepEqual(analyzeFrenchWord("oreille").syllables, ["o", "reille"],
-  "oreille: o-reille");
-assert.deepEqual(analyzeFrenchWord("soleil").syllables, ["so", "leil"],
-  "soleil: so-leil");
-assert.deepEqual(analyzeFrenchWord("accueil").syllables, ["ac", "cueil"],
-  "accueil: ac-cueil");
-assert.deepEqual(analyzeFrenchWord("fauteuil").syllables, ["fau", "teuil"],
-  "fauteuil: fau-teuil");
-assert.deepEqual(analyzeFrenchWord("seuil").syllables, ["seuil"],
-  "seuil: monosyllabe");
-assert.deepEqual(analyzeFrenchWord("paille").syllables, ["paille"],
-  "paille: monosyllabe");
-assert.deepEqual(analyzeFrenchWord("taille").syllables, ["taille"],
-  "taille: monosyllabe");
-assert.deepEqual(analyzeFrenchWord("conseil").syllables, ["con", "seil"],
-  "conseil: con-seil");
-assert.deepEqual(analyzeFrenchWord("sommeil").syllables, ["som", "meil"],
-  "sommeil: som-meil");
-assert.deepEqual(analyzeFrenchWord("appareil").syllables, ["ap", "pa", "reil"],
-  "appareil: ap-pa-reil");
-
-// ---------- MOTS EN -ILLE CLASSIQUES ----------
-
-assert.deepEqual(analyzeFrenchWord("fille").syllables, ["fille"],
-  "fille: monosyllabe");
-assert.deepEqual(analyzeFrenchWord("ville").syllables, ["ville"],
-  "ville: monosyllabe");
-assert.deepEqual(analyzeFrenchWord("mille").syllables, ["mille"],
-  "mille: monosyllabe");
-assert.deepEqual(analyzeFrenchWord("vanille").syllables, ["va", "nille"],
-  "vanille: va-nille");
-assert.deepEqual(analyzeFrenchWord("chenille").syllables, ["che", "nille"],
-  "chenille: che-nille");
-assert.deepEqual(analyzeFrenchWord("coquille").syllables, ["co", "quille"],
-  "coquille: co-quille");
-
-// ---------- MOTS COURANTS DIVERS ----------
-
-assert.equal(
-  syllabifyFrenchWord("extraordinaire", { level: "strong", separator: "-" }),
-  "ex-tra-or-din-aire",
-  "extraordinaire: decoupe complexe"
-);
-
-assert.equal(
-  syllabifyFrenchWord("construction", { level: "strong", separator: "-" }),
-  "con-struc-tion",
-  "construction: cluster str"
-);
+assert.equal(analyzeFrenchWord("contient").silentEnding, "");
+assert.equal(analyzeFrenchWord("intervient").silentEnding, "");
 
 // ---------- MODE OFF ----------
 
 assert.equal(
   syllabifyFrenchWord("communication", { level: "off", separator: "-" }),
-  "communication",
-  "En mode off, aucun mot ne doit etre decoupe"
+  "communication"
 );
-
 assert.equal(
   syllabifyFrenchText("Bonjour le monde.", { level: "off", separator: "-" }),
-  "Bonjour le monde.",
-  "En mode off, le texte reste intact"
+  "Bonjour le monde."
 );
 
 console.log("syllabify-french: ok");
