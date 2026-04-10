@@ -1,4 +1,4 @@
-const CACHE_NAME = "odysey-pwa-v1";
+const CACHE_NAME = "odysey-pwa-__ODYSEY_BUILD_ID__";
 const APP_SHELL_URLS = [
   "./",
   "./index.html",
@@ -34,6 +34,53 @@ const APP_SHELL_URLS = [
   "./src/core/lexicon/french-lexicon.generated.mjs"
 ];
 
+function isNetworkFirstRequest(request) {
+  if (request.mode === "navigate") {
+    return true;
+  }
+
+  const requestUrl = new URL(request.url);
+  return /\.(?:html|css|js|mjs|json|webmanifest)$/i.test(requestUrl.pathname);
+}
+
+async function updateCacheFromNetwork(request) {
+  const networkResponse = await fetch(request);
+
+  if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === "opaque") {
+    return networkResponse;
+  }
+
+  const responseClone = networkResponse.clone();
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, responseClone);
+  return networkResponse;
+}
+
+async function cacheFirstResponse(request) {
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  try {
+    return await updateCacheFromNetwork(request);
+  } catch {
+    return caches.match("./src/index.html");
+  }
+}
+
+async function networkFirstResponse(request) {
+  try {
+    return await updateCacheFromNetwork(request);
+  } catch {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    return caches.match("./src/index.html");
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL_URLS))
@@ -64,25 +111,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+  if (isNetworkFirstRequest(event.request)) {
+    event.respondWith(networkFirstResponse(event.request));
+    return;
+  }
 
-      return fetch(event.request)
-        .then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === "opaque") {
-            return networkResponse;
-          }
-
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-          return networkResponse;
-        })
-        .catch(() => caches.match("./src/index.html"));
-    })
-  );
+  event.respondWith(cacheFirstResponse(event.request));
 });

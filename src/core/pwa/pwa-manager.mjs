@@ -25,12 +25,16 @@ export class PwaManager {
     this.deferredPrompt = null;
     this.elements = null;
     this.rootPath = detectAppRootPath();
+    this.hadInitialController = false;
+    this.hasReloadedForUpdate = false;
   }
 
   init(elements = {}) {
     this.elements = elements;
+    this.hadInitialController = Boolean(navigator.serviceWorker?.controller);
     this.bindInstallEvents();
     this.bindAppInstalledEvent();
+    this.bindControllerChangeEvent();
     void this.registerServiceWorker();
     return this;
   }
@@ -57,15 +61,31 @@ export class PwaManager {
     });
   }
 
+  bindControllerChangeEvent() {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!this.hadInitialController || this.hasReloadedForUpdate) {
+        return;
+      }
+
+      this.hasReloadedForUpdate = true;
+      window.location.reload();
+    });
+  }
+
   async registerServiceWorker() {
     if (!canRegisterServiceWorker()) {
       return;
     }
 
     try {
-      await navigator.serviceWorker.register(`${this.rootPath}service-worker.js`, {
+      const registration = await navigator.serviceWorker.register(`${this.rootPath}service-worker.js`, {
         scope: this.rootPath
       });
+      await registration.update();
     } catch (error) {
       console.warn("Impossible d'enregistrer le service worker PWA", error);
     }
