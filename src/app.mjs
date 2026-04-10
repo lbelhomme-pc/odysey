@@ -804,6 +804,9 @@ function buildProfilePreferences(profile) {
   const preserved = {
     appTheme: normalizeAppTheme(appState.preferences.appTheme),
     speechVoiceId: appState.preferences.speechVoiceId,
+    speechRate: Number(appState.preferences.speechRate) || DEFAULT_PREFERENCES.speechRate,
+    pauseBetweenSentences:
+      Number(appState.preferences.pauseBetweenSentences) || DEFAULT_PREFERENCES.pauseBetweenSentences,
     localAiMode: normalizeLocalAiMode(appState.preferences.localAiMode),
     localAiModel: normalizeLocalAiModel(appState.preferences.localAiModel)
   };
@@ -822,6 +825,21 @@ function buildProfilePreferences(profile) {
     nextPreferences.focusMode = "none";
   }
   return nextPreferences;
+}
+
+function syncAudioPreferences() {
+  audioEngine.setVoice(appState.preferences.speechVoiceId);
+  audioEngine.setRate(appState.preferences.speechRate);
+  audioEngine.setPauseBetweenSentences(appState.preferences.pauseBetweenSentences || 0);
+}
+
+function getAudioRecoveryContext() {
+  return (
+    normalizeAudioStartContext(appState.audioResumeOverride) ||
+    getCurrentAudioContext() ||
+    normalizeAudioStartContext(appState.preferredAudioStartContext) ||
+    normalizeAudioStartContext(getAudioStartContext({ preferSelection: false }))
+  );
 }
 
 function shouldMigrateLegacyVisualProfile(profileId, preferences) {
@@ -855,6 +873,10 @@ function activateProfile(profileId, { statusMessage } = {}) {
     return false;
   }
 
+  const wasPlaying = appState.speaking && !appState.audioPaused;
+  const wasPaused = appState.audioPaused;
+  const audioRecoveryContext = wasPlaying || wasPaused ? getAudioRecoveryContext() : null;
+
   appState.activeProfileId = profile.id;
   appState.preferences = buildProfilePreferences(profile);
   syncControlsWithState();
@@ -869,7 +891,17 @@ function activateProfile(profileId, { statusMessage } = {}) {
   renderDocument();
   debouncePersist();
 
-  if (statusMessage) {
+  if (wasPlaying && audioRecoveryContext?.startKey) {
+    startAudioPlayback(audioRecoveryContext);
+  } else if (wasPaused && audioRecoveryContext?.startKey) {
+    setAudioResumeOverride(audioRecoveryContext);
+    updateDocumentMeta();
+    syncQuickActionButtons();
+    if (statusMessage) {
+      elements.statusLine.textContent = `${statusMessage} La lecture audio reprendra ici.`;
+    }
+    return true;
+  } else if (statusMessage) {
     elements.statusLine.textContent = statusMessage;
   }
 
@@ -1484,6 +1516,7 @@ function syncControlsWithState() {
   if (controls.overlayCustomColor) {
     controls.overlayCustomColor.disabled = appState.preferences.overlayPreset !== "custom";
   }
+  syncAudioPreferences();
   ariaManager.refreshSliderValues();
 }
 

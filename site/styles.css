@@ -287,6 +287,12 @@ h3 {
   transform: translateY(-1px);
 }
 
+.button-disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.68;
+}
+
 .button-accent {
   background: var(--accent);
   border-color: var(--accent);
