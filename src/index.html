@@ -34,20 +34,6 @@
             <img class="brand-logo" src="./assets/odysey-brand.png" alt="Odysey" />
           </div>
 
-          <div class="document-preview-card" aria-label="Aperçu du document">
-            <div class="document-preview-sheet">
-              <p class="document-preview-kicker">Document actif</p>
-              <strong id="documentTitle">Aucun PDF chargé</strong>
-              <span id="documentMeta">Importe un PDF pour activer la lecture adaptée.</span>
-              <div class="document-preview-lines" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-          </div>
-
           <div class="info-pills">
             <div class="info-pill">
               <span>Pages</span>
@@ -55,95 +41,14 @@
             </div>
             <div class="info-pill">
               <span>Mode actif</span>
-              <strong id="documentModeInfo">Lecture reflow</strong>
+              <strong id="documentModeInfo">Normal</strong>
             </div>
             <div class="info-pill">
               <span>Profil</span>
-              <strong id="documentProfileInfo">Lecture visuelle allégée</strong>
+              <strong id="documentProfileInfo">Normal</strong>
             </div>
           </div>
 
-        </section>
-
-        <section class="panel start-assistant-panel panel-collapsible is-collapsed" aria-labelledby="startAssistantTitle">
-          <div class="section-head">
-            <h2 id="startAssistantTitle">Démarrage rapide</h2>
-            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
-          </div>
-          <p class="support-copy">
-            Commence par un besoin simple. Odysey active ensuite directement le profil le plus utile, sans faire
-            apparaître tous les réglages à la fois.
-          </p>
-          <div id="startAssistantButtons" class="assistant-grid">
-            <button class="quick-action assistant-need" type="button" data-start-need="normal">
-              <strong>Lecture simple</strong>
-              <span>Le PDF recomposé reste sobre, sans aide visuelle supplémentaire.</span>
-            </button>
-            <button class="quick-action assistant-need" type="button" data-start-need="dyslexie">
-              <strong>Je lis difficilement</strong>
-              <span>Active directement un profil Dyslexie avec appuis utiles et sans surcharge.</span>
-            </button>
-            <button class="quick-action assistant-need" type="button" data-start-need="audio">
-              <strong>Je veux être guidé</strong>
-              <span>Prépare Audio / Focus pour suivre le texte avec la voix et le repère visuel.</span>
-            </button>
-            <button class="quick-action assistant-need" type="button" data-start-need="maths">
-              <strong>J'ai des maths / sciences</strong>
-              <span>Oriente vers un profil adapté aux formules, unités, exposants et tableaux.</span>
-            </button>
-          </div>
-          <p id="startAssistantSummary" class="support-copy assistant-summary"></p>
-
-          <details class="panel-subgroup">
-            <summary>Afficher les profils</summary>
-            <div class="section-head compact">
-              <h3>Profils importants</h3>
-            </div>
-            <div id="profilesList" class="profiles-grid"></div>
-
-            <details class="panel-subgroup profiles-advanced">
-              <summary>Plus de profils et personnalisation</summary>
-              <p class="support-copy">
-                Réglages plus spécialisés pour des besoins précis : maths, attention, motricité ou analyse.
-              </p>
-              <div id="advancedProfilesList" class="profiles-grid"></div>
-
-              <div class="section-head compact">
-                <h3>Créer un profil</h3>
-              </div>
-
-              <div class="control-grid">
-                <label class="control">
-                  <span>Nom du profil personnalisé</span>
-                  <input
-                    id="customProfileName"
-                    type="text"
-                    maxlength="60"
-                    placeholder="Exemple : Mon profil maths calme"
-                    autocomplete="off"
-                  />
-                </label>
-              </div>
-
-              <div class="quick-actions-grid profile-actions-grid">
-                <button id="saveProfileButton" class="ghost-action subtle" type="button">Enregistrer ce profil</button>
-                <button id="deleteProfileButton" class="ghost-action danger subtle" type="button">Supprimer le profil</button>
-              </div>
-
-              <p id="profileFeedback" class="inline-feedback" hidden></p>
-
-              <div class="section-head compact">
-                <h3>Personnalisés</h3>
-              </div>
-              <div id="customProfilesList" class="profiles-grid"></div>
-              <p id="researchNotes" class="support-copy"></p>
-              <button id="profileSummaryButton" class="ghost-action subtle wide" type="button">Voir le tableau des profils</button>
-            </details>
-          </details>
-
-          <ul id="recentList" class="recent-list" aria-live="polite" hidden aria-hidden="true">
-            <li>Aucun document récent.</li>
-          </ul>
         </section>
 
         <section class="panel support-panel panel-collapsible is-collapsed" aria-labelledby="documentActionsTitle">
@@ -193,9 +98,90 @@
           </details>
         </section>
 
+        <section class="panel start-assistant-panel panel-collapsible is-collapsed" aria-labelledby="startAssistantTitle">
+          <div class="section-head">
+            <h2 id="startAssistantTitle">Réglages standards</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
+          </div>
+          <p class="support-copy">
+            Commence par un besoin simple. Odysey active ensuite directement le profil le plus utile, sans faire
+            apparaître tous les réglages à la fois.
+          </p>
+          <div id="startAssistantButtons" class="assistant-grid">
+            <button class="quick-action assistant-need" type="button" data-start-need="normal">
+              <strong>Lecture simple</strong>
+              <span>Le PDF recomposé reste sobre, sans aide visuelle supplémentaire.</span>
+            </button>
+            <button class="quick-action assistant-need" type="button" data-start-need="dyslexie">
+              <strong>Je lis difficilement</strong>
+              <span>Active directement un profil Dyslexie avec appuis utiles et sans surcharge.</span>
+            </button>
+            <button class="quick-action assistant-need" type="button" data-start-need="audio">
+              <strong>Je veux être guidé</strong>
+              <span>Prépare Audio/Focus pour suivre le texte avec la voix et le repère visuel.</span>
+            </button>
+            <button class="quick-action assistant-need" type="button" data-start-need="maths">
+              <strong>J'ai des maths / sciences</strong>
+              <span>Oriente vers un profil adapté aux formules, unités, exposants et tableaux.</span>
+            </button>
+          </div>
+          <p id="startAssistantSummary" class="support-copy assistant-summary"></p>
+
+          <details class="panel-subgroup">
+            <summary>Afficher les profils</summary>
+            <div class="section-head compact">
+              <h3>Profils intégrés</h3>
+            </div>
+            <div id="profilesList" class="profiles-grid"></div>
+
+            <details class="panel-subgroup profiles-advanced">
+              <summary>Personnaliser les profils</summary>
+              <p class="support-copy">
+                Les autres besoins peuvent être couverts en ajustant un profil puis en l'enregistrant comme profil personnalisé.
+              </p>
+              <div id="advancedProfilesList" class="profiles-grid"></div>
+
+              <div class="section-head compact">
+                <h3>Créer un profil</h3>
+              </div>
+
+              <div class="control-grid">
+                <label class="control">
+                  <span>Nom du profil personnalisé</span>
+                  <input
+                    id="customProfileName"
+                    type="text"
+                    maxlength="60"
+                    placeholder="Exemple : Mon profil maths calme"
+                    autocomplete="off"
+                  />
+                </label>
+              </div>
+
+              <div class="quick-actions-grid profile-actions-grid">
+                <button id="saveProfileButton" class="ghost-action subtle" type="button">Enregistrer ce profil</button>
+                <button id="deleteProfileButton" class="ghost-action danger subtle" type="button">Supprimer le profil</button>
+              </div>
+
+              <p id="profileFeedback" class="inline-feedback" hidden></p>
+
+              <div class="section-head compact">
+                <h3>Personnalisés</h3>
+              </div>
+              <div id="customProfilesList" class="profiles-grid"></div>
+              <p id="researchNotes" class="support-copy"></p>
+              <button id="profileSummaryButton" class="ghost-action subtle wide" type="button">Voir le tableau des profils</button>
+            </details>
+          </details>
+
+          <ul id="recentList" class="recent-list" aria-live="polite" hidden aria-hidden="true">
+            <li>Aucun document récent.</li>
+          </ul>
+        </section>
+
         <section class="panel controls-panel essential-controls-panel panel-collapsible is-collapsed" aria-labelledby="essentialReadingTitle">
           <div class="section-head">
-            <h2 id="essentialReadingTitle">Lecture essentielle</h2>
+            <h2 id="essentialReadingTitle">Réglages personnalisés</h2>
             <div class="section-actions">
               <button id="openHeaderButton" class="ghost-action subtle" type="button" hidden>Importer un autre PDF</button>
               <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
@@ -432,7 +418,7 @@
 
               <label class="control">
                 <span>Vitesse audio réelle <output data-output-for="speechRate"></output></span>
-                <input id="speechRate" type="range" min="0.7" max="1.4" step="0.05" />
+                <input id="speechRate" type="range" min="0.45" max="2" step="0.05" />
               </label>
 
               <label class="control">
@@ -526,39 +512,6 @@
           </details>
         </section>
 
-        <section class="panel support-panel panel-collapsible is-collapsed">
-          <div class="section-head">
-            <h2>Repères et suivi</h2>
-            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
-          </div>
-          <p class="support-copy">
-            Retrouve ici les repères utiles sur le document en cours : suivi de lecture, marque-pages, surlignages et notes.
-          </p>
-          <div class="quick-actions-grid">
-            <button id="bookmarkQuickButton" class="quick-action" type="button">Marque-page rapide</button>
-            <button id="exportNotesButton" class="quick-action" type="button">Exporter mes notes</button>
-            <button id="resumeReadingButton" class="quick-action" type="button">Reprendre au dernier repère</button>
-            <button id="saveReadingCheckpointButton" class="quick-action" type="button">Mettre à jour le repère</button>
-          </div>
-          <p id="readingTrackingSummary" class="support-copy">
-            Ouvre un document pour enregistrer automatiquement ton repère, ton temps de lecture et le dernier profil utile.
-          </p>
-          <details class="panel-subgroup">
-            <summary>Afficher les repères et surlignages</summary>
-            <div class="section-head compact">
-              <h3>Marque-pages</h3>
-            </div>
-            <ul id="bookmarksList" class="bookmark-list"></ul>
-            <p id="bookmarksEmpty" class="support-copy bookmark-empty">Aucun repère enregistré pour ce document.</p>
-            <div class="section-head compact">
-              <h3>Passages surlignés</h3>
-            </div>
-            <ul id="annotationsList" class="annotation-list"></ul>
-            <p id="annotationsEmpty" class="support-copy annotation-empty">Aucun passage surligné pour ce document.</p>
-          </details>
-          <p class="support-copy copyright-note">© Ludovic Belhomme</p>
-        </section>
-
         <section class="panel teacher-panel panel-collapsible is-collapsed" aria-labelledby="teacherToolsTitle">
           <div class="section-head">
             <h2 id="teacherToolsTitle">Mode enseignant / parent / ortho</h2>
@@ -572,7 +525,6 @@
             <summary>Afficher les outils d'analyse</summary>
             <div id="teacherModeSummary" class="teacher-summary"></div>
             <div class="quick-actions-grid teacher-actions">
-              <button id="teacherActivateProfileButton" class="quick-action" type="button">Activer le profil enseignant</button>
               <button id="teacherCompareButton" class="quick-action" type="button">Comparer brut / adapte</button>
               <button id="teacherExportButton" class="quick-action" type="button">Exporter une fiche</button>
             </div>
@@ -633,6 +585,12 @@
         <button id="floatingSidebarButton" class="floating-sidebar-toggle ghost-action subtle" type="button" hidden>
           Afficher les réglages
         </button>
+
+        <div id="quickActionDock" class="quick-action-dock" hidden aria-label="Actions rapides de lecture">
+          <button id="quickOverviewButton" class="quick-action-dock__button" type="button">Vue</button>
+          <button id="quickReadButton" class="quick-action-dock__button" type="button">Lire</button>
+          <button id="quickStopButton" class="quick-action-dock__button quick-action-dock__button--stop" type="button" hidden>Arrêter</button>
+        </div>
 
         <div id="warningBanner" class="warning-banner" hidden>
           <strong>Attention</strong>
@@ -750,6 +708,30 @@
             </section>
           </div>
         </div>
+      </form>
+    </dialog>
+
+    <dialog id="documentOverviewDialog" class="dl-profile-dialog document-overview-dialog" aria-labelledby="documentOverviewTitle" aria-modal="true">
+      <form method="dialog" class="dl-profile-dialog__surface document-overview-dialog__surface">
+        <div class="dl-profile-dialog__header document-overview-dialog__header">
+          <div>
+            <p class="eyebrow">Vue d'ensemble</p>
+            <h2 id="documentOverviewTitle">Parcourir le document</h2>
+            <p id="documentOverviewMeta" class="support-copy document-overview-meta">Aucun document chargé.</p>
+          </div>
+          <button id="closeDocumentOverviewButton" type="submit" class="ghost-action subtle">Fermer</button>
+        </div>
+
+        <div class="document-overview-toolbar" aria-label="Zoom de la vue d'ensemble">
+          <button id="overviewZoomOutButton" class="ghost-action subtle" type="button">Dézoomer</button>
+          <label class="document-overview-zoom-control">
+            <span id="overviewZoomLabel">100%</span>
+            <input id="overviewZoomRange" type="range" min="20" max="400" step="5" value="100" />
+          </label>
+          <button id="overviewZoomInButton" class="ghost-action subtle" type="button">Zoomer</button>
+        </div>
+
+        <div id="documentOverviewContent" class="document-overview-content" aria-label="Aperçu complet du document"></div>
       </form>
     </dialog>
 

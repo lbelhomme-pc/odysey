@@ -15,7 +15,7 @@ const APP_SHELL_URLS = [
   "./src/assets/pwa-icon-192.png",
   "./src/assets/pwa-icon-512.png",
   "./src/assets/pwa-icon-maskable-512.png",
-  "./src/core/document/bookmark-store.mjs",
+  "./src/core/document/document-storage-key.mjs",
   "./src/core/document/annotation-store.mjs",
   "./src/core/document/document-report.mjs",
   "./src/core/document/document-model.mjs",

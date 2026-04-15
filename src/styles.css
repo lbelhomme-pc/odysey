@@ -335,90 +335,6 @@ body.is-distraction-free .app-copyright {
   display: none;
 }
 
-.document-preview-card {
-  margin-top: 22px;
-  min-width: 0;
-  padding: 16px;
-  border-radius: var(--radius-frame);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0)),
-    color-mix(in srgb, var(--ui-panelStrong) 74%, var(--ui-panel) 26%);
-  border: 1px solid color-mix(in srgb, var(--ui-accent) 9%, var(--ui-border) 91%);
-}
-
-.document-preview-sheet {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-  min-height: 220px;
-  padding: 24px 22px;
-  border-radius: var(--radius-inner);
-  background: color-mix(in srgb, var(--ui-panel) 92%, white 8%);
-  border: 1px solid color-mix(in srgb, var(--ui-accent) 7%, var(--ui-border) 93%);
-}
-
-.document-preview-kicker {
-  margin: 0;
-  color: var(--ui-textSoft);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-#documentTitle {
-  display: block;
-  max-width: 100%;
-  min-width: 0;
-  font-size: 1.7rem;
-  line-height: 1.02;
-  letter-spacing: -0.03em;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  hyphens: auto;
-}
-
-#documentMeta {
-  display: block;
-  max-width: 100%;
-  min-width: 0;
-  font-size: 0.98rem;
-  line-height: 1.5;
-  color: var(--ui-textSoft);
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  hyphens: auto;
-}
-
-.document-preview-lines {
-  display: grid;
-  gap: 10px;
-  margin-top: auto;
-}
-
-.document-preview-lines span {
-  display: block;
-  height: 10px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--ui-accentSoft) 70%, white 30%), transparent);
-}
-
-.document-preview-lines span:nth-child(1) {
-  width: 88%;
-}
-
-.document-preview-lines span:nth-child(2) {
-  width: 74%;
-}
-
-.document-preview-lines span:nth-child(3) {
-  width: 81%;
-}
-
-.document-preview-lines span:nth-child(4) {
-  width: 62%;
-}
-
 .info-pills {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1046,13 +962,134 @@ button:disabled {
   overflow: auto;
 }
 
+.document-overview-dialog {
+  width: min(1460px, 98vw);
+  max-width: 98vw;
+}
+
+.document-overview-dialog__surface {
+  max-height: 92vh;
+}
+
+.document-overview-dialog__header {
+  align-items: flex-start;
+}
+
+.document-overview-meta {
+  margin: 8px 0 0;
+}
+
+.document-overview-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 84%, transparent);
+  border-radius: var(--radius-frame);
+  background: color-mix(in srgb, var(--ui-panelStrong) 32%, white 68%);
+}
+
+.document-overview-zoom-control {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  color: var(--ui-accentStrong);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.document-overview-zoom-control input {
+  width: 100%;
+}
+
+.document-overview-content {
+  max-height: min(68vh, 760px);
+  overflow: auto;
+  padding: 28px;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 84%, transparent);
+  border-radius: var(--radius-frame);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--ui-panelStrong) 28%, white 72%);
+}
+
+.document-overview-pages {
+  display: grid;
+  gap: 28px;
+  width: var(--overview-page-width, 980px);
+  max-width: none;
+  margin: 0 auto;
+  color: var(--dl-text-color);
+  font-family: var(--dl-font-family);
+  font-size: var(--overview-font-size, var(--dl-font-size));
+  line-height: max(1.8, var(--dl-line-height));
+  letter-spacing: max(0.12em, var(--dl-letter-spacing));
+  word-spacing: max(0.16em, var(--dl-word-spacing));
+}
+
+.document-overview-page {
+  display: grid;
+  gap: 14px;
+  padding: var(--overview-page-padding, var(--dl-padding));
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+  border-radius: var(--radius-frame);
+  background: var(--dl-bg-color);
+  box-shadow: 0 18px 42px rgba(35, 28, 20, 0.1);
+}
+
+.document-overview-page__header,
+.document-overview-block__meta {
+  color: var(--accent);
+  font-size: 0.68em;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.document-overview-page__body {
+  display: grid;
+  gap: 0.85em;
+}
+
+.document-overview-block {
+  display: grid;
+  gap: 0.45em;
+  padding: var(--overview-block-padding, 12px);
+  border: 1px solid transparent;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  border-radius: var(--radius-inner);
+  cursor: pointer;
+}
+
+.document-overview-block:hover,
+.document-overview-block:focus-visible,
+.document-overview-block.is-current {
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  background: color-mix(in srgb, var(--accentSoft) 20%, transparent);
+  outline: none;
+}
+
+.document-overview-block p,
+.document-overview-block pre {
+  margin: 0;
+}
+
+.document-overview-empty {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 34px;
+  text-align: center;
+  color: var(--ui-textSoft);
+}
+
 .teacher-panel {
   display: grid;
   gap: 14px;
 }
 
 .reading-tools-panel,
-.tracking-panel,
 .exam-panel {
   display: grid;
   gap: 14px;
@@ -1185,93 +1222,6 @@ button:disabled {
   gap: 8px;
 }
 
-.bookmark-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 8px;
-}
-
-.bookmark-item {
-  display: grid;
-}
-
-.bookmark-button {
-  display: grid;
-  gap: 3px;
-  width: 100%;
-  padding: 12px 14px;
-  text-align: left;
-  border: 1px solid color-mix(in srgb, var(--ui-border) 84%, transparent);
-  border-radius: var(--radius-inner);
-  background: color-mix(in srgb, var(--ui-panelStrong) 36%, white 64%);
-  color: var(--ui-text);
-}
-
-.bookmark-button strong {
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
-
-.bookmark-meta {
-  color: var(--ui-textSoft);
-  font-size: 0.84rem;
-  line-height: 1.45;
-}
-
-.bookmark-empty {
-  margin: 8px 0 0;
-}
-
-.annotation-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 8px;
-}
-
-.annotation-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: start;
-}
-
-.annotation-button {
-  display: grid;
-  gap: 3px;
-  width: 100%;
-  padding: 12px 14px;
-  text-align: left;
-  border: 1px solid color-mix(in srgb, var(--ui-border) 84%, transparent);
-  border-radius: var(--radius-inner);
-  background: color-mix(in srgb, var(--ui-panelStrong) 36%, white 64%);
-  color: var(--ui-text);
-}
-
-.annotation-button strong {
-  font-size: 0.94rem;
-  line-height: 1.45;
-}
-
-.annotation-meta {
-  color: var(--ui-textSoft);
-  font-size: 0.84rem;
-  line-height: 1.45;
-}
-
-.annotation-remove {
-  min-width: 44px;
-  min-height: 44px;
-  padding-inline: 12px;
-}
-
-.annotation-empty {
-  margin: 8px 0 0;
-}
-
 .ocr-progress {
   display: grid;
   gap: 8px;
@@ -1381,6 +1331,62 @@ button:disabled {
   min-height: 40px;
   padding-inline: 14px;
   box-shadow: var(--shadow-soft);
+}
+
+.quick-action-dock {
+  position: fixed;
+  right: 24px;
+  bottom: 78px;
+  z-index: 24;
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 82%, transparent);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--ui-panel) 92%, white 8%);
+  box-shadow: 0 14px 34px rgba(35, 28, 20, 0.14);
+}
+
+.quick-action-dock[hidden] {
+  display: none;
+}
+
+.quick-action-dock__button {
+  min-width: 58px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 0.94rem;
+  cursor: pointer;
+}
+
+.quick-action-dock__button:hover,
+.quick-action-dock__button:focus-visible,
+.quick-action-dock__button.is-active {
+  background: color-mix(in srgb, var(--ui-accentSoft) 60%, white 40%);
+  color: var(--ui-accentStrong);
+  outline: none;
+}
+
+.quick-action-dock__button--stop {
+  color: color-mix(in srgb, #7a2c2c 72%, var(--ui-text) 28%);
+}
+
+.quick-action-dock__button--stop:hover,
+.quick-action-dock__button--stop:focus-visible {
+  background: color-mix(in srgb, #f0d4cf 58%, white 42%);
+  color: #6f2424;
+}
+
+.quick-action-dock__button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .stage-topbar {
@@ -1828,8 +1834,7 @@ html[data-focus-mode="paragraph"] .reader-block.is-current {
 }
 
 html[data-profile-id="normal"] .reader-block.is-current,
-html[data-profile-id="lecture-visuelle-allegee"] .reader-block.is-current,
-html[data-profile-id="dyslexie-legere"] .reader-block.is-current {
+html[data-profile-id="lecture-visuelle-allegee"] .reader-block.is-current {
   border-color: transparent;
   border-left-color: transparent;
   background: transparent;
@@ -1845,7 +1850,6 @@ html[data-profile-id="audio"] .reader-block.is-current {
 
 html[data-profile-id="normal"] .reader-block.is-current::before,
 html[data-profile-id="lecture-visuelle-allegee"] .reader-block.is-current::before,
-html[data-profile-id="dyslexie-legere"] .reader-block.is-current::before,
 html[data-profile-id="audio"] .reader-block.is-current::before {
   background: color-mix(in srgb, var(--accent) 52%, transparent);
 }
@@ -1972,7 +1976,12 @@ html[data-profile-id="audio"][data-audio-state="paused"] .reader-block.is-audio-
 
 .word-audio-track.is-audio-word .word-adapted,
 .word-audio-track.is-audio-word {
+  border-radius: 0.34em;
+  background: color-mix(in srgb, var(--accentSoft) 42%, transparent);
   color: var(--accentStrong);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+    inset 0 -0.16em 0 color-mix(in srgb, var(--accent) 26%, transparent);
   text-decoration: underline;
   text-decoration-thickness: 0.1em;
   text-underline-offset: 0.16em;
@@ -2204,6 +2213,10 @@ html[data-coloration-mode="pedagogiqueAlt"] {
     grid-template-columns: 1fr;
   }
 
+  .document-overview-toolbar {
+    grid-template-columns: 1fr;
+  }
+
   .info-pills {
     grid-template-columns: 1fr 1fr;
   }
@@ -2224,10 +2237,6 @@ html[data-coloration-mode="pedagogiqueAlt"] {
     border-radius: var(--radius-frame);
   }
 
-  .document-preview-sheet {
-    min-height: 180px;
-  }
-
   .info-pills {
     grid-template-columns: 1fr;
   }
@@ -2238,6 +2247,15 @@ html[data-coloration-mode="pedagogiqueAlt"] {
 
   .selection-assist__actions {
     grid-template-columns: 1fr;
+  }
+
+  .quick-action-dock {
+    right: 14px;
+    bottom: 64px;
+  }
+
+  .document-overview-content {
+    padding: 14px;
   }
 
   .dl-shortcuts-list li {

@@ -78,13 +78,15 @@ for (const profile of BUILTIN_PROFILES) {
 
 const byId = Object.fromEntries(BUILTIN_PROFILES.map((profile) => [profile.id, { ...DEFAULT_PREFERENCES, ...profile.defaults }]));
 
-assert.equal(byId["comprehension-simplifiee"].readingGuideMode, "window", "Compréhension simplifiée doit garder une fenêtre de lecture.");
-assert.equal(byId["dyslexie-severe"].readingGuideMode, "ruler", "Dyslexie renforcée doit activer la réglette.");
-assert.equal(normalizeColorationMode(byId["dyslexie-severe"].colorationMode), "sonsFrancais", "Dyslexie renforcée doit garder la coloration sons français.");
+assert.deepEqual(
+  BUILTIN_PROFILES.map((profile) => profile.id),
+  ["normal", "lecture-visuelle-allegee", "audio", "decodage-renforce", "mode-examen", "dyspraxie", "dyscalculie"],
+  "La liste des profils integres doit rester simplifiee."
+);
+assert.equal(byId["decodage-renforce"].readingGuideMode, "ruler", "Dyslexie renforcée doit activer la réglette.");
+assert.equal(normalizeColorationMode(byId["decodage-renforce"].colorationMode), "pedagogique", "Dyslexie renforcée doit garder la coloration pédagogique.");
+assert.equal(byId["mode-examen"].verificationMode, "off", "Mode examen doit garder les aides reduites.");
 assert.equal(byId.dyscalculie.verificationMode, "markers", "Dyscalculie doit activer les repères de vérification.");
-assert.equal(byId.tdah.readingGuideMode, "window", "TDAH doit utiliser la fenêtre de lecture.");
-assert.equal(byId.tdah.distractionFree, true, "TDAH doit démarrer en immersion.");
 assert.equal(byId.dyspraxie.readingGuideMode, "ruler", "Dyspraxie doit garder une réglette simple.");
-assert.equal(byId.enseignant.verificationMode, "markers", "Enseignant / Ortho doit garder les repères.");
 
 console.log("profiles: ok");

@@ -16,6 +16,16 @@ contextBridge.exposeInMainWorld("dysReaderApi", {
   readOcrLanguageData: (language) => ipcRenderer.invoke("ocr:read-language-data", language),
   getLocalAiStatus: (model) => ipcRenderer.invoke("local-ai:status", model),
   generateLocalAiText: (payload) => ipcRenderer.invoke("local-ai:generate", payload),
+  speakNative: (payload) => ipcRenderer.invoke("speech:native-speak", payload),
+  stopNativeSpeech: () => ipcRenderer.invoke("speech:native-stop"),
+  onNativeSpeechProgress: (callback) => {
+    if (typeof callback !== "function") {
+      return () => {};
+    }
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("speech:native-progress", listener);
+    return () => ipcRenderer.removeListener("speech:native-progress", listener);
+  },
   loadSettings: () => ipcRenderer.invoke("storage:load-settings"),
   saveSettings: (payload) => ipcRenderer.invoke("storage:save-settings", payload),
   openPath: (targetPath) => ipcRenderer.invoke("shell:open-path", targetPath),

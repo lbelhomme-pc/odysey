@@ -14,7 +14,6 @@ const SHORTCUTS = [
   { keys: "Ctrl+1 à Ctrl+9", action: "Changer de profil" },
   { keys: "Ctrl+,", action: "Afficher ou masquer les réglages" },
   { keys: "Ctrl+P", action: "Imprimer la version adaptée" },
-  { keys: "Ctrl+B", action: "Marque-page rapide" },
   { keys: "F1 / Ctrl+?", action: "Aide des raccourcis" }
 ];
 
@@ -149,12 +148,6 @@ export class KeyboardNav {
     if (event.ctrlKey && event.key.toLowerCase() === "p") {
       event.preventDefault();
       this.app.printAdapted?.();
-      return;
-    }
-
-    if (event.ctrlKey && event.key.toLowerCase() === "b") {
-      event.preventDefault();
-      this.app.quickBookmark?.();
       return;
     }
 

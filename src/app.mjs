@@ -1,17 +1,9 @@
 ﻿import { APP_THEME_TOKENS, BUILTIN_PROFILES, DEFAULT_PREFERENCES, FONT_OPTIONS, THEME_TOKENS } from "./profiles.mjs";
 import { importPdfFromBytes } from "./pdf-processing.mjs";
+import { buildDocumentStorageKey } from "./core/document/document-storage-key.mjs";
 import {
-  buildBookmarkDocumentKey,
-  exportBookmarksAsText,
-  getBookmarkExportFileName,
-  normalizeBookmarks,
-  upsertBookmark
-} from "./core/document/bookmark-store.mjs";
-import {
-  exportAnnotationsAsText,
   getBlockAnnotations,
   normalizeAnnotations,
-  removeAnnotation,
   upsertAnnotation
 } from "./core/document/annotation-store.mjs";
 import {
@@ -75,10 +67,8 @@ const appState = {
   activeProfileId: BUILTIN_PROFILES[0].id,
   selectedBlockKey: "",
   recentFilesMeta: [],
-  bookmarksByDocument: {},
   annotationsByDocument: {},
   teacherNotesByDocument: {},
-  readingProgressByDocument: {},
   voices: [],
   speechAvailable: false,
   speechUtterance: null,
@@ -98,9 +88,9 @@ const appState = {
     totalPages: 0,
     status: "OCR prêt."
   },
+  overviewZoom: 100,
   rulerY: null,
   persistTimer: null,
-  bookmarks: [],
   annotations: [],
   teacherNotes: "",
   selectionDraft: null,
@@ -127,8 +117,6 @@ const appState = {
     message: "IA locale non vérifiée pour le moment."
   },
   localAiCache: new Map(),
-  readingTimeTickStartedAt: 0,
-  readingTimeIntervalId: 0,
   examBaseMinutes: 60,
   examTimeRemainingSeconds: 0,
   examTimerId: 0,
@@ -138,9 +126,11 @@ const appState = {
 const IMPORTANT_PROFILE_IDS = new Set([
   "normal",
   "lecture-visuelle-allegee",
-  "dyslexie-legere",
+  "audio",
   "decodage-renforce",
-  "audio"
+  "mode-examen",
+  "dyspraxie",
+  "dyscalculie"
 ]);
 
 const TEMP_CUSTOM_PROFILE_ID = "custom-live";
@@ -151,10 +141,12 @@ const elements = {
   openHeaderButton: document.querySelector("#openHeaderButton"),
   toggleSidebarButton: document.querySelector("#toggleSidebarButton"),
   floatingSidebarButton: document.querySelector("#floatingSidebarButton"),
+  quickActionDock: document.querySelector("#quickActionDock"),
+  quickOverviewButton: document.querySelector("#quickOverviewButton"),
+  quickReadButton: document.querySelector("#quickReadButton"),
+  quickStopButton: document.querySelector("#quickStopButton"),
   printButton: document.querySelector("#printButton"),
   exportPdfButton: document.querySelector("#exportPdfButton"),
-  documentTitle: document.querySelector("#documentTitle"),
-  documentMeta: document.querySelector("#documentMeta"),
   documentPagesInfo: document.querySelector("#documentPagesInfo"),
   documentModeInfo: document.querySelector("#documentModeInfo"),
   documentProfileInfo: document.querySelector("#documentProfileInfo"),
@@ -175,7 +167,6 @@ const elements = {
   closeProfileSummaryDialogButton: document.querySelector("#closeProfileSummaryDialogButton"),
   profileSummaryTable: document.querySelector("#profileSummaryTable"),
   teacherModeSummary: document.querySelector("#teacherModeSummary"),
-  teacherActivateProfileButton: document.querySelector("#teacherActivateProfileButton"),
   teacherCompareButton: document.querySelector("#teacherCompareButton"),
   teacherExportButton: document.querySelector("#teacherExportButton"),
   teacherNotesInput: document.querySelector("#teacherNotesInput"),
@@ -209,11 +200,6 @@ const elements = {
   localAiCheckButton: document.querySelector("#localAiCheckButton"),
   localAiInstallButton: document.querySelector("#localAiInstallButton"),
   openExternalButton: document.querySelector("#openExternalButton"),
-  bookmarkQuickButton: document.querySelector("#bookmarkQuickButton"),
-  exportNotesButton: document.querySelector("#exportNotesButton"),
-  readingTrackingSummary: document.querySelector("#readingTrackingSummary"),
-  resumeReadingButton: document.querySelector("#resumeReadingButton"),
-  saveReadingCheckpointButton: document.querySelector("#saveReadingCheckpointButton"),
   examModeButton: document.querySelector("#examModeButton"),
   examPrintButton: document.querySelector("#examPrintButton"),
   examBaseMinutes: document.querySelector("#examBaseMinutes"),
@@ -228,10 +214,6 @@ const elements = {
   ocrProgressValue: document.querySelector("#ocrProgressValue"),
   ocrProgressBar: document.querySelector("#ocrProgressBar"),
   ocrHint: document.querySelector("#ocrHint"),
-  bookmarksList: document.querySelector("#bookmarksList"),
-  bookmarksEmpty: document.querySelector("#bookmarksEmpty"),
-  annotationsList: document.querySelector("#annotationsList"),
-  annotationsEmpty: document.querySelector("#annotationsEmpty"),
   supportDialogButton: document.querySelector("#supportDialogButton"),
   installPwaButton: document.querySelector("#installPwaButton"),
   voiceSelect: document.querySelector("#speechVoiceId"),
@@ -244,7 +226,15 @@ const elements = {
   selectionAssist: document.querySelector("#selectionAssist"),
   selectionPreview: document.querySelector("#selectionPreview"),
   selectionSpeechButton: document.querySelector("#selectionSpeechButton"),
-  clearSelectionAssistButton: document.querySelector("#clearSelectionAssistButton")
+  clearSelectionAssistButton: document.querySelector("#clearSelectionAssistButton"),
+  documentOverviewDialog: document.querySelector("#documentOverviewDialog"),
+  closeDocumentOverviewButton: document.querySelector("#closeDocumentOverviewButton"),
+  documentOverviewMeta: document.querySelector("#documentOverviewMeta"),
+  documentOverviewContent: document.querySelector("#documentOverviewContent"),
+  overviewZoomOutButton: document.querySelector("#overviewZoomOutButton"),
+  overviewZoomInButton: document.querySelector("#overviewZoomInButton"),
+  overviewZoomRange: document.querySelector("#overviewZoomRange"),
+  overviewZoomLabel: document.querySelector("#overviewZoomLabel")
 };
 
 const controlIds = [
@@ -291,7 +281,17 @@ const runtimeApi = window.dysReaderApi
   : createBrowserApi();
 const runtimeSubscriptions = [];
 const readingGuide = new ReadingGuide();
-const audioEngine = new AudioEngine();
+const audioEngine = new AudioEngine({
+  nativeSpeech:
+    typeof runtimeApi.speakNative === "function"
+      ? {
+          speak: runtimeApi.speakNative,
+          stop: runtimeApi.stopNativeSpeech,
+          onProgress: runtimeApi.onNativeSpeechProgress
+        }
+      : null,
+  preferNativeSpeech: runtimeApi.kind === "electron"
+});
 const ocrEngine = new OcrEngine({
   runtime: runtimeApi.kind,
   readLanguageData: runtimeApi.readOcrLanguageData
@@ -385,6 +385,18 @@ function createBrowserApi() {
         text: "",
         reason: "LOCAL_AI_DESKTOP_ONLY"
       };
+    },
+    async speakNative() {
+      return {
+        ok: false,
+        reason: "NATIVE_SPEECH_DESKTOP_ONLY"
+      };
+    },
+    async stopNativeSpeech() {
+      return { ok: true };
+    },
+    onNativeSpeechProgress() {
+      return () => {};
     },
     async loadSettings() {
       try {
@@ -721,24 +733,14 @@ function describeProfileAudience(profile) {
       return "Pour lire le PDF tel quel, sans aide visuelle supplémentaire.";
     case "lecture-visuelle-allegee":
       return "Pour une lecture plus confortable, aérée et stable, sans décodage marqué.";
-    case "dyslexie-legere":
-      return "Pour une dyslexie légère à modérée avec un appui discret sur le décodage.";
     case "decodage-renforce":
-      return "Pour les lecteurs qui ont besoin d’un guidage fort sur les sons, syllabes et la ligne.";
+      return "Pour une dyslexie plus marquée avec un guidage fort sur les syllabes et la ligne.";
     case "audio":
       return "Pour suivre le texte avec la voix et mieux rester concentré pendant la lecture.";
-    case "comprehension-simplifiee":
-      return "Pour réduire l’effort cognitif avec une colonne plus étroite et un repérage fort.";
-    case "dyslexie-severe":
-      return "Pour une dyslexie marquée avec grands espacements, réglette et audio ralenti.";
     case "dyscalculie":
       return "Pour des documents avec nombres, calculs ou expressions mathématiques à surveiller.";
-    case "tdah":
-      return "Pour limiter les distractions avec une fenêtre de lecture et un cadre plus focalisé.";
     case "dyspraxie":
       return "Pour une lecture stable et des repères simples quand la fatigue motrice est importante.";
-    case "enseignant":
-      return "Pour analyser un document, repérer les zones fragiles et observer les aides activées.";
     case "mode-examen":
       return "Pour une passation très sobre, avec confort de lecture, tiers-temps et impression propre.";
     default:
@@ -884,9 +886,6 @@ function activateProfile(profileId, { statusMessage } = {}) {
   applyTheme();
   setPanelFeedback(elements.profileFeedback, "");
   setPanelFeedback(elements.settingsFeedback, "");
-  if (appState.importedDocument) {
-    syncReadingProgressStorage({ updateVisitedAt: false });
-  }
   renderProfiles();
   renderDocument();
   debouncePersist();
@@ -1104,30 +1103,17 @@ function getPersistablePreferences() {
   };
 }
 
-function syncBookmarksStorage() {
-  if (!appState.currentPdfBlobUrl && !appState.importedDocument) {
-    return;
-  }
-
-  const bookmarkDocumentKey = buildBookmarkDocumentKey(appState.importedDocument);
-  if (!bookmarkDocumentKey) {
-    return;
-  }
-
-  appState.bookmarksByDocument[bookmarkDocumentKey] = normalizeBookmarks(appState.bookmarks);
-}
-
 function syncAnnotationsStorage() {
   if (!appState.currentPdfBlobUrl && !appState.importedDocument) {
     return;
   }
 
-  const bookmarkDocumentKey = buildBookmarkDocumentKey(appState.importedDocument);
-  if (!bookmarkDocumentKey) {
+  const documentKey = buildDocumentStorageKey(appState.importedDocument);
+  if (!documentKey) {
     return;
   }
 
-  appState.annotationsByDocument[bookmarkDocumentKey] = normalizeAnnotations(appState.annotations);
+  appState.annotationsByDocument[documentKey] = normalizeAnnotations(appState.annotations);
 }
 
 function syncTeacherNotesStorage() {
@@ -1135,16 +1121,15 @@ function syncTeacherNotesStorage() {
     return;
   }
 
-  const bookmarkDocumentKey = buildBookmarkDocumentKey(appState.importedDocument);
-  if (!bookmarkDocumentKey) {
+  const documentKey = buildDocumentStorageKey(appState.importedDocument);
+  if (!documentKey) {
     return;
   }
 
-  appState.teacherNotesByDocument[bookmarkDocumentKey] = String(appState.teacherNotes || "").trim();
+  appState.teacherNotesByDocument[documentKey] = String(appState.teacherNotes || "").trim();
 }
 
 async function persistState() {
-  syncBookmarksStorage();
   syncAnnotationsStorage();
   syncTeacherNotesStorage();
   const payload = {
@@ -1152,10 +1137,8 @@ async function persistState() {
     lastUsedPreferences: getPersistablePreferences(),
       activeProfileId: appState.activeProfileId,
       recentFilesMeta: appState.recentFilesMeta.slice(0, 6),
-      bookmarksByDocument: appState.bookmarksByDocument,
       annotationsByDocument: appState.annotationsByDocument,
       teacherNotesByDocument: appState.teacherNotesByDocument,
-      readingProgressByDocument: appState.readingProgressByDocument,
       examBaseMinutes: appState.examBaseMinutes
   };
   await runtimeApi.saveSettings(payload);
@@ -1207,14 +1190,6 @@ async function loadPersistedState() {
     if (Array.isArray(payload?.recentFilesMeta)) {
       appState.recentFilesMeta = payload.recentFilesMeta;
     }
-    if (payload?.bookmarksByDocument && typeof payload.bookmarksByDocument === "object") {
-      appState.bookmarksByDocument = Object.fromEntries(
-        Object.entries(payload.bookmarksByDocument).map(([documentKey, entries]) => [
-          documentKey,
-          normalizeBookmarks(Array.isArray(entries) ? entries : [])
-        ])
-      );
-    }
     if (payload?.annotationsByDocument && typeof payload.annotationsByDocument === "object") {
       appState.annotationsByDocument = Object.fromEntries(
         Object.entries(payload.annotationsByDocument).map(([documentKey, entries]) => [
@@ -1228,29 +1203,18 @@ async function loadPersistedState() {
         Object.entries(payload.teacherNotesByDocument).map(([documentKey, value]) => [documentKey, String(value || "")])
       );
     }
-    if (payload?.readingProgressByDocument && typeof payload.readingProgressByDocument === "object") {
-      appState.readingProgressByDocument = Object.fromEntries(
-        Object.entries(payload.readingProgressByDocument).map(([documentKey, value]) => [
-          documentKey,
-          {
-            lastBlockKey: String(value?.lastBlockKey || ""),
-            lastBlockLabel: String(value?.lastBlockLabel || ""),
-            lastPageNumber: Math.max(0, Number(value?.lastPageNumber || 0)),
-            lastVisitedAt: String(value?.lastVisitedAt || ""),
-            totalReadingMs: Math.max(0, Number(value?.totalReadingMs || 0)),
-            lastProfileId:
-              value?.lastProfileId && findProfile(String(value.lastProfileId))
-                ? String(value.lastProfileId)
-                : BUILTIN_PROFILES[0].id
-          }
-        ])
-      );
-    }
     if (payload?.examBaseMinutes) {
       appState.examBaseMinutes = Math.max(10, Number(payload.examBaseMinutes || 60));
     }
-    if (payload?.activeProfileId && findProfile(payload.activeProfileId)) {
-      appState.activeProfileId = payload.activeProfileId;
+    if (payload?.activeProfileId) {
+      const storedProfile = findProfile(payload.activeProfileId);
+      if (storedProfile) {
+        appState.activeProfileId = storedProfile.id;
+      } else {
+        const normalProfile = findProfile("normal") || appState.builtinProfiles[0];
+        appState.activeProfileId = normalProfile.id;
+        appState.preferences = buildProfilePreferences(normalProfile);
+      }
     }
     if (shouldMigrateLegacyVisualProfile(appState.activeProfileId, appState.preferences)) {
       appState.preferences = migrateLegacyVisualProfilePreferences(appState.preferences);
@@ -1414,46 +1378,65 @@ function applyControlHelp() {
 
 function getActiveModeLabel() {
   if (!appState.importedDocument) {
-    return "En attente";
+    return "Normal";
   }
 
   if (appState.importedDocument.extractionQuality === "poor") {
     return "PDF original";
   }
 
-  const modes = [];
-  if (normalizeColorationPreference(appState.preferences.colorationMode) !== "none") {
-    modes.push("Aide au décodage");
-  }
-  if (normalizeSyllableLevel(appState.preferences.syllableLevel) !== "off") {
-    modes.push("Syllabes");
-  }
-  if (appState.preferences.focusMode !== "none") {
-    modes.push("Focus");
-  }
-  if (normalizeReadingGuideMode(appState.preferences.readingGuideMode, appState.preferences.focusMode) !== "off") {
-    modes.push("Réglette");
-  }
-  if (getEffectiveVerificationMode() !== "off") {
-    modes.push("Vérification");
-  }
   if (appState.speaking || appState.audioPaused) {
-    modes.push("Audio");
+    return "Audio";
   }
 
-  if (modes.length === 0) {
-    if (appState.activeProfileId === "mode-examen") {
-      return "Mode examen";
-    }
-    return appState.activeProfileId === "normal" ? "Mode normal" : "Lecture simple";
+  if (appState.activeProfileId === "mode-examen") {
+    return "Examen";
   }
 
-  return modes.join(" + ");
+  return "Normal";
+}
+
+function getSpeechSynthesisRuntime() {
+  const windowSynthesis = typeof window !== "undefined" ? window.speechSynthesis : null;
+  return windowSynthesis || globalThis.speechSynthesis || null;
+}
+
+function getSpeechUtteranceConstructor() {
+  const windowCtor = typeof window !== "undefined" ? window.SpeechSynthesisUtterance : null;
+  const globalCtor = globalThis.SpeechSynthesisUtterance;
+  const Utterance = windowCtor || globalCtor;
+  return typeof Utterance === "function" ? Utterance : null;
+}
+
+function isNativeSpeechRuntimeAvailable() {
+  return runtimeApi.kind === "electron" && typeof runtimeApi.speakNative === "function";
+}
+
+function isSpeechRuntimeAvailable() {
+  return Boolean((getSpeechSynthesisRuntime() && getSpeechUtteranceConstructor()) || isNativeSpeechRuntimeAvailable());
+}
+
+function createSpeechUtterance(text) {
+  const Utterance = getSpeechUtteranceConstructor();
+  return Utterance ? new Utterance(text) : null;
+}
+
+function hasActiveSpeechRuntimeQueue() {
+  const synthesis = getSpeechSynthesisRuntime();
+  return Boolean(
+    synthesis?.speaking ||
+      synthesis?.pending ||
+      synthesis?.paused ||
+      audioEngine.currentUtterance ||
+      appState.speechUtterance
+  );
 }
 
 function syncQuickActionButtons() {
   const audioState = appState.audioPaused ? "paused" : appState.speaking ? "playing" : "idle";
-  const hasSpeechDocument = appState.speechAvailable && getNavigableBlocks().length > 0;
+  const speechRuntimeAvailable = isSpeechRuntimeAvailable();
+  const hasSpeechDocument = speechRuntimeAvailable && getNavigableBlocks().length > 0;
+  const canUseOverview = Boolean(appState.importedDocument && appState.importedDocument.extractionQuality !== "poor");
   const canRestartAudioFromSelection = audioState === "paused" && Boolean(appState.audioResumeOverride?.startKey);
   document.documentElement.dataset.audioState = audioState;
 
@@ -1472,7 +1455,7 @@ function syncQuickActionButtons() {
 
   if (elements.speechStopButton) {
     elements.speechStopButton.classList.toggle("is-active", audioState !== "idle");
-    elements.speechStopButton.disabled = !appState.speechAvailable || audioState === "idle";
+    elements.speechStopButton.disabled = !speechRuntimeAvailable || audioState === "idle";
     elements.speechStopButton.textContent = "Arrêter";
   }
 
@@ -1484,8 +1467,30 @@ function syncQuickActionButtons() {
     elements.speechNextButton.disabled = !hasSpeechDocument;
   }
 
+  if (elements.quickActionDock) {
+    elements.quickActionDock.hidden = !canUseOverview;
+  }
+  if (elements.quickOverviewButton) {
+    elements.quickOverviewButton.disabled = !canUseOverview;
+  }
+  if (elements.quickReadButton) {
+    elements.quickReadButton.disabled = !hasSpeechDocument;
+    elements.quickReadButton.classList.toggle("is-active", audioState === "playing");
+    elements.quickReadButton.textContent =
+      audioState === "paused"
+        ? "Reprendre"
+        : audioState === "playing"
+          ? "Pause"
+          : "Lire";
+  }
+  if (elements.quickStopButton) {
+    const showStop = audioState !== "idle";
+    elements.quickStopButton.hidden = !showStop;
+    elements.quickStopButton.disabled = !showStop;
+  }
+
   if (elements.selectionSpeechButton) {
-    elements.selectionSpeechButton.disabled = !appState.selectionDraft || !appState.speechAvailable;
+    elements.selectionSpeechButton.disabled = !appState.selectionDraft || !speechRuntimeAvailable;
   }
 }
 
@@ -1543,7 +1548,10 @@ function renderProfiles() {
   const advancedProfiles = appState.builtinProfiles.filter((profile) => !IMPORTANT_PROFILE_IDS.has(profile.id));
   elements.profilesList.innerHTML = importantProfiles.map((profile) => renderCard(profile)).join("");
   if (elements.advancedProfilesList) {
-    elements.advancedProfilesList.innerHTML = advancedProfiles.map((profile) => renderCard(profile)).join("");
+    elements.advancedProfilesList.hidden = !advancedProfiles.length;
+    elements.advancedProfilesList.innerHTML = advancedProfiles.length
+      ? advancedProfiles.map((profile) => renderCard(profile)).join("")
+      : "";
   }
   elements.customProfilesList.innerHTML = appState.customProfiles.length
     ? appState.customProfiles.map((profile) => renderCard(profile, true)).join("")
@@ -1595,227 +1603,19 @@ function renderRecentFiles() {
     .join("");
 }
 
-function loadBookmarksForCurrentDocument() {
-  const bookmarkDocumentKey = buildBookmarkDocumentKey(appState.importedDocument);
-  appState.bookmarks = bookmarkDocumentKey
-    ? normalizeBookmarks(appState.bookmarksByDocument[bookmarkDocumentKey] || [])
-    : [];
-}
-
 function loadAnnotationsForCurrentDocument() {
-  const bookmarkDocumentKey = buildBookmarkDocumentKey(appState.importedDocument);
-  appState.annotations = bookmarkDocumentKey
-    ? normalizeAnnotations(appState.annotationsByDocument[bookmarkDocumentKey] || [])
+  const documentKey = buildDocumentStorageKey(appState.importedDocument);
+  appState.annotations = documentKey
+    ? normalizeAnnotations(appState.annotationsByDocument[documentKey] || [])
     : [];
 }
 
 function loadTeacherNotesForCurrentDocument() {
-  const bookmarkDocumentKey = buildBookmarkDocumentKey(appState.importedDocument);
-  appState.teacherNotes = bookmarkDocumentKey ? String(appState.teacherNotesByDocument[bookmarkDocumentKey] || "") : "";
+  const documentKey = buildDocumentStorageKey(appState.importedDocument);
+  appState.teacherNotes = documentKey ? String(appState.teacherNotesByDocument[documentKey] || "") : "";
   if (elements.teacherNotesInput) {
     elements.teacherNotesInput.value = appState.teacherNotes;
   }
-}
-
-function getReadingProgressDocumentKey() {
-  return buildBookmarkDocumentKey(appState.importedDocument);
-}
-
-function getCurrentReadingProgress() {
-  const documentKey = getReadingProgressDocumentKey();
-  if (!documentKey) {
-    return null;
-  }
-
-  if (!appState.readingProgressByDocument[documentKey]) {
-    appState.readingProgressByDocument[documentKey] = {
-      lastBlockKey: "",
-      lastBlockLabel: "",
-      lastPageNumber: 0,
-      lastVisitedAt: "",
-      totalReadingMs: 0,
-      lastProfileId: appState.activeProfileId
-    };
-  }
-
-  return appState.readingProgressByDocument[documentKey];
-}
-
-function buildCheckpointLabel(text) {
-  return String(text || "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 96);
-}
-
-function syncReadingProgressStorage({ updateVisitedAt = true } = {}) {
-  if (!appState.importedDocument) {
-    return;
-  }
-
-  const progress = getCurrentReadingProgress();
-  if (!progress) {
-    return;
-  }
-
-  const selectedContext = getSelectedReadableBlockContext();
-  if (selectedContext) {
-    progress.lastBlockKey = selectedContext.blockKey;
-    progress.lastPageNumber = selectedContext.pageNumber;
-    progress.lastBlockLabel = buildCheckpointLabel(selectedContext.block?.text || "");
-  }
-
-  progress.lastProfileId = appState.activeProfileId;
-  if (updateVisitedAt) {
-    progress.lastVisitedAt = new Date().toISOString();
-  }
-}
-
-function loadReadingProgressForCurrentDocument() {
-  const documentKey = getReadingProgressDocumentKey();
-  return documentKey ? appState.readingProgressByDocument[documentKey] || null : null;
-}
-
-function formatReadingDuration(totalMs = 0) {
-  const totalMinutes = Math.max(0, Math.round(Number(totalMs || 0) / 60000));
-  if (totalMinutes < 1) {
-    return "moins d’une minute";
-  }
-  if (totalMinutes < 60) {
-    return `${totalMinutes} min`;
-  }
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return minutes > 0 ? `${hours} h ${minutes} min` : `${hours} h`;
-}
-
-function formatProgressDate(value) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "jamais" : date.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
-}
-
-function accumulateReadingTime() {
-  if (!appState.importedDocument || document.hidden) {
-    appState.readingTimeTickStartedAt = 0;
-    return;
-  }
-
-  const now = Date.now();
-  if (!appState.readingTimeTickStartedAt) {
-    appState.readingTimeTickStartedAt = now;
-    return;
-  }
-
-  const elapsed = Math.max(0, now - appState.readingTimeTickStartedAt);
-  if (elapsed < 1000) {
-    return;
-  }
-
-  const progress = getCurrentReadingProgress();
-  if (progress) {
-    progress.totalReadingMs = Number(progress.totalReadingMs || 0) + elapsed;
-    syncReadingProgressStorage({ updateVisitedAt: false });
-    renderReadingTracking();
-  }
-
-  appState.readingTimeTickStartedAt = now;
-}
-
-function startReadingTrackingLoop() {
-  if (appState.readingTimeIntervalId) {
-    window.clearInterval(appState.readingTimeIntervalId);
-  }
-  appState.readingTimeTickStartedAt = !document.hidden && appState.importedDocument ? Date.now() : 0;
-  appState.readingTimeIntervalId = window.setInterval(() => {
-    accumulateReadingTime();
-    debouncePersist();
-  }, 15000);
-}
-
-function handleVisibilityTracking() {
-  if (document.hidden) {
-    accumulateReadingTime();
-    appState.readingTimeTickStartedAt = 0;
-    debouncePersist();
-  } else if (appState.importedDocument) {
-    appState.readingTimeTickStartedAt = Date.now();
-  }
-}
-
-function renderReadingTracking() {
-  if (!elements.readingTrackingSummary) {
-    return;
-  }
-
-  if (!appState.importedDocument) {
-    elements.readingTrackingSummary.textContent =
-      "Ouvre un document pour enregistrer automatiquement ton repère, ton temps de lecture et le dernier profil utile.";
-    elements.resumeReadingButton?.setAttribute("disabled", "disabled");
-    elements.saveReadingCheckpointButton?.setAttribute("disabled", "disabled");
-    return;
-  }
-
-  const progress = getCurrentReadingProgress();
-  const profile = findProfile(progress?.lastProfileId || appState.activeProfileId);
-  const checkpointLine = progress?.lastBlockKey
-    ? `Dernier repère : page ${progress.lastPageNumber || "?"}, ${progress.lastBlockLabel || "bloc repéré"}.`
-    : "Aucun repère automatique enregistré pour ce document pour le moment.";
-  const timeLine = `Temps de lecture cumulé : ${formatReadingDuration(progress?.totalReadingMs || 0)}.`;
-  const profileLine = `Dernier profil utilisé : ${repairUiText(profile?.label || "Normal")}.`;
-  const dateLine = `Mise à jour : ${formatProgressDate(progress?.lastVisitedAt)}.`;
-
-  elements.readingTrackingSummary.innerHTML = `
-    <strong>${escapeHtml(appState.importedDocument.fileName || "Document")}</strong>
-    <p>${escapeHtml(checkpointLine)}</p>
-    <p>${escapeHtml(timeLine)}</p>
-    <p>${escapeHtml(profileLine)}</p>
-    <p>${escapeHtml(dateLine)}</p>
-  `;
-
-  elements.resumeReadingButton?.toggleAttribute("disabled", !progress?.lastBlockKey);
-  elements.saveReadingCheckpointButton?.toggleAttribute("disabled", !appState.selectedBlockKey);
-}
-
-function resumeReadingFromProgress() {
-  const progress = getCurrentReadingProgress();
-  if (!progress?.lastBlockKey) {
-    elements.statusLine.textContent = "Aucun repère de reprise n’est encore enregistré pour ce document.";
-    return;
-  }
-
-  const targetBlock = elements.pageList.querySelector(`[data-block-key="${progress.lastBlockKey}"]`);
-  if (!targetBlock) {
-    progress.lastBlockKey = "";
-    progress.lastBlockLabel = "";
-    progress.lastPageNumber = 0;
-    progress.lastVisitedAt = new Date().toISOString();
-    renderReadingTracking();
-    debouncePersist();
-    elements.statusLine.textContent = "L’ancien repère n’est plus disponible. Un nouveau repère sera créé à la prochaine lecture.";
-    return;
-  }
-
-  if (progress.lastProfileId && progress.lastProfileId !== appState.activeProfileId && findProfile(progress.lastProfileId)) {
-    activateProfile(progress.lastProfileId, {
-      statusMessage: `Profil restauré : ${repairUiText(findProfile(progress.lastProfileId)?.label || "Normal")}.`
-    });
-  }
-
-  setSelectedBlock(progress.lastBlockKey, { scroll: true });
-  elements.pageList.querySelector(`[data-block-key="${progress.lastBlockKey}"]`)?.focus({ preventScroll: true });
-  elements.statusLine.textContent = "Reprise effectuée au dernier repère automatique.";
-}
-
-function saveReadingCheckpoint() {
-  if (!appState.importedDocument || !appState.selectedBlockKey) {
-    elements.statusLine.textContent = "Choisis d’abord un bloc dans la zone de lecture.";
-    return;
-  }
-
-  syncReadingProgressStorage();
-  renderReadingTracking();
-  debouncePersist();
-  elements.statusLine.textContent = "Repère automatique mis à jour.";
 }
 
 function resetWordInsight() {
@@ -2191,15 +1991,45 @@ async function inspectWord(word, options = {}) {
       : `Mot analysé : ${insight.word}.`;
 }
 
-function pronounceIsolatedWord() {
+async function pronounceIsolatedWord() {
   const word = appState.currentWordInsight?.word;
   if (!word) {
     elements.statusLine.textContent = "Choisis d’abord un mot dans le texte.";
     return;
   }
 
+  if (isNativeSpeechRuntimeAvailable() && runtimeApi.kind === "electron") {
+    stopSpeech();
+    const result = await runtimeApi.speakNative({
+      text: word,
+      rate: mapUiSpeechRate(appState.preferences.speechRate)
+    });
+    elements.statusLine.textContent = result?.ok
+      ? `Prononciation du mot : ${word}.`
+      : "Impossible de lancer la voix Windows pour ce mot.";
+    return;
+  }
+
+  const synthesis = getSpeechSynthesisRuntime();
+  const utterance = createSpeechUtterance(word);
+  if (!synthesis || !utterance) {
+    if (!isNativeSpeechRuntimeAvailable()) {
+      elements.statusLine.textContent = "Aucune voix système disponible pour prononcer ce mot.";
+      return;
+    }
+
+    stopSpeech();
+    const result = await runtimeApi.speakNative({
+      text: word,
+      rate: mapUiSpeechRate(appState.preferences.speechRate)
+    });
+    elements.statusLine.textContent = result?.ok
+      ? `Prononciation du mot : ${word}.`
+      : "Impossible de lancer la voix Windows pour ce mot.";
+    return;
+  }
+
   stopSpeech();
-  const utterance = new SpeechSynthesisUtterance(word);
   const selectedVoice = appState.voices.find((voice) => voice.voiceURI === appState.preferences.speechVoiceId);
   if (selectedVoice) {
     utterance.voice = selectedVoice;
@@ -2208,8 +2038,8 @@ function pronounceIsolatedWord() {
     utterance.lang = "fr-FR";
   }
   utterance.rate = mapUiSpeechRate(appState.preferences.speechRate);
-  window.speechSynthesis?.cancel?.();
-  window.speechSynthesis?.speak?.(utterance);
+  synthesis.cancel?.();
+  synthesis.speak?.(utterance);
   elements.statusLine.textContent = `Prononciation du mot : ${word}.`;
 }
 
@@ -2451,18 +2281,12 @@ function renderTeacherTools() {
   const selectedContext = getSelectedReadableBlockContext();
   const activeProfile = findProfile(appState.activeProfileId);
   const hasDocument = Boolean(appState.importedDocument);
-  const isTeacherProfile = appState.activeProfileId === "enseignant";
 
   if (!hasDocument) {
     elements.teacherModeSummary.innerHTML = `
       <strong>Aucune fiche active</strong>
       <p>Importe un PDF pour comparer le document brut avec la lecture adaptee et conserver des remarques.</p>
     `;
-    if (elements.teacherActivateProfileButton) {
-      elements.teacherActivateProfileButton.disabled = false;
-      elements.teacherActivateProfileButton.textContent = "Activer le profil enseignant";
-      elements.teacherActivateProfileButton.classList.remove("is-active");
-    }
     if (elements.teacherCompareButton) {
       elements.teacherCompareButton.disabled = true;
     }
@@ -2492,13 +2316,6 @@ function renderTeacherTools() {
     <p>${escapeHtml(reasonsLabel)}</p>
   `;
 
-  if (elements.teacherActivateProfileButton) {
-    elements.teacherActivateProfileButton.disabled = false;
-    elements.teacherActivateProfileButton.textContent = isTeacherProfile
-      ? "Profil enseignant actif"
-      : "Activer le profil enseignant";
-    elements.teacherActivateProfileButton.classList.toggle("is-active", isTeacherProfile);
-  }
   if (elements.teacherCompareButton) {
     elements.teacherCompareButton.disabled = !selectedContext;
   }
@@ -2588,103 +2405,6 @@ function buildTeacherSheetText() {
   }
 
   return lines.join("\n");
-}
-
-function renderBookmarks() {
-  if (!elements.bookmarksList || !elements.bookmarksEmpty) {
-    return;
-  }
-
-  const hasDocument = Boolean(appState.importedDocument);
-  const bookmarks = normalizeBookmarks(appState.bookmarks);
-  appState.bookmarks = bookmarks;
-
-  if (!hasDocument) {
-    elements.bookmarksList.innerHTML = "";
-    elements.bookmarksEmpty.hidden = false;
-    elements.bookmarksEmpty.textContent = "Importe un PDF pour commencer à poser des repères.";
-    return;
-  }
-
-  if (bookmarks.length === 0) {
-    elements.bookmarksList.innerHTML = "";
-    elements.bookmarksEmpty.hidden = false;
-    elements.bookmarksEmpty.textContent = "Aucun repère enregistré pour ce document.";
-    return;
-  }
-
-  elements.bookmarksEmpty.hidden = true;
-  elements.bookmarksList.innerHTML = bookmarks
-    .map((bookmark) => {
-      const createdAt = new Date(bookmark.createdAt);
-      const createdLabel = Number.isNaN(createdAt.getTime()) ? "" : createdAt.toLocaleDateString("fr-FR");
-      const metaParts = [];
-      if (bookmark.pageNumber) {
-        metaParts.push(`Page ${bookmark.pageNumber}`);
-      }
-      if (createdLabel) {
-        metaParts.push(createdLabel);
-      }
-
-      return `
-        <li class="bookmark-item">
-          <button class="bookmark-button" type="button" data-bookmark-key="${escapeAttribute(bookmark.key)}">
-            <strong>${escapeHtml(bookmark.label)}</strong>
-            <span class="bookmark-meta">${escapeHtml(metaParts.join(" • ") || "Repère de lecture")}</span>
-          </button>
-        </li>
-      `;
-    })
-    .join("");
-}
-
-function renderAnnotations() {
-  if (!elements.annotationsList || !elements.annotationsEmpty) {
-    return;
-  }
-
-  const hasDocument = Boolean(appState.importedDocument);
-  const annotations = normalizeAnnotations(appState.annotations);
-  appState.annotations = annotations;
-
-  if (!hasDocument) {
-    elements.annotationsList.innerHTML = "";
-    elements.annotationsEmpty.hidden = false;
-    elements.annotationsEmpty.textContent = "Importe un PDF pour commencer à surligner des passages.";
-    return;
-  }
-
-  if (annotations.length === 0) {
-    elements.annotationsList.innerHTML = "";
-    elements.annotationsEmpty.hidden = false;
-    elements.annotationsEmpty.textContent = "Aucun passage surligné pour ce document.";
-    return;
-  }
-
-  elements.annotationsEmpty.hidden = true;
-  elements.annotationsList.innerHTML = annotations
-    .map((annotation) => {
-      const createdAt = new Date(annotation.createdAt);
-      const createdLabel = Number.isNaN(createdAt.getTime()) ? "" : createdAt.toLocaleDateString("fr-FR");
-      const metaParts = [];
-      if (annotation.pageNumber) {
-        metaParts.push(`Page ${annotation.pageNumber}`);
-      }
-      if (createdLabel) {
-        metaParts.push(createdLabel);
-      }
-
-      return `
-        <li class="annotation-item">
-          <button class="annotation-button" type="button" data-annotation-id="${escapeAttribute(annotation.id)}" data-block-key="${escapeAttribute(annotation.blockKey)}">
-            <strong>${escapeHtml(annotation.excerpt)}</strong>
-            <span class="annotation-meta">${escapeHtml(metaParts.join(" • ") || "Passage surligné")}</span>
-          </button>
-          <button class="ghost-action subtle annotation-remove" type="button" data-remove-annotation-id="${escapeAttribute(annotation.id)}" aria-label="Supprimer ce surlignage">×</button>
-        </li>
-      `;
-    })
-    .join("");
 }
 
 function clearSelectionAssist() {
@@ -2923,11 +2643,9 @@ async function handleStartOcr() {
     if (canAdoptOcr) {
       ocrDocument.filePath = previousDocument.filePath;
       appState.importedDocument = ocrDocument;
-      loadBookmarksForCurrentDocument();
       loadAnnotationsForCurrentDocument();
       loadTeacherNotesForCurrentDocument();
-      const savedProgress = loadReadingProgressForCurrentDocument();
-      appState.selectedBlockKey = savedProgress?.lastBlockKey || getFirstReadableBlockKey(appState.importedDocument);
+      appState.selectedBlockKey = getFirstReadableBlockKey(appState.importedDocument);
       rememberFileMeta(appState.importedDocument);
       renderDocument();
       debouncePersist();
@@ -3154,21 +2872,11 @@ function addAnnotation(color) {
     createdAt: Date.now()
   });
   syncAnnotationsStorage();
-  renderAnnotations();
   renderDocument();
   debouncePersist();
   window.getSelection?.()?.removeAllRanges?.();
   clearSelectionAssist();
   elements.statusLine.textContent = "Passage surligné et enregistré pour ce document.";
-}
-
-function deleteAnnotation(annotationId) {
-  appState.annotations = removeAnnotation(appState.annotations, annotationId);
-  syncAnnotationsStorage();
-  renderAnnotations();
-  renderDocument();
-  debouncePersist();
-  elements.statusLine.textContent = "Surlignage supprimé.";
 }
 
 function updateLayoutVariables() {
@@ -3221,30 +2929,13 @@ function setWarning(message, visible) {
 
 function updateDocumentMeta() {
   if (!appState.importedDocument) {
-    elements.documentTitle.textContent = "Aucun PDF chargé";
-    elements.documentMeta.textContent = "Importe un PDF texte pour activer la lecture adaptée.";
     elements.documentPagesInfo.textContent = "0";
-    elements.documentModeInfo.textContent = "En attente";
+    elements.documentModeInfo.textContent = "Normal";
     elements.documentProfileInfo.textContent = getActiveProfileLabel();
     return;
   }
 
-  const { fileName, pageCount, extractionQuality } = appState.importedDocument;
-  const qualityLabel = getExtractionQualityLabel(extractionQuality);
-  const diagnostics = getDocumentDiagnostics();
-  const ocrLabel =
-    extractionQuality === "ocr" && Number.isFinite(appState.importedDocument.ocr?.averageConfidence)
-      ? ` - OCR ${Math.round(appState.importedDocument.ocr.averageConfidence)}%`
-      : "";
-  const formulaLabel =
-    diagnostics.formulaBlockCount > 0
-      ? ` - ${diagnostics.formulaBlockCount} formule(s)`
-      : diagnostics.verificationBlockCount > 0
-        ? ` - ${diagnostics.verificationBlockCount} bloc(s) à vérifier`
-        : "";
-
-  elements.documentTitle.textContent = fileName;
-  elements.documentMeta.textContent = `${pageCount} page(s) - ${qualityLabel}${ocrLabel}${formulaLabel}`;
+  const { pageCount } = appState.importedDocument;
   elements.documentPagesInfo.textContent = String(pageCount);
   elements.documentModeInfo.textContent = getActiveModeLabel();
   elements.documentProfileInfo.textContent = getActiveProfileLabel();
@@ -3708,7 +3399,7 @@ function buildAudioStartContextFromNode(node) {
   });
 }
 
-function highlightAudioSentence(blockKey, sentenceIndex) {
+function highlightAudioSentence(blockKey, sentenceIndex, { align = true, showSentence = true } = {}) {
   clearAudioHighlights();
   const block = elements.pageList.querySelector(`[data-block-key="${blockKey}"]`);
   if (!block) {
@@ -3722,9 +3413,12 @@ function highlightAudioSentence(blockKey, sentenceIndex) {
   });
   block.classList.add("is-audio-block");
   const sentence = block.querySelector(`[data-audio-sentence-index="${sentenceIndex}"]`);
-  if (sentence) {
+  if (sentence && showSentence) {
     sentence.classList.add("is-audio-sentence");
+  }
+  if (sentence && align) {
     readingGuide.moveToElement(sentence);
+    keepAudioElementInView(sentence);
   }
 }
 
@@ -3734,12 +3428,9 @@ function getStartNeedFromProfile(profileId) {
     case "lecture-visuelle-allegee":
     case "dyspraxie":
       return "normal";
-    case "dyslexie-legere":
-    case "dyslexie-severe":
-    case "comprehension-simplifiee":
+    case "decodage-renforce":
       return "dyslexie";
     case "audio":
-    case "tdah":
       return "audio";
     case "dyscalculie":
       return "maths";
@@ -3753,7 +3444,7 @@ function getStartNeedProfileId(needId) {
     case "normal":
       return "normal";
     case "dyslexie":
-      return "dyslexie-legere";
+      return "decodage-renforce";
     case "audio":
       return "audio";
     case "maths":
@@ -3778,8 +3469,33 @@ function getStartNeedSummary(needId) {
   }
 }
 
+function keepAudioElementInView(element, { force = false } = {}) {
+  if (!element || !elements.readArea) {
+    return;
+  }
+
+  const containerRect = elements.readArea.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  const comfortTop = containerRect.top + containerRect.height * 0.22;
+  const comfortBottom = containerRect.bottom - containerRect.height * 0.25;
+  const shouldScroll = force || elementRect.top < comfortTop || elementRect.bottom > comfortBottom;
+  if (!shouldScroll) {
+    return;
+  }
+
+  const nextTop =
+    elements.readArea.scrollTop + (elementRect.top - containerRect.top) - elements.readArea.clientHeight * 0.42;
+  elements.readArea.scrollTo({
+    top: Math.max(0, nextTop),
+    behavior: document.documentElement.dataset.motionPreference === "reduce" ? "auto" : "smooth"
+  });
+}
+
 function highlightAudioWord(blockKey, sentenceIndex, wordIndex) {
-  highlightAudioSentence(blockKey, sentenceIndex);
+  highlightAudioSentence(blockKey, sentenceIndex, {
+    align: false,
+    showSentence: !audioEngine.preferNativeSpeech
+  });
   const block = elements.pageList.querySelector(`[data-block-key="${blockKey}"]`);
   const sentence = block?.querySelector(`[data-audio-sentence-index="${sentenceIndex}"]`);
   const word = sentence?.querySelector(`[data-audio-word-index="${wordIndex}"]`);
@@ -3790,6 +3506,11 @@ function highlightAudioWord(blockKey, sentenceIndex, wordIndex) {
   });
   if (word) {
     word.classList.add("is-audio-word");
+    readingGuide.moveToElement(word);
+    keepAudioElementInView(word);
+  } else if (sentence) {
+    readingGuide.moveToElement(sentence);
+    keepAudioElementInView(sentence);
   }
 }
 
@@ -3948,32 +3669,11 @@ function isReadingTarget(target) {
   return elements.readArea.contains(target) || target === elements.readArea;
 }
 
-function quickBookmark() {
-  if (!appState.importedDocument || !appState.selectedBlockKey) {
-    elements.statusLine.textContent = "Aucun passage lisible n'est sélectionné pour ajouter un marque-page.";
-    return;
-  }
-
-  const current = elements.pageList.querySelector(`[data-block-key="${appState.selectedBlockKey}"]`);
-  const label = current?.querySelector(".reader-block--heading, p, .table-cell")?.textContent?.trim() || "Position courante";
-  appState.bookmarks = upsertBookmark(appState.bookmarks, {
-    key: appState.selectedBlockKey,
-    pageNumber: current?.dataset.pageNumber || "",
-    label,
-    createdAt: Date.now()
-  });
-  syncBookmarksStorage();
-  renderBookmarks();
-  debouncePersist();
-  elements.statusLine.textContent = "Marque-page rapide ajouté pour la position courante.";
-}
-
 function renderDocument() {
   updateLayoutVariables();
   updateDocumentMeta();
   renderVerificationSummary();
   renderTeacherTools();
-  renderReadingTracking();
   renderWordInsight();
   renderLocalAiStatus();
   syncExamDurationOutput();
@@ -3986,21 +3686,20 @@ function renderDocument() {
   elements.openExternalButton.disabled = !documentLoaded;
   elements.printButton.disabled = !canUseAdaptedView;
   elements.exportPdfButton.disabled = !canUseAdaptedView;
-  elements.bookmarkQuickButton.disabled = !documentLoaded;
-  elements.exportNotesButton.disabled = !documentLoaded;
   elements.examModeButton?.toggleAttribute("disabled", !canUseAdaptedView);
   elements.examPrintButton?.toggleAttribute("disabled", !canUseAdaptedView);
   elements.examBaseMinutes?.toggleAttribute("disabled", !documentLoaded);
   elements.examToggleTimerButton?.toggleAttribute("disabled", !documentLoaded);
   elements.examResetTimerButton?.toggleAttribute("disabled", !documentLoaded);
-  renderBookmarks();
-  renderAnnotations();
   updateOcrUi();
 
   if (!documentLoaded) {
     setWarning("", false);
     elements.printSummary.innerHTML = "";
     elements.pageList.innerHTML = "";
+    if (elements.documentOverviewDialog?.open) {
+      elements.documentOverviewDialog.close();
+    }
     readingGuide.setMode("off");
     clearSelectionAssist();
     appState.ocrState.status = "OCR prêt.";
@@ -4012,6 +3711,7 @@ function renderDocument() {
     resetWordInsight();
     renderBlockAssistMessage("Sélectionne un bloc pour obtenir un résumé ou une reformulation simple.");
     renderTeacherCompareDialog();
+    syncQuickActionButtons();
     return;
   }
 
@@ -4029,6 +3729,7 @@ function renderDocument() {
     readingGuide.setMode("off");
     renderBlockAssistMessage("L’assistance détaillée sera disponible après reconstruction OCR.");
     renderTeacherCompareDialog();
+    syncQuickActionButtons();
     return;
   }
 
@@ -4087,10 +3788,146 @@ function renderDocument() {
   renderPrintSummary(buildCurrentPrintManifest());
   highlightSelectedBlock();
   syncReadingGuide();
-  renderReadingTracking();
   if (elements.teacherCompareDialog?.open) {
     renderTeacherCompareDialog();
   }
+  if (elements.documentOverviewDialog?.open) {
+    renderDocumentOverview();
+  }
+  syncQuickActionButtons();
+}
+
+function clampOverviewZoom(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return 100;
+  }
+  return Math.min(400, Math.max(20, Math.round(numeric / 5) * 5));
+}
+
+function getOverviewBlockCount(documentModel = appState.importedDocument) {
+  return (documentModel?.pages || []).reduce((sum, page) => sum + (page.blocks?.length || 0), 0);
+}
+
+function updateDocumentOverviewZoomUi() {
+  const zoom = clampOverviewZoom(appState.overviewZoom);
+  appState.overviewZoom = zoom;
+  if (elements.overviewZoomRange) {
+    elements.overviewZoomRange.value = String(zoom);
+  }
+  if (elements.overviewZoomLabel) {
+    elements.overviewZoomLabel.textContent = `${zoom}%`;
+  }
+  if (elements.overviewZoomOutButton) {
+    elements.overviewZoomOutButton.disabled = zoom <= 20;
+  }
+  if (elements.overviewZoomInButton) {
+    elements.overviewZoomInButton.disabled = zoom >= 400;
+  }
+}
+
+function applyDocumentOverviewZoom() {
+  if (!elements.documentOverviewContent) {
+    return;
+  }
+
+  const zoom = clampOverviewZoom(appState.overviewZoom);
+  const ratio = zoom / 100;
+  const baseFontSize = Math.max(16, Number(appState.preferences.fontSize) || DEFAULT_PREFERENCES.fontSize);
+  const basePadding = Math.max(18, Number(appState.preferences.pagePadding) || DEFAULT_PREFERENCES.pagePadding);
+  elements.documentOverviewContent.style.setProperty("--overview-font-size", `${Math.max(4, baseFontSize * ratio).toFixed(2)}px`);
+  elements.documentOverviewContent.style.setProperty("--overview-page-width", `${Math.max(180, Math.round(980 * ratio))}px`);
+  elements.documentOverviewContent.style.setProperty("--overview-page-padding", `${Math.max(6, Math.round(basePadding * ratio))}px`);
+  elements.documentOverviewContent.style.setProperty("--overview-block-padding", `${Math.max(4, Math.round(12 * ratio))}px`);
+}
+
+function renderDocumentOverview() {
+  if (!elements.documentOverviewContent || !elements.documentOverviewMeta) {
+    return;
+  }
+
+  updateDocumentOverviewZoomUi();
+  applyDocumentOverviewZoom();
+
+  const documentModel = appState.importedDocument;
+  if (!documentModel || documentModel.extractionQuality === "poor") {
+    elements.documentOverviewMeta.textContent = "Aucun document lisible à parcourir.";
+    elements.documentOverviewContent.innerHTML = `
+      <article class="document-overview-empty">
+        <h3>Vue d'ensemble indisponible</h3>
+        <p>Importe un PDF lisible ou lance l'OCR local avant d'afficher l'ensemble du document.</p>
+      </article>
+    `;
+    return;
+  }
+
+  const blockCount = getOverviewBlockCount(documentModel);
+  elements.documentOverviewMeta.textContent = `${documentModel.fileName || "Document"} - ${documentModel.pageCount || documentModel.pages.length} page(s), ${blockCount} bloc(s).`;
+
+  const pagesMarkup = documentModel.pages
+    .map((page) => {
+      const blocksMarkup = (page.blocks || [])
+        .map((block, blockIndex) => {
+          const blockKey = buildBlockKey(page.pageNumber, blockIndex);
+          const typeLabel = getBlockTypeLabel(block);
+          return `
+            <article
+              class="document-overview-block document-overview-block--${escapeAttribute(block.type || "paragraph")} ${blockKey === appState.selectedBlockKey ? "is-current" : ""}"
+              data-overview-block-key="${escapeAttribute(blockKey)}"
+              tabindex="0"
+              role="button"
+              aria-label="Aller au ${escapeAttribute(typeLabel.toLowerCase())} page ${page.pageNumber}"
+            >
+              <span class="document-overview-block__meta">p.${page.pageNumber} · ${escapeHtml(typeLabel)}</span>
+              ${renderBlockBody(block, blockKey)}
+            </article>
+          `;
+        })
+        .join("");
+
+      return `
+        <section class="document-overview-page" aria-label="Page ${page.pageNumber}">
+          <header class="document-overview-page__header">Page ${page.pageNumber}</header>
+          <div class="document-overview-page__body">
+            ${blocksMarkup || `<p class="muted-inline">Page sans texte exploitable.</p>`}
+          </div>
+        </section>
+      `;
+    })
+    .join("");
+
+  elements.documentOverviewContent.innerHTML = `<div class="document-overview-pages">${pagesMarkup}</div>`;
+}
+
+function openDocumentOverview() {
+  if (!appState.importedDocument || appState.importedDocument.extractionQuality === "poor") {
+    elements.statusLine.textContent = "La vue d'ensemble sera disponible après import d'un PDF lisible ou reconstruction OCR.";
+    return;
+  }
+
+  renderDocumentOverview();
+  if (!elements.documentOverviewDialog?.open) {
+    elements.documentOverviewDialog?.showModal();
+  }
+  elements.statusLine.textContent = "Vue d'ensemble du document ouverte.";
+}
+
+function selectOverviewBlock(blockKey) {
+  if (!blockKey) {
+    return;
+  }
+
+  elements.documentOverviewDialog?.close();
+  setSelectedBlock(blockKey, { scroll: true });
+  const escapedKey = window.CSS?.escape ? window.CSS.escape(blockKey) : blockKey;
+  const target = elements.pageList.querySelector(`[data-block-key="${escapedKey}"]`);
+  target?.focus?.({ preventScroll: true });
+}
+
+function setDocumentOverviewZoom(value) {
+  appState.overviewZoom = clampOverviewZoom(value);
+  updateDocumentOverviewZoomUi();
+  applyDocumentOverviewZoom();
 }
 
 function rememberFileMeta(importedDocument) {
@@ -4109,7 +3946,6 @@ async function handlePdfOpen() {
     return;
   }
 
-  accumulateReadingTime();
   elements.statusLine.textContent = "Lecture du PDF en cours...";
   let nextPdfBlobUrl = "";
   try {
@@ -4128,22 +3964,8 @@ async function handlePdfOpen() {
     appState.currentPdfBlobUrl = nextPdfBlobUrl;
     appState.currentPdfBytes = typedBytes;
     appState.importedDocument = importedDocument;
-    loadBookmarksForCurrentDocument();
     loadAnnotationsForCurrentDocument();
     loadTeacherNotesForCurrentDocument();
-    const savedProgress = loadReadingProgressForCurrentDocument();
-    const savedProfile =
-      savedProgress?.lastProfileId && findProfile(savedProgress.lastProfileId)
-        ? findProfile(savedProgress.lastProfileId)
-        : null;
-    if (savedProfile) {
-      appState.activeProfileId = savedProfile.id;
-      appState.preferences = buildProfilePreferences(savedProfile);
-      syncControlsWithState();
-      applyAppTheme();
-      applyTheme();
-      renderProfiles();
-    }
     resetWordInsight();
     renderBlockAssistMessage("Sélectionne un bloc pour obtenir un résumé ou une reformulation simple.");
     clearSelectionAssist();
@@ -4162,13 +3984,10 @@ async function handlePdfOpen() {
       importedDocument.extractionQuality === "poor"
         ? "OCR recommande pour ce document scanne."
         : getIdleOcrStatus();
-    appState.selectedBlockKey = savedProgress?.lastBlockKey || getFirstReadableBlockKey(appState.importedDocument);
-    appState.readingTimeTickStartedAt = document.hidden ? 0 : Date.now();
+    appState.selectedBlockKey = getFirstReadableBlockKey(appState.importedDocument);
     renderDocument();
     rememberFileMeta(appState.importedDocument);
-    elements.statusLine.textContent = savedProgress?.lastBlockKey
-      ? `${getImportStatusMessage(appState.importedDocument)} Reprise disponible depuis le panneau de suivi.`
-      : getImportStatusMessage(appState.importedDocument);
+    elements.statusLine.textContent = getImportStatusMessage(appState.importedDocument);
   } catch (error) {
     if (nextPdfBlobUrl) {
       URL.revokeObjectURL(nextPdfBlobUrl);
@@ -4237,41 +4056,6 @@ async function handleExportAdaptedPdf() {
   }
 }
 
-async function handleExportNotes() {
-  if (!appState.importedDocument) {
-    elements.statusLine.textContent = "Importe un document avant d'exporter des notes.";
-    return;
-  }
-
-  const bookmarkText = exportBookmarksAsText(appState.importedDocument.fileName, appState.bookmarks);
-  const annotationText = exportAnnotationsAsText(appState.importedDocument.fileName, appState.annotations);
-  const content = `${bookmarkText}\n\n${annotationText}`;
-  try {
-    const result = await runtimeApi.saveTextFile({
-      defaultFileName: getBookmarkExportFileName(appState.importedDocument.fileName),
-      content,
-      title: "Exporter les marque-pages"
-    });
-
-    if (result?.canceled) {
-      elements.statusLine.textContent = "Export des notes annulé.";
-      return;
-    }
-
-    if (result?.ok === false) {
-      elements.statusLine.textContent = "L'export des notes a échoué.";
-      return;
-    }
-
-    elements.statusLine.textContent = result?.filePath
-      ? `Notes exportées : ${result.filePath}`
-      : "Notes exportées au format texte.";
-  } catch (error) {
-    console.error("Erreur pendant l'export des notes", error);
-    elements.statusLine.textContent = "Impossible d'exporter les notes pour le moment.";
-  }
-}
-
 async function handleExportTeacherSheet() {
   if (!appState.importedDocument) {
     elements.statusLine.textContent = "Importe un document avant d'exporter une fiche.";
@@ -4328,12 +4112,6 @@ function setSelectedBlock(blockKey, { scroll = true, audioStartContext = null, p
     highlightSelectedBlock(scroll);
     syncReadingGuide();
     renderTeacherTools();
-  }
-
-  if (persistProgress && blockKey && blockChanged) {
-    syncReadingProgressStorage();
-    renderReadingTracking();
-    debouncePersist();
   }
 
   if (elements.teacherCompareDialog?.open && blockChanged) {
@@ -4556,22 +4334,53 @@ function resetCurrentSettings() {
 }
 
 function setVoices() {
-  const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  const synthesis = getSpeechSynthesisRuntime();
+  const webSpeechAvailable = Boolean(synthesis && getSpeechUtteranceConstructor());
+  const nativeSpeechAvailable = isNativeSpeechRuntimeAvailable();
+  const speechRuntimeAvailable = webSpeechAvailable || nativeSpeechAvailable;
+  const voices = webSpeechAvailable ? synthesis.getVoices?.() || [] : [];
   appState.voices = voices;
-  appState.speechAvailable = voices.length > 0;
+  appState.speechAvailable = speechRuntimeAvailable;
+  if (webSpeechAvailable) {
+    audioEngine.synthesis = synthesis;
+  }
+  audioEngine.setNativeSpeech(
+    nativeSpeechAvailable
+      ? {
+          speak: runtimeApi.speakNative,
+          stop: runtimeApi.stopNativeSpeech,
+          onProgress: runtimeApi.onNativeSpeechProgress
+        }
+      : null
+  );
+  audioEngine.setPreferNativeSpeech(nativeSpeechAvailable && runtimeApi.kind === "electron");
 
-  if (!appState.speechAvailable) {
+  if (!speechRuntimeAvailable) {
     elements.voiceSelect.disabled = true;
     syncQuickActionButtons();
     elements.statusLine.textContent = "Aucune voix système détectée. La lecture audio reste désactivée.";
     return;
   }
 
-  elements.voiceSelect.disabled = false;
+  if (nativeSpeechAvailable && runtimeApi.kind === "electron") {
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Voix Windows par défaut";
+    elements.voiceSelect.replaceChildren(defaultOption);
+    elements.voiceSelect.disabled = true;
+    appState.preferences.speechVoiceId = "";
+    audioEngine.setVoice("");
+    audioEngine.setRate(appState.preferences.speechRate);
+    audioEngine.setPauseBetweenSentences(appState.preferences.pauseBetweenSentences || 0);
+    syncQuickActionButtons();
+    return;
+  }
+
+  elements.voiceSelect.disabled = voices.length === 0 || audioEngine.preferNativeSpeech;
   const currentValue = appState.preferences.speechVoiceId;
   const defaultOption = document.createElement("option");
   defaultOption.value = "";
-  defaultOption.textContent = "Voix système par défaut";
+  defaultOption.textContent = audioEngine.preferNativeSpeech ? "Voix Windows par défaut" : "Voix système par défaut";
   const voiceOptions = voices.map((voice) => {
     const option = document.createElement("option");
     option.value = voice.voiceURI;
@@ -4614,9 +4423,6 @@ function buildSpeechQueue() {
 }
 
 function stopSpeech({ silent = false } = {}) {
-  if (!window.speechSynthesis) {
-    return;
-  }
   if (appState.pendingAudioRestartTimerId) {
     window.clearTimeout(appState.pendingAudioRestartTimerId);
     appState.pendingAudioRestartTimerId = 0;
@@ -4638,7 +4444,8 @@ function stopSpeech({ silent = false } = {}) {
 }
 
 function playNextUtterance() {
-  if (!window.speechSynthesis || appState.speechQueue.length === 0) {
+  const synthesis = getSpeechSynthesisRuntime();
+  if (!synthesis || appState.speechQueue.length === 0) {
     appState.speaking = false;
     elements.speechToggleButton.textContent = "Lire";
     updateDocumentMeta();
@@ -4649,7 +4456,12 @@ function playNextUtterance() {
 
   const next = appState.speechQueue.shift();
   setSelectedBlock(next.key, { scroll: true });
-  const utterance = new SpeechSynthesisUtterance(next.text);
+  const utterance = createSpeechUtterance(next.text);
+  if (!utterance) {
+    elements.statusLine.textContent = "Aucune voix système disponible pour la lecture audio.";
+    stopSpeech({ silent: true });
+    return;
+  }
   utterance.rate = mapUiSpeechRate(appState.preferences.speechRate);
   const selectedVoice = appState.voices.find((voice) => voice.voiceURI === appState.preferences.speechVoiceId);
   if (selectedVoice) {
@@ -4661,11 +4473,11 @@ function playNextUtterance() {
     stopSpeech();
   };
   appState.speechUtterance = utterance;
-  window.speechSynthesis.speak(utterance);
+  synthesis.speak(utterance);
 }
 
 function legacyToggleSpeech() {
-  if (!appState.speechAvailable) {
+  if (!ensureSpeechRuntimeReady()) {
     elements.statusLine.textContent = "Aucune voix système disponible pour la lecture audio.";
     return;
   }
@@ -4694,15 +4506,19 @@ function pauseSpeech() {
     return;
   }
 
+  const resumeContext = getCurrentAudioContext();
   audioEngine.pause();
   appState.audioPaused = true;
+  if (resumeContext?.startKey) {
+    setAudioResumeOverride(resumeContext);
+  }
   updateDocumentMeta();
   syncQuickActionButtons();
   elements.statusLine.textContent = "Lecture audio en pause.";
 }
 
 function launchAudioPlayback(startContext) {
-  if (!appState.speechAvailable) {
+  if (!ensureSpeechRuntimeReady()) {
     elements.statusLine.textContent = "Aucune voix système disponible pour la lecture audio.";
     return false;
   }
@@ -4736,11 +4552,13 @@ function launchAudioPlayback(startContext) {
         startSentenceIndex: -1,
         startWordIndex: -1
       });
-      setSelectedBlock(blockKey, { scroll: true });
-      syncReadingGuide({ alignToSelection: true });
+      setSelectedBlock(blockKey, { scroll: false });
     },
     onSentenceStart: ({ blockKey, sentenceIndex }) => {
-      highlightAudioSentence(blockKey, sentenceIndex);
+      highlightAudioSentence(blockKey, sentenceIndex, {
+        align: !audioEngine.preferNativeSpeech,
+        showSentence: !audioEngine.preferNativeSpeech
+      });
     },
     onWordBoundary: ({ blockKey, sentenceIndex, wordIndex }) => {
       highlightAudioWord(blockKey, sentenceIndex, wordIndex);
@@ -4793,7 +4611,7 @@ function startAudioPlayback(startContext) {
     appState.pendingAudioRestartTimerId = 0;
   }
 
-  const needsRestartDelay = appState.speaking || appState.audioPaused;
+  const needsRestartDelay = appState.speaking || appState.audioPaused || hasActiveSpeechRuntimeQueue();
   if (needsRestartDelay) {
     stopSpeech({ silent: true });
     appState.pendingAudioRestartTimerId = window.setTimeout(() => {
@@ -4817,7 +4635,7 @@ function startSelectionSpeech() {
 }
 
 function toggleSpeech() {
-  if (!appState.speechAvailable) {
+  if (!ensureSpeechRuntimeReady()) {
     elements.statusLine.textContent = "Aucune voix système disponible pour la lecture audio.";
     return;
   }
@@ -4846,6 +4664,71 @@ function toggleSpeech() {
   }
 
   startAudioPlayback(getAudioStartContext({ preferSelection: false }));
+}
+
+function ensureSpeechRuntimeReady() {
+  const synthesis = getSpeechSynthesisRuntime();
+  const webSpeechAvailable = Boolean(synthesis && getSpeechUtteranceConstructor());
+  const nativeSpeechAvailable = isNativeSpeechRuntimeAvailable();
+  if (!webSpeechAvailable && !nativeSpeechAvailable) {
+    appState.speechAvailable = false;
+    syncQuickActionButtons();
+    return false;
+  }
+
+  if (!appState.speechAvailable) {
+    appState.speechAvailable = true;
+  }
+  if (webSpeechAvailable) {
+    audioEngine.synthesis = synthesis;
+  }
+  audioEngine.setNativeSpeech(
+    nativeSpeechAvailable
+      ? {
+          speak: runtimeApi.speakNative,
+          stop: runtimeApi.stopNativeSpeech,
+          onProgress: runtimeApi.onNativeSpeechProgress
+        }
+      : null
+  );
+  audioEngine.setPreferNativeSpeech(nativeSpeechAvailable && runtimeApi.kind === "electron");
+
+  const voices = webSpeechAvailable ? synthesis.getVoices?.() || [] : [];
+  if (webSpeechAvailable && voices.length > 0 && voices.length !== appState.voices.length) {
+    setVoices();
+  } else {
+    syncQuickActionButtons();
+  }
+  return true;
+}
+
+function getQuickReadStartContext() {
+  return (
+    normalizeAudioStartContext(appState.audioResumeOverride) ||
+    getCurrentAudioContext() ||
+    normalizeAudioStartContext(appState.preferredAudioStartContext) ||
+    getAudioStartContext({ preferSelection: false })
+  );
+}
+
+function handleQuickReadButton() {
+  if (appState.speaking && !appState.audioPaused) {
+    pauseSpeech();
+    return;
+  }
+
+  if (!ensureSpeechRuntimeReady()) {
+    elements.statusLine.textContent = "Aucune voix système disponible pour la lecture audio.";
+    return;
+  }
+
+  const context = getQuickReadStartContext();
+  if (!context?.startKey) {
+    elements.statusLine.textContent = "Aucun passage lisible n'est disponible pour lancer la lecture.";
+    return;
+  }
+
+  startAudioPlayback(context);
 }
 
 function playPreviousSentence() {
@@ -5078,7 +4961,7 @@ function bindReadingInteractions() {
 
   elements.pageList.addEventListener("keydown", (event) => {
     const block = event.target.closest(".reader-block");
-    if (!block || !appState.speechAvailable) {
+    if (!block || !isSpeechRuntimeAvailable()) {
       return;
     }
 
@@ -5121,6 +5004,9 @@ function bindTopLevelActions() {
   elements.openHeaderButton.addEventListener("click", handlePdfOpen);
   elements.toggleSidebarButton.addEventListener("click", toggleSettings);
   elements.floatingSidebarButton.addEventListener("click", toggleSettings);
+  elements.quickOverviewButton?.addEventListener("click", openDocumentOverview);
+  elements.quickReadButton?.addEventListener("click", handleQuickReadButton);
+  elements.quickStopButton?.addEventListener("click", () => stopSpeech());
   elements.printButton.addEventListener("click", handlePrint);
   elements.exportPdfButton.addEventListener("click", handleExportAdaptedPdf);
   elements.saveProfileButton.addEventListener("click", saveCurrentProfile);
@@ -5138,8 +5024,6 @@ function bindTopLevelActions() {
   elements.openExternalButton.addEventListener("click", async () => {
     await runtimeApi.openPath(appState.importedDocument?.filePath || "");
   });
-  elements.bookmarkQuickButton?.addEventListener("click", quickBookmark);
-  elements.exportNotesButton?.addEventListener("click", handleExportNotes);
   elements.wordSpeakButton?.addEventListener("click", pronounceIsolatedWord);
   elements.refreshWordDefinitionButton?.addEventListener("click", () => {
     if (appState.currentWordInsight?.word) {
@@ -5155,8 +5039,6 @@ function bindTopLevelActions() {
     await runtimeApi.openExternalUrl(LOCAL_AI_INSTALL_URL);
     elements.statusLine.textContent = "La page d'installation d'Ollama a été ouverte dans votre navigateur.";
   });
-  elements.resumeReadingButton?.addEventListener("click", resumeReadingFromProgress);
-  elements.saveReadingCheckpointButton?.addEventListener("click", saveReadingCheckpoint);
   elements.startAssistantButtons?.addEventListener("click", (event) => {
     const needButton = event.target.closest("[data-start-need]");
     if (!needButton) {
@@ -5171,11 +5053,6 @@ function bindTopLevelActions() {
 
     activateProfile(profile.id, {
       statusMessage: `Besoin applique : ${repairUiText(profile.label)}.`
-    });
-  });
-  elements.teacherActivateProfileButton?.addEventListener("click", () => {
-    activateProfile("enseignant", {
-      statusMessage: "Profil enseignant / ortho active."
     });
   });
   elements.teacherCompareButton?.addEventListener("click", openTeacherCompareDialog);
@@ -5212,35 +5089,32 @@ function bindTopLevelActions() {
   });
   elements.startOcrButton?.addEventListener("click", handleStartOcr);
   elements.cancelOcrButton?.addEventListener("click", handleCancelOcr);
-  elements.bookmarksList?.addEventListener("click", (event) => {
-    const bookmarkButton = event.target.closest("[data-bookmark-key]");
-    if (!bookmarkButton) {
-      return;
-    }
-
-    setSelectedBlock(bookmarkButton.dataset.bookmarkKey, { scroll: true });
-    elements.pageList.querySelector(`[data-block-key="${bookmarkButton.dataset.bookmarkKey}"]`)?.focus({
-      preventScroll: true
-    });
-    elements.statusLine.textContent = "Marque-page ouvert dans la zone de lecture.";
+  elements.overviewZoomRange?.addEventListener("input", (event) => {
+    setDocumentOverviewZoom(event.target.value);
   });
-  elements.annotationsList?.addEventListener("click", (event) => {
-    const removeButton = event.target.closest("[data-remove-annotation-id]");
-    if (removeButton) {
-      deleteAnnotation(removeButton.dataset.removeAnnotationId);
+  elements.overviewZoomOutButton?.addEventListener("click", () => {
+    setDocumentOverviewZoom(appState.overviewZoom - 20);
+  });
+  elements.overviewZoomInButton?.addEventListener("click", () => {
+    setDocumentOverviewZoom(appState.overviewZoom + 20);
+  });
+  elements.documentOverviewContent?.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target.closest("[data-overview-block-key]") : null;
+    if (!target?.dataset?.overviewBlockKey) {
       return;
     }
-
-    const annotationButton = event.target.closest("[data-annotation-id]");
-    if (!annotationButton) {
+    selectOverviewBlock(target.dataset.overviewBlockKey);
+  });
+  elements.documentOverviewContent?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
       return;
     }
-
-    setSelectedBlock(annotationButton.dataset.blockKey, { scroll: true });
-    elements.pageList.querySelector(`[data-block-key="${annotationButton.dataset.blockKey}"]`)?.focus({
-      preventScroll: true
-    });
-    elements.statusLine.textContent = "Passage surligné ouvert dans la zone de lecture.";
+    const target = event.target instanceof Element ? event.target.closest("[data-overview-block-key]") : null;
+    if (!target?.dataset?.overviewBlockKey) {
+      return;
+    }
+    event.preventDefault();
+    selectOverviewBlock(target.dataset.overviewBlockKey);
   });
   elements.selectionAssist?.addEventListener("click", (event) => {
     const colorButton = event.target.closest("[data-annotation-color]");
@@ -5332,7 +5206,6 @@ function init() {
         exitImmersion,
         toggleSettings,
         printAdapted: handlePrint,
-        quickBookmark,
         activateProfileByShortcut,
         adjustZoom,
         toggleSpeech,
@@ -5350,16 +5223,9 @@ function init() {
         void refreshLocalAiStatus({ silent: true });
         syncExamDurationOutput();
         resetExamTimer();
-        startReadingTrackingLoop();
-        document.addEventListener("visibilitychange", handleVisibilityTracking);
         window.speechSynthesis?.addEventListener?.("voiceschanged", setVoices);
         window.addEventListener("beforeunload", () => {
-          accumulateReadingTime();
           document.removeEventListener("selectionchange", handleSelectionChange);
-          document.removeEventListener("visibilitychange", handleVisibilityTracking);
-          if (appState.readingTimeIntervalId) {
-            window.clearInterval(appState.readingTimeIntervalId);
-          }
           if (appState.examTimerId) {
             window.clearInterval(appState.examTimerId);
           }
