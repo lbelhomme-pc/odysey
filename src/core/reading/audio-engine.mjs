@@ -68,6 +68,27 @@ function createSpeechUtterance(text) {
   return Utterance ? new Utterance(text) : null;
 }
 
+const DEFAULT_SPEECH_LANG = "fr-FR";
+
+function getAvailableVoices(synthesis) {
+  return typeof synthesis?.getVoices === "function" ? synthesis.getVoices() : [];
+}
+
+function findPreferredVoice(voices, voiceURI) {
+  const safeVoices = Array.isArray(voices) ? voices : [];
+  const selectedVoice = safeVoices.find((voice) => voice.voiceURI === voiceURI);
+  if (selectedVoice) {
+    return selectedVoice;
+  }
+
+  return (
+    safeVoices.find((voice) => /^fr(?:-|$)/iu.test(String(voice.lang || ""))) ||
+    safeVoices.find((voice) => voice.default) ||
+    safeVoices[0] ||
+    null
+  );
+}
+
 function buildQueueTokens(tokens, startWordIndex = 0) {
   const safeTokens = Array.isArray(tokens) ? tokens : [];
   if (safeTokens.length === 0) {
@@ -122,6 +143,8 @@ export class AudioEngine {
     this.pauseBetweenSentences = 0;
     this.callbacks = {};
     this.pauseTimer = null;
+    this.webSpeechResumeTimer = null;
+    this.webSpeechStartTimer = null;
     this.nativeTrackingTimer = null;
     this.nativeProgressUnsubscribe = null;
     this.nativeTrackedWordIndex = -1;
@@ -292,6 +315,7 @@ export class AudioEngine {
     if (!this.synthesis?.speaking) {
       return;
     }
+    this.clearWebSpeechWatchdog();
     this.isPaused = true;
     this.synthesis.pause();
   }
@@ -303,6 +327,7 @@ export class AudioEngine {
     this.isStopped = true;
     this.isPaused = false;
     this.clearPauseTimer();
+    this.clearWebSpeechWatchdog();
     this.clearNativeWordTracking();
     if (this.synthesis?.paused) {
       this.synthesis.resume?.();
@@ -346,6 +371,17 @@ export class AudioEngine {
     if (this.pauseTimer) {
       globalThis.clearTimeout(this.pauseTimer);
       this.pauseTimer = null;
+    }
+  }
+
+  clearWebSpeechWatchdog() {
+    if (this.webSpeechResumeTimer) {
+      globalThis.clearTimeout(this.webSpeechResumeTimer);
+      this.webSpeechResumeTimer = null;
+    }
+    if (this.webSpeechStartTimer) {
+      globalThis.clearTimeout(this.webSpeechStartTimer);
+      this.webSpeechStartTimer = null;
     }
   }
 
@@ -491,17 +527,30 @@ export class AudioEngine {
       return;
     }
     utterance.rate = this.rate;
+    utterance.lang = DEFAULT_SPEECH_LANG;
+    utterance.pitch = 1;
+    utterance.volume = 1;
     this.isStopped = false;
 
-    const selectedVoice = this.synthesis.getVoices().find((voice) => voice.voiceURI === this.voiceURI);
+    const selectedVoice = findPreferredVoice(getAvailableVoices(this.synthesis), this.voiceURI);
     if (selectedVoice) {
       utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang || DEFAULT_SPEECH_LANG;
     }
 
     this.callbacks.onBlockStart?.(item);
     this.callbacks.onSentenceStart?.(item);
 
+    let speechStarted = false;
+    const markSpeechStarted = () => {
+      speechStarted = true;
+      this.clearWebSpeechWatchdog();
+    };
+
+    utterance.onstart = markSpeechStarted;
+
     utterance.onboundary = (event) => {
+      markSpeechStarted();
       if (event.name && event.name !== "word") {
         return;
       }
@@ -524,10 +573,12 @@ export class AudioEngine {
     utterance.onerror = (error) => {
       this.currentUtterance = null;
       this.clearPauseTimer();
+      this.clearWebSpeechWatchdog();
       this.callbacks.onError?.(error);
     };
 
     utterance.onend = () => {
+      this.clearWebSpeechWatchdog();
       if (this.isStopped) {
         this.currentUtterance = null;
         return;
@@ -549,7 +600,32 @@ export class AudioEngine {
     };
 
     this.currentUtterance = utterance;
-    this.synthesis.speak(utterance);
+    this.clearWebSpeechWatchdog();
+    this.webSpeechResumeTimer = globalThis.setTimeout(() => {
+      if (this.currentUtterance === utterance && !speechStarted && !this.isStopped && !this.isPaused) {
+        this.synthesis?.resume?.();
+      }
+    }, 300);
+    this.webSpeechStartTimer = globalThis.setTimeout(() => {
+      if (
+        this.currentUtterance === utterance &&
+        !speechStarted &&
+        !this.isStopped &&
+        !this.isPaused &&
+        !this.synthesis?.speaking
+      ) {
+        this.synthesis?.resume?.();
+      }
+    }, 1200);
+
+    try {
+      this.synthesis.speak(utterance);
+      this.synthesis.resume?.();
+    } catch (error) {
+      this.currentUtterance = null;
+      this.clearWebSpeechWatchdog();
+      this.callbacks.onError?.(error);
+    }
   }
 
   speakCurrentWithNativeVoice(item) {

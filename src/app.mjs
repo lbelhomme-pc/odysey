@@ -70,6 +70,8 @@ const appState = {
   annotationsByDocument: {},
   teacherNotesByDocument: {},
   voices: [],
+  voiceRefreshTimerId: 0,
+  voiceRefreshAttempts: 0,
   speechAvailable: false,
   speechUtterance: null,
   speechQueue: [],
@@ -4333,12 +4335,57 @@ function resetCurrentSettings() {
   elements.statusLine.textContent = "Réglages réinitialisés à partir du profil actif.";
 }
 
+function clearVoiceRefreshTimer() {
+  if (appState.voiceRefreshTimerId) {
+    window.clearTimeout(appState.voiceRefreshTimerId);
+    appState.voiceRefreshTimerId = 0;
+  }
+}
+
+function scheduleVoiceRefresh() {
+  clearVoiceRefreshTimer();
+
+  if (appState.voiceRefreshAttempts >= 4) {
+    return;
+  }
+
+  const delays = [250, 750, 1500, 3000];
+  const delay = delays[appState.voiceRefreshAttempts] || delays.at(-1) || 1500;
+  appState.voiceRefreshAttempts += 1;
+  appState.voiceRefreshTimerId = window.setTimeout(() => {
+    appState.voiceRefreshTimerId = 0;
+    setVoices();
+  }, delay);
+}
+
+function formatSpeechRuntimeError(error) {
+  const reason = String(error?.error || error?.message || "").toLowerCase();
+
+  if (reason.includes("not-allowed") || reason.includes("permission")) {
+    return "Le navigateur a bloqué la lecture audio. Clique encore une fois sur Lire ou autorise l'audio du navigateur.";
+  }
+
+  if (reason.includes("interrupted") || reason.includes("canceled") || reason.includes("cancelled")) {
+    return "La lecture audio a été interrompue. Relance Lire pour reprendre.";
+  }
+
+  if (reason.includes("network")) {
+    return "La voix du navigateur n'a pas pu demarrer correctement. Essaie une autre voix ou recharge la page.";
+  }
+
+  return "La synthese vocale du navigateur a rencontre un probleme.";
+}
+
 function setVoices() {
   const synthesis = getSpeechSynthesisRuntime();
   const webSpeechAvailable = Boolean(synthesis && getSpeechUtteranceConstructor());
   const nativeSpeechAvailable = isNativeSpeechRuntimeAvailable();
   const speechRuntimeAvailable = webSpeechAvailable || nativeSpeechAvailable;
   const voices = webSpeechAvailable ? synthesis.getVoices?.() || [] : [];
+  if (voices.length > 0 || !webSpeechAvailable) {
+    clearVoiceRefreshTimer();
+    appState.voiceRefreshAttempts = 0;
+  }
   appState.voices = voices;
   appState.speechAvailable = speechRuntimeAvailable;
   if (webSpeechAvailable) {
@@ -4356,6 +4403,7 @@ function setVoices() {
   audioEngine.setPreferNativeSpeech(nativeSpeechAvailable && runtimeApi.kind === "electron");
 
   if (!speechRuntimeAvailable) {
+    clearVoiceRefreshTimer();
     elements.voiceSelect.disabled = true;
     syncQuickActionButtons();
     elements.statusLine.textContent = "Aucune voix système détectée. La lecture audio reste désactivée.";
@@ -4398,6 +4446,10 @@ function setVoices() {
   audioEngine.setRate(appState.preferences.speechRate);
   audioEngine.setPauseBetweenSentences(appState.preferences.pauseBetweenSentences || 0);
   syncQuickActionButtons();
+
+  if (webSpeechAvailable && voices.length === 0) {
+    scheduleVoiceRefresh();
+  }
 }
 
 function buildSpeechQueue() {
@@ -4466,10 +4518,13 @@ function playNextUtterance() {
   const selectedVoice = appState.voices.find((voice) => voice.voiceURI === appState.preferences.speechVoiceId);
   if (selectedVoice) {
     utterance.voice = selectedVoice;
+    utterance.lang = selectedVoice.lang || "fr-FR";
+  } else {
+    utterance.lang = "fr-FR";
   }
   utterance.onend = () => playNextUtterance();
-  utterance.onerror = () => {
-    elements.statusLine.textContent = "La synthèse vocale a rencontré un problème.";
+  utterance.onerror = (error) => {
+    elements.statusLine.textContent = formatSpeechRuntimeError(error);
     stopSpeech();
   };
   appState.speechUtterance = utterance;
@@ -4572,8 +4627,8 @@ function launchAudioPlayback(startContext) {
         clearAudioHighlights();
         elements.statusLine.textContent = "Lecture audio terminée.";
     },
-    onError: () => {
-      elements.statusLine.textContent = "La synthèse vocale a rencontré un problème.";
+    onError: (error) => {
+      elements.statusLine.textContent = formatSpeechRuntimeError(error);
       stopSpeech({ silent: true });
     }
   });
@@ -4697,6 +4752,9 @@ function ensureSpeechRuntimeReady() {
   if (webSpeechAvailable && voices.length > 0 && voices.length !== appState.voices.length) {
     setVoices();
   } else {
+    if (webSpeechAvailable && voices.length === 0) {
+      scheduleVoiceRefresh();
+    }
     syncQuickActionButtons();
   }
   return true;
@@ -5223,13 +5281,30 @@ function init() {
         void refreshLocalAiStatus({ silent: true });
         syncExamDurationOutput();
         resetExamTimer();
-        window.speechSynthesis?.addEventListener?.("voiceschanged", setVoices);
+        if (window.speechSynthesis) {
+          const handleVoicesChanged = () => {
+            clearVoiceRefreshTimer();
+            appState.voiceRefreshAttempts = 0;
+            setVoices();
+          };
+          window.speechSynthesis.addEventListener?.("voiceschanged", handleVoicesChanged);
+          if ("onvoiceschanged" in window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+          }
+          runtimeSubscriptions.push(() => {
+            window.speechSynthesis?.removeEventListener?.("voiceschanged", handleVoicesChanged);
+            if (window.speechSynthesis?.onvoiceschanged === handleVoicesChanged) {
+              window.speechSynthesis.onvoiceschanged = null;
+            }
+          });
+        }
         window.addEventListener("beforeunload", () => {
           document.removeEventListener("selectionchange", handleSelectionChange);
           if (appState.examTimerId) {
             window.clearInterval(appState.examTimerId);
           }
           audioEngine.stop();
+          clearVoiceRefreshTimer();
           ocrEngine.terminate();
           readingGuide.destroy();
         keyboardNav.destroy();

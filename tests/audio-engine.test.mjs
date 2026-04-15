@@ -84,6 +84,7 @@ const synthesis = {
     this.speakCalls += 1;
     this.speaking = true;
     this.lastUtteranceText = utterance.text;
+    utterance.onstart?.();
   }
 };
 
@@ -99,8 +100,57 @@ assert.equal(
   true,
   "Une reprise sur un nouveau mot doit rester possible meme si speechSynthesis est encore marque en pause."
 );
-assert.equal(synthesis.resumeCalls, 1, "Le moteur doit d'abord nettoyer l'etat paused global.");
+assert.equal(
+  synthesis.resumeCalls,
+  2,
+  "Le moteur doit nettoyer l'etat paused global puis reveiller la synthese web juste apres le demarrage."
+);
 assert.equal(synthesis.speakCalls, 1, "Le moteur doit ensuite lancer la nouvelle phrase au lieu de reprendre un flux vide.");
 assert.equal(synthesis.lastUtteranceText, "trois.", "Le nouveau point de depart doit etre respecte.");
+
+const voicedSynthesis = {
+  paused: false,
+  speaking: false,
+  resumeCalls: 0,
+  speakCalls: 0,
+  voices: [{ voiceURI: "fr-system", lang: "fr-FR", default: true }],
+  getVoices() {
+    return this.voices;
+  },
+  resume() {
+    this.resumeCalls += 1;
+    this.paused = false;
+  },
+  cancel() {
+    this.paused = false;
+    this.speaking = false;
+  },
+  speak(utterance) {
+    this.speakCalls += 1;
+    this.speaking = true;
+    this.lastUtterance = utterance;
+    utterance.onstart?.();
+  }
+};
+
+const voicedEngine = new AudioEngine({ synthesis: voicedSynthesis });
+voicedEngine.loadFromBlocks(blocks, {
+  startKey: "page-1-block-1",
+  startSentenceIndex: 0,
+  startWordIndex: 0
+});
+
+assert.equal(
+  voicedEngine.play(),
+  true,
+  "La lecture web doit rester possible meme sans voix explicitement choisie par l'utilisateur."
+);
+assert.equal(voicedSynthesis.speakCalls, 1, "Le moteur doit bien appeler la synthese vocale du navigateur.");
+assert.equal(voicedSynthesis.lastUtterance.lang, "fr-FR", "Une langue francaise doit etre appliquee par defaut.");
+assert.equal(
+  voicedSynthesis.lastUtterance.voice?.voiceURI,
+  "fr-system",
+  "La premiere voix francaise disponible doit etre choisie automatiquement."
+);
 
 console.log("audio-engine: ok");
