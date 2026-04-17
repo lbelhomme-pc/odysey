@@ -26,27 +26,31 @@ import {
   normalizeColorationMode as normalizeColorationPreference,
   renderAdaptedText
 } from "./core/reading/decoding-engine.mjs";
-import {
-  normalizeSyllabificationMode,
-  normalizeSyllableLevel,
-  normalizeSyllableWordScope
-} from "./core/reading/syllabify-french.mjs";
+import { normalizeSyllableLevel } from "./core/reading/syllabify-french.mjs";
 import { analyzeMathContent, renderMathText, verbalizeMathText } from "./core/reading/math-support.mjs";
 import {
   DEFAULT_LOCAL_AI_MODEL,
   LOCAL_AI_INSTALL_URL,
   buildLocalAiDefinitionRequest,
-  buildLocalAiReformulationRequest,
-  buildLocalAiSummaryRequest,
+  buildLocalAiDocumentQuestionRequest,
+  buildLocalAiInstructionRequest,
+  buildLocalAiSchoolReformulationRequest,
+  buildLocalAiSchoolSummaryRequest,
   cleanLocalAiText,
   normalizeLocalAiMode,
   normalizeLocalAiModel
 } from "./core/ai/local-llm.mjs";
 import {
+  buildInstructionBreakdown,
   buildLocalWordInsight,
+  buildSchoolReformulation,
+  buildSchoolSummary,
   buildShortSummary,
   buildSimpleReformulation,
+  detectInstructionStructure,
+  getSchoolLevelLabel,
   lookupWordInsight,
+  normalizeSchoolLevel,
   sanitizeLookupWord
 } from "./core/reading/reading-assist.mjs";
 import { ReadingGuide } from "./core/reading/reading-guide.mjs";
@@ -72,6 +76,7 @@ const appState = {
   voices: [],
   voiceRefreshTimerId: 0,
   voiceRefreshAttempts: 0,
+  nativeVoices: [],
   speechAvailable: false,
   speechUtterance: null,
   speechQueue: [],
@@ -91,7 +96,10 @@ const appState = {
     status: "OCR prêt."
   },
   overviewZoom: 100,
-  rulerY: null,
+  rulerContentTop: null,
+  rulerPointerClientX: null,
+  rulerPointerClientY: null,
+  rulerUpdateFrameId: 0,
   persistTimer: null,
   annotations: [],
   teacherNotes: "",
@@ -122,31 +130,28 @@ const appState = {
   examBaseMinutes: 60,
   examTimeRemainingSeconds: 0,
   examTimerId: 0,
-  examTimerRunning: false
+  examTimerRunning: false,
+  activeRibbonTab: ""
 };
-
-const IMPORTANT_PROFILE_IDS = new Set([
-  "normal",
-  "lecture-visuelle-allegee",
-  "audio",
-  "decodage-renforce",
-  "mode-examen",
-  "dyspraxie",
-  "dyscalculie"
-]);
 
 const TEMP_CUSTOM_PROFILE_ID = "custom-live";
 
 const elements = {
+  ribbonShell: document.querySelector(".app-ribbon-shell"),
+  ribbonTabs: Array.from(document.querySelectorAll("[data-ribbon-tab]")),
+  ribbonPanels: Array.from(document.querySelectorAll("[data-ribbon-panel]")),
   openButton: document.querySelector("#openPdfButton"),
   emptyOpenButton: document.querySelector("#emptyOpenButton"),
   openHeaderButton: document.querySelector("#openHeaderButton"),
   toggleSidebarButton: document.querySelector("#toggleSidebarButton"),
   floatingSidebarButton: document.querySelector("#floatingSidebarButton"),
   quickActionDock: document.querySelector("#quickActionDock"),
+  quickActionHint: document.querySelector("#quickActionHint"),
   quickOverviewButton: document.querySelector("#quickOverviewButton"),
   quickReadButton: document.querySelector("#quickReadButton"),
   quickStopButton: document.querySelector("#quickStopButton"),
+  quickAidButton: document.querySelector("#quickAidButton"),
+  quickSettingsButton: document.querySelector("#quickSettingsButton"),
   printButton: document.querySelector("#printButton"),
   exportPdfButton: document.querySelector("#exportPdfButton"),
   documentPagesInfo: document.querySelector("#documentPagesInfo"),
@@ -160,10 +165,7 @@ const elements = {
   docState: document.querySelector("#docState"),
   pageList: document.querySelector("#pageList"),
   profilesList: document.querySelector("#profilesList"),
-  advancedProfilesList: document.querySelector("#advancedProfilesList"),
   customProfilesList: document.querySelector("#customProfilesList"),
-  startAssistantButtons: document.querySelector("#startAssistantButtons"),
-  startAssistantSummary: document.querySelector("#startAssistantSummary"),
   profileSummaryButton: document.querySelector("#profileSummaryButton"),
   profileSummaryDialog: document.querySelector("#profileSummaryDialog"),
   closeProfileSummaryDialogButton: document.querySelector("#closeProfileSummaryDialogButton"),
@@ -181,13 +183,16 @@ const elements = {
   saveProfileButton: document.querySelector("#saveProfileButton"),
   deleteProfileButton: document.querySelector("#deleteProfileButton"),
   profileFeedback: document.querySelector("#profileFeedback"),
+  settingsProfileHint: document.querySelector("#settingsProfileHint"),
   immersionButton: document.querySelector("#immersionButton"),
   resetSettingsButton: document.querySelector("#resetSettingsButton"),
   settingsFeedback: document.querySelector("#settingsFeedback"),
+  dysEssentialsSummary: document.querySelector("#dysEssentialsSummary"),
   speechToggleButton: document.querySelector("#speechToggleButton"),
   speechStopButton: document.querySelector("#speechStopButton"),
   speechPrevButton: document.querySelector("#speechPrevButton"),
   speechNextButton: document.querySelector("#speechNextButton"),
+  refreshVoicesButton: document.querySelector("#refreshVoicesButton"),
   wordInsightWord: document.querySelector("#wordInsightWord"),
   wordInsightSyllables: document.querySelector("#wordInsightSyllables"),
   wordInsightDefinition: document.querySelector("#wordInsightDefinition"),
@@ -197,7 +202,11 @@ const elements = {
   refreshWordDefinitionButton: document.querySelector("#refreshWordDefinitionButton"),
   blockSummaryButton: document.querySelector("#blockSummaryButton"),
   blockReformulateButton: document.querySelector("#blockReformulateButton"),
+  blockInstructionButton: document.querySelector("#blockInstructionButton"),
   blockAssistOutput: document.querySelector("#blockAssistOutput"),
+  documentQuestionInput: document.querySelector("#documentQuestionInput"),
+  documentQuestionButton: document.querySelector("#documentQuestionButton"),
+  documentQuestionOutput: document.querySelector("#documentQuestionOutput"),
   localAiStatusText: document.querySelector("#localAiStatusText"),
   localAiCheckButton: document.querySelector("#localAiCheckButton"),
   localAiInstallButton: document.querySelector("#localAiInstallButton"),
@@ -224,7 +233,6 @@ const elements = {
   statusLine: document.querySelector("#statusLine"),
   keyboardHint: document.querySelector("#keyboardHint"),
   recentList: document.querySelector("#recentList"),
-  researchNotes: document.querySelector("#researchNotes"),
   selectionAssist: document.querySelector("#selectionAssist"),
   selectionPreview: document.querySelector("#selectionPreview"),
   selectionSpeechButton: document.querySelector("#selectionSpeechButton"),
@@ -260,13 +268,12 @@ const controlIds = [
   "readingGuideColor",
   "colorationMode",
   "syllableLevel",
-  "syllabificationMode",
-  "syllableWordScope",
   "soundColorMode",
   "syllableBreakMode",
   "verificationMode",
   "speechRate",
   "pauseBetweenSentences",
+  "assistSchoolLevel",
   "localAiMode",
   "localAiModel",
   "ocrLanguage"
@@ -397,6 +404,13 @@ function createBrowserApi() {
     async stopNativeSpeech() {
       return { ok: true };
     },
+    async getNativeVoices() {
+      return {
+        ok: false,
+        voices: [],
+        reason: "NATIVE_VOICES_DESKTOP_ONLY"
+      };
+    },
     onNativeSpeechProgress() {
       return () => {};
     },
@@ -490,6 +504,9 @@ const OVERLAY_PRESETS = {
   grey: "#e4e7eb"
 };
 
+const SIMPLIFIED_SYLLABLE_MODE = "pedagogique";
+const SIMPLIFIED_SYLLABLE_SCOPE = "auto";
+
 const CONTROL_HELP_TEXTS = {
   fontFamily: "Choisit la police utilisée dans la zone de lecture. Privilégie une police simple et stable.",
   fontSize: "Agrandit ou réduit le texte du PDF adapté pour le rendre plus confortable à lire.",
@@ -502,25 +519,27 @@ const CONTROL_HELP_TEXTS = {
   theme: "Change uniquement l'apparence du PDF adapté. Ce réglage ne modifie pas la couleur de l'application.",
   overlayPreset: "Ajoute un voile léger sur la zone de lecture pour adoucir l'écran si besoin.",
   overlayOpacity: "Règle la force du filtre visuel. Garde une valeur légère pour ne pas masquer le texte.",
-  overlayCustomColor: "Permet de choisir toi-même la couleur du filtre visuel.",
+  overlayCustomColor: "Choisir une couleur ici bascule automatiquement le filtre en mode personnalisé.",
   highlightMode: "Définit la force du repère sur le bloc en cours de lecture.",
   focusMode: "Assombrit légèrement le reste du texte pour aider à rester sur le paragraphe actif.",
   readingGuideMode: "Affiche une réglette ou une fenêtre de lecture qui suit le texte pour garder la ligne.",
   readingGuideLines: "Définit le nombre de lignes visibles dans la réglette ou la fenêtre.",
   readingGuideOpacity: "Règle la force visuelle de la réglette pour qu'elle reste utile sans gêner.",
   readingGuideColor: "Choisit la couleur du contour de la réglette.",
-  colorationMode: "Active une aide visuelle pour les sons ou une coloration douce. À utiliser seulement si elle aide vraiment.",
-  syllableLevel: "Découpe les mots en syllabes de lecture. Léger reste discret, Renforcé aide davantage au décodage.",
-  syllabificationMode:
-    "Choisit entre la syllabation pédagogique, utile pour l'apprentissage, et une version typographique plus conservatrice pour comparer.",
-  syllableWordScope:
-    "Auto ne découpe que les mots les plus utiles. Tous les mots force l'affichage syllabique partout pour tester ou comparer.",
-  soundColorMode: "Choisit des couleurs plus douces ou plus nettes pour les sons français.",
-  syllableBreakMode: "Affiche un séparateur discret entre les syllabes quand le mode syllabes est actif.",
+  colorationMode:
+    "Choisis une seule aide principale pour le texte : dys, sons français, lignes, mots ou noir et blanc.",
+  syllableLevel:
+    "Ajoute ou retire la séparation syllabique normale. Garde-la désactivée si le texte devient trop chargé.",
+  soundColorMode:
+    "Change le style uniquement quand l'aide principale est Sons français.",
+  syllableBreakMode:
+    "Choisis le signe visible entre les syllabes : rien, point ou tiret.",
   verificationMode: "Aide à relire les passages potentiellement fragiles : maths, OCR incertain, tableaux ou blocs complexes.",
   speechVoiceId: "Choisit la voix système utilisée pour la lecture audio.",
   speechRate: "Règle la vitesse réelle de lecture audio. La valeur de base a été ralentie pour être plus confortable.",
   pauseBetweenSentences: "Ajoute une petite pause entre les phrases pour laisser le temps de suivre.",
+  assistSchoolLevel:
+    "Choisit le niveau utilisé pour les résumés, reformulations, consignes et réponses de l'IA.",
   localAiMode:
     "Choisit si l'IA locale Gemma est désactivée, utilisée seulement à la demande, ou privilégiée automatiquement quand elle est disponible.",
   localAiModel:
@@ -642,6 +661,16 @@ function normalizeAppTheme(value) {
   return DEFAULT_PREFERENCES.appTheme;
 }
 
+function enforceSimplifiedSyllablePreferences(preferences) {
+  if (!preferences || typeof preferences !== "object") {
+    return preferences;
+  }
+
+  preferences.syllabificationMode = SIMPLIFIED_SYLLABLE_MODE;
+  preferences.syllableWordScope = SIMPLIFIED_SYLLABLE_SCOPE;
+  return preferences;
+}
+
 function getLocalAiModeLabel(mode) {
   switch (normalizeLocalAiMode(mode)) {
     case "prefer-local":
@@ -657,36 +686,48 @@ function describeProfileDecoding(preferences) {
   const parts = [];
   const colorationMode = normalizeColorationPreference(preferences.colorationMode);
   const syllableLevel = normalizeSyllableLevel(preferences.syllableLevel);
+  const usesSyllableStructure = isPedagogicColorationMode(colorationMode) || syllableLevel !== "off";
 
   if (colorationMode === "sonsFrancais") {
-    parts.push(`sons français (${preferences.soundColorMode === "strong" ? "nets" : "doux"})`);
+    const toneLabel =
+      preferences.soundColorMode === "strong"
+        ? "nets"
+        : preferences.soundColorMode === "vivid"
+          ? "très contrastés"
+          : preferences.soundColorMode === "monoStrong"
+            ? "noir et blanc fort"
+            : preferences.soundColorMode === "mono"
+              ? "noir et blanc doux"
+              : "doux";
+    parts.push(`sons français (${toneLabel})`);
   } else if (colorationMode === "pedagogique") {
     parts.push("coloration douce");
   } else if (colorationMode === "pedagogiqueAlt") {
     parts.push("coloration alternative");
+  } else if (colorationMode === "pedagogiqueContrast") {
+    parts.push("coloration dys accentuée");
+  } else if (colorationMode === "alternanceLignes") {
+    parts.push("alternance par ligne");
+  } else if (colorationMode === "alternanceMots") {
+    parts.push("alternance par mot");
+  } else if (colorationMode === "noirEtBlanc") {
+    parts.push("noir et blanc");
   }
 
   if (syllableLevel === "light") {
-    parts.push("syllabes légères");
+    parts.push("séparation syllabique légère");
   } else if (syllableLevel === "strong") {
-    parts.push("syllabes renforcées");
+    parts.push("séparation syllabique renforcée");
   }
 
-  if (syllableLevel !== "off") {
-    parts.push(
-      normalizeSyllabificationMode(preferences.syllabificationMode) === "typographique"
-        ? "syllabation typographique"
-        : "syllabation pédagogique"
-    );
-    if (normalizeSyllableWordScope(preferences.syllableWordScope) === "all") {
-      parts.push("tous les mots");
-    }
+  if (usesSyllableStructure && isPedagogicColorationMode(colorationMode) && syllableLevel === "off") {
+    parts.push("séparation syllabique intégrée");
   }
 
-  if (syllableLevel !== "off" && preferences.syllableBreakMode === "dot") {
-    parts.push("coupure point médian");
-  } else if (syllableLevel !== "off" && preferences.syllableBreakMode === "hyphen") {
-    parts.push("coupure tiret");
+  if (usesSyllableStructure && preferences.syllableBreakMode === "dot") {
+    parts.push("point médian");
+  } else if (usesSyllableStructure && preferences.syllableBreakMode === "hyphen") {
+    parts.push("tiret discret");
   }
 
   return parts.length ? parts.join(" • ") : "Aucune";
@@ -736,7 +777,7 @@ function describeProfileAudience(profile) {
     case "lecture-visuelle-allegee":
       return "Pour une lecture plus confortable, aérée et stable, sans décodage marqué.";
     case "decodage-renforce":
-      return "Pour une dyslexie plus marquée avec un guidage fort sur les syllabes et la ligne.";
+      return "Pour une base dys avec alternance par ligne, colonne resserrée et repères stables.";
     case "audio":
       return "Pour suivre le texte avec la voix et mieux rester concentré pendant la lecture.";
     case "dyscalculie":
@@ -758,19 +799,18 @@ function renderProfileSummaryDialog() {
   const rows = appState.builtinProfiles
     .map((profile) => {
       const defaults = profile.defaults || {};
-      const kind = IMPORTANT_PROFILE_IDS.has(profile.id) ? "Important" : "Avancé";
       const label = repairUiText(profile.label);
       const description = repairUiText(profile.description || "");
       return `
         <tr>
-          <td><span class="profile-summary-kind">${kind}</span></td>
+          <td><span class="profile-summary-kind">Standard</span></td>
           <td>
             <strong>${escapeHtml(label)}</strong>
             ${escapeHtml(description)}
           </td>
           <td>${escapeHtml(getFontLabel(defaults.fontFamily))}</td>
           <td>${escapeHtml(`${defaults.fontSize}px`)}</td>
-          <td>${escapeHtml(`interligne ${Number(defaults.lineHeight).toFixed(2)} • lettres ${Number(defaults.letterSpacing).toFixed(2)}em • mots ${Number(defaults.wordSpacing).toFixed(2)}em`)}</td>
+          <td>${escapeHtml(`interligne ${formatPercentUnit(defaults.lineHeight)} • lettres ${formatPercentUnit(defaults.letterSpacing)} • mots ${formatPercentUnit(defaults.wordSpacing)}`)}</td>
           <td>${escapeHtml(`${defaults.maxLineLength}ch`)}</td>
           <td>${escapeHtml(getThemeLabel(defaults.theme))}</td>
           <td>${escapeHtml(describeProfileDecoding(defaults))}</td>
@@ -812,19 +852,19 @@ function buildProfilePreferences(profile) {
     pauseBetweenSentences:
       Number(appState.preferences.pauseBetweenSentences) || DEFAULT_PREFERENCES.pauseBetweenSentences,
     localAiMode: normalizeLocalAiMode(appState.preferences.localAiMode),
-    localAiModel: normalizeLocalAiModel(appState.preferences.localAiModel)
+    localAiModel: normalizeLocalAiModel(appState.preferences.localAiModel),
+    assistSchoolLevel: normalizeSchoolLevel(appState.preferences.assistSchoolLevel)
   };
 
   const nextPreferences = {
     ...profile.defaults,
     colorationMode: normalizeColorationPreference(profile.defaults?.colorationMode),
     syllableLevel: normalizeSyllableLevel(profile.defaults?.syllableLevel),
-    syllabificationMode: normalizeSyllabificationMode(profile.defaults?.syllabificationMode),
-    syllableWordScope: normalizeSyllableWordScope(profile.defaults?.syllableWordScope),
     verificationMode: normalizeVerificationMode(profile.defaults?.verificationMode),
     readingGuideMode: normalizeReadingGuideMode(profile.defaults?.readingGuideMode, profile.defaults?.focusMode),
     ...preserved
   };
+  enforceSimplifiedSyllablePreferences(nextPreferences);
   if (nextPreferences.focusMode === "ruler") {
     nextPreferences.focusMode = "none";
   }
@@ -975,10 +1015,12 @@ function openTeacherCompareDialog() {
 
   renderTeacherCompareDialog();
   if (elements.teacherCompareDialog.open) {
+    scheduleRenderedLinePatterns(elements.teacherCompareAdapted);
     return;
   }
 
   elements.teacherCompareDialog.showModal();
+  scheduleRenderedLinePatterns(elements.teacherCompareAdapted);
   elements.closeTeacherCompareDialogButton?.focus();
 }
 
@@ -1152,19 +1194,18 @@ async function loadPersistedState() {
     if (payload?.savedProfiles && Array.isArray(payload.savedProfiles)) {
       appState.customProfiles = payload.savedProfiles.map((profile) => ({
         ...profile,
-        defaults: {
+        defaults: enforceSimplifiedSyllablePreferences({
           ...DEFAULT_PREFERENCES,
           ...profile.defaults,
           appTheme: normalizeAppTheme(profile.defaults?.appTheme),
           localAiMode: normalizeLocalAiMode(profile.defaults?.localAiMode),
           localAiModel: normalizeLocalAiModel(profile.defaults?.localAiModel),
+          assistSchoolLevel: normalizeSchoolLevel(profile.defaults?.assistSchoolLevel),
           colorationMode: normalizeColorationPreference(profile.defaults?.colorationMode),
           syllableLevel: normalizeSyllableLevel(profile.defaults?.syllableLevel),
-          syllabificationMode: normalizeSyllabificationMode(profile.defaults?.syllabificationMode),
-          syllableWordScope: normalizeSyllableWordScope(profile.defaults?.syllableWordScope),
           verificationMode: normalizeVerificationMode(profile.defaults?.verificationMode),
           readingGuideMode: normalizeReadingGuideMode(profile.defaults?.readingGuideMode, profile.defaults?.focusMode)
-        }
+        })
       }));
     }
     if (payload?.lastUsedPreferences) {
@@ -1172,13 +1213,13 @@ async function loadPersistedState() {
         ...DEFAULT_PREFERENCES,
         ...payload.lastUsedPreferences
       };
+      enforceSimplifiedSyllablePreferences(appState.preferences);
       appState.preferences.appTheme = normalizeAppTheme(appState.preferences.appTheme);
       appState.preferences.localAiMode = normalizeLocalAiMode(appState.preferences.localAiMode);
       appState.preferences.localAiModel = normalizeLocalAiModel(appState.preferences.localAiModel);
+      appState.preferences.assistSchoolLevel = normalizeSchoolLevel(appState.preferences.assistSchoolLevel);
       appState.preferences.colorationMode = normalizeColorationPreference(appState.preferences.colorationMode);
       appState.preferences.syllableLevel = normalizeSyllableLevel(appState.preferences.syllableLevel);
-      appState.preferences.syllabificationMode = normalizeSyllabificationMode(appState.preferences.syllabificationMode);
-      appState.preferences.syllableWordScope = normalizeSyllableWordScope(appState.preferences.syllableWordScope);
       appState.preferences.verificationMode = normalizeVerificationMode(appState.preferences.verificationMode);
       appState.preferences.readingGuideMode = normalizeReadingGuideMode(
         appState.preferences.readingGuideMode,
@@ -1226,18 +1267,89 @@ async function loadPersistedState() {
   }
 }
 
-function updateSidebarToggleUi() {
-  const sidebarHidden = appState.preferences.distractionFree;
+function closeRibbonMenus({ focusTarget = null } = {}) {
+  appState.activeRibbonTab = "";
+
+  elements.ribbonTabs.forEach((button) => {
+    button.classList.remove("is-active");
+    button.setAttribute("aria-selected", "false");
+    button.setAttribute("aria-expanded", "false");
+    button.tabIndex = 0;
+  });
+
+  elements.ribbonPanels.forEach((panel) => {
+    panel.classList.remove("is-active");
+    panel.hidden = true;
+    panel.style.removeProperty("left");
+  });
+
+  focusTarget?.focus?.();
+}
+
+function positionActiveRibbonPanel(tabId) {
+  const panel = elements.ribbonPanels.find((candidate) => candidate.dataset.ribbonPanel === tabId);
+  const button = elements.ribbonTabs.find((candidate) => candidate.dataset.ribbonTab === tabId);
+  const shell = elements.ribbonShell;
+  if (!panel || !button || !shell) {
+    return;
+  }
+
+  const shellRect = shell.getBoundingClientRect();
+  const buttonRect = button.getBoundingClientRect();
+  const estimatedWidth = Math.min(500, window.innerWidth - 56);
+  const maxLeft = Math.max(10, shell.clientWidth - estimatedWidth - 10);
+  const nextLeft = Math.min(Math.max(10, buttonRect.left - shellRect.left - 8), maxLeft);
+  panel.style.left = `${Math.round(nextLeft)}px`;
+}
+
+function setActiveRibbonTab(tabId, { focus = false, toggle = false } = {}) {
+  const availableTabs = new Set(elements.ribbonTabs.map((button) => button.dataset.ribbonTab));
+  if (!availableTabs.has(tabId)) {
+    closeRibbonMenus();
+    return;
+  }
+
+  if (toggle && appState.activeRibbonTab === tabId) {
+    const button = elements.ribbonTabs.find((candidate) => candidate.dataset.ribbonTab === tabId) || null;
+    closeRibbonMenus({ focusTarget: focus ? button : null });
+    return;
+  }
+
+  appState.activeRibbonTab = tabId;
+
+  elements.ribbonTabs.forEach((button) => {
+    const isActive = button.dataset.ribbonTab === tabId;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    button.setAttribute("aria-expanded", isActive ? "true" : "false");
+    button.tabIndex = 0;
+    if (isActive && focus) {
+      button.focus();
+    }
+  });
+
+  elements.ribbonPanels.forEach((panel) => {
+    const isActive = panel.dataset.ribbonPanel === tabId;
+    panel.classList.toggle("is-active", isActive);
+    panel.hidden = !isActive;
+  });
+
+  positionActiveRibbonPanel(tabId);
+}
+
+function updateRibbonToggleUi() {
+  const ribbonHidden = appState.preferences.distractionFree;
   if (elements.immersionButton) {
-    elements.immersionButton.textContent = sidebarHidden ? "Afficher les réglages" : "Mode immersion";
+    elements.immersionButton.textContent = ribbonHidden ? "Quitter l'immersion" : "Mode immersion";
+    elements.immersionButton.setAttribute("aria-pressed", ribbonHidden ? "true" : "false");
   }
   if (elements.toggleSidebarButton) {
-    elements.toggleSidebarButton.textContent = sidebarHidden ? "Afficher les réglages" : "Masquer les réglages";
-    elements.toggleSidebarButton.setAttribute("aria-pressed", sidebarHidden ? "true" : "false");
+    elements.toggleSidebarButton.textContent = ribbonHidden ? "Afficher le ruban" : "Réduire le ruban";
+    elements.toggleSidebarButton.setAttribute("aria-pressed", ribbonHidden ? "true" : "false");
   }
   if (elements.floatingSidebarButton) {
-    elements.floatingSidebarButton.hidden = !sidebarHidden;
-    elements.floatingSidebarButton.setAttribute("aria-pressed", sidebarHidden ? "true" : "false");
+    elements.floatingSidebarButton.hidden = !ribbonHidden;
+    elements.floatingSidebarButton.setAttribute("aria-pressed", ribbonHidden ? "true" : "false");
   }
 }
 
@@ -1324,21 +1436,41 @@ function fillStaticControls() {
       .map((model) => `<option value="${model.value}">${model.label}</option>`)
       .join("");
   }
+
+  if (controls.assistSchoolLevel) {
+    controls.assistSchoolLevel.innerHTML = [
+      { value: "college", label: "Collège" },
+      { value: "lycee", label: "Lycée" }
+    ]
+      .map((level) => `<option value="${level.value}">${level.label}</option>`)
+      .join("");
+  }
+}
+
+function formatFrenchNumber(value, digits = 0) {
+  return new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  }).format(Number(value) || 0);
+}
+
+function formatPercentUnit(value, digits = 0) {
+  return `${formatFrenchNumber(Number(value) * 100, digits)} %`;
 }
 
 function formatOutputValue(key, value) {
   switch (key) {
     case "fontSize":
-      return `${value}px`;
+      return `${value} px`;
     case "lineHeight":
-      return `${Number(value).toFixed(2)}`;
+      return formatPercentUnit(value);
     case "letterSpacing":
     case "wordSpacing":
-      return `${Number(value).toFixed(2)}em`;
+      return formatPercentUnit(value);
     case "maxLineLength":
-      return `${value}ch`;
+      return `${value} caractères`;
     case "pagePadding":
-      return `${value}px`;
+      return `${value} px`;
     case "readingGuideMode":
       return value === "window" ? "Fenêtre" : value === "ruler" ? "Réglette" : "Désactivée";
     case "readingGuideLines":
@@ -1348,13 +1480,25 @@ function formatOutputValue(key, value) {
     case "overlayOpacity":
       return `${Math.round(Number(value) * 100)}%`;
     case "soundColorMode":
-      return value === "strong" ? "Nettes" : "Douces";
+      if (value === "strong") {
+        return "Nettes";
+      }
+      if (value === "vivid") {
+        return "Très contrastées";
+      }
+      if (value === "monoStrong") {
+        return "Noir et blanc fort";
+      }
+      if (value === "mono") {
+        return "Noir et blanc doux";
+      }
+      return "Douces";
     case "syllableLevel":
       return value === "strong" ? "Renforcé" : value === "light" ? "Léger" : "Désactivé";
     case "syllableBreakMode":
       return value === "hyphen" ? "Tiret discret" : value === "dot" ? "Point médian" : "Aucune";
     case "speechRate":
-      return `${mapUiSpeechRate(value).toFixed(2)}x`;
+      return `${formatFrenchNumber(mapUiSpeechRate(value), 2)}×`;
     default:
       return String(value);
   }
@@ -1376,6 +1520,129 @@ function applyControlHelp() {
     control.title = helpText;
     control.setAttribute("aria-description", helpText);
   });
+}
+
+function isPedagogicColorationMode(mode) {
+  return ["pedagogique", "pedagogiqueAlt", "pedagogiqueContrast"].includes(normalizeColorationPreference(mode));
+}
+
+function getDysDependencyState(preferences = appState.preferences) {
+  const colorationMode = normalizeColorationPreference(preferences.colorationMode);
+  const syllableLevel = normalizeSyllableLevel(preferences.syllableLevel);
+  const guideMode = normalizeReadingGuideMode(preferences.readingGuideMode, preferences.focusMode);
+  const usesPedagogicColoration = isPedagogicColorationMode(colorationMode);
+  const usesSyllableStructure = usesPedagogicColoration || syllableLevel !== "off";
+
+  return {
+    colorationMode,
+    syllableLevel,
+    usesPedagogicColoration,
+    usesSoundColors: colorationMode === "sonsFrancais",
+    usesSyllableStructure,
+    usesExtendedSyllables: syllableLevel !== "off",
+    usesOverlayOpacity: preferences.overlayPreset !== "none",
+    usesGuideSettings: guideMode !== "off",
+    guideMode
+  };
+}
+
+function setControlInteractivity(key, enabled, inactiveReason = "") {
+  const control = controls[key];
+  if (!control) {
+    return;
+  }
+
+  if (key !== "overlayCustomColor") {
+    control.disabled = !enabled;
+  }
+
+  const wrapper = control.closest(".control");
+  if (!wrapper) {
+    return;
+  }
+
+  wrapper.classList.toggle("is-inactive", !enabled);
+  wrapper.dataset.inactiveReason = !enabled ? inactiveReason : "";
+}
+
+function renderDysEssentialsSummary() {
+  if (!elements.dysEssentialsSummary) {
+    return;
+  }
+
+  const state = getDysDependencyState();
+  const colorationLabels = {
+    none: "aucune aide",
+    pedagogique: "dys doux",
+    pedagogiqueAlt: "dys alterné",
+    pedagogiqueContrast: "dys accentué",
+    sonsFrancais: "sons français",
+    alternanceLignes: "lignes alternées",
+    alternanceMots: "mots alternés",
+    noirEtBlanc: "noir et blanc"
+  };
+  const syllableLabels = {
+    off: "non",
+    light: "oui, discret",
+    strong: "oui, visible"
+  };
+  const currentSyllableLabel =
+    state.usesPedagogicColoration && state.syllableLevel === "off"
+      ? "déjà intégrées"
+      : syllableLabels[state.syllableLevel] || state.syllableLevel;
+  const syllableBreakLabels = {
+    none: "sans signe",
+    dot: "point",
+    hyphen: "tiret"
+  };
+  const separatorLabel = state.usesSyllableStructure
+    ? syllableBreakLabels[appState.preferences.syllableBreakMode] || "sans signe"
+    : "inactif";
+  const soundCopy = state.usesSoundColors
+    ? `sons : ${formatControlValue("soundColorMode", appState.preferences.soundColorMode).toLowerCase()}`
+    : "sons : seulement si tu choisis Sons français";
+
+  elements.dysEssentialsSummary.innerHTML = `
+    <strong>Actuel : ${escapeHtml(colorationLabels[state.colorationMode] || state.colorationMode)}</strong>
+    <p>Syllabes : ${escapeHtml(currentSyllableLabel)} · Séparation : ${escapeHtml(separatorLabel)} · ${escapeHtml(soundCopy)}.</p>
+  `;
+}
+
+function syncDependentControls() {
+  const state = getDysDependencyState();
+
+  setControlInteractivity(
+    "soundColorMode",
+    state.usesSoundColors,
+    "Disponible seulement avec le mode dys « Sons français »."
+  );
+  setControlInteractivity(
+    "syllableBreakMode",
+    state.usesSyllableStructure,
+    "Le séparateur n'apparaît que si la lecture découpe le mot en syllabes."
+  );
+  setControlInteractivity(
+    "overlayOpacity",
+    state.usesOverlayOpacity,
+    "L'opacité du filtre n'agit que si un filtre visuel est choisi."
+  );
+  setControlInteractivity(
+    "readingGuideLines",
+    state.usesGuideSettings,
+    "Le nombre de lignes visibles agit quand une réglette ou une fenêtre est activée."
+  );
+  setControlInteractivity(
+    "readingGuideOpacity",
+    state.usesGuideSettings,
+    "L'opacité agit quand une réglette ou une fenêtre est activée."
+  );
+  setControlInteractivity(
+    "readingGuideColor",
+    state.usesGuideSettings,
+    "La couleur agit quand une réglette ou une fenêtre est activée."
+  );
+
+  renderDysEssentialsSummary();
 }
 
 function getActiveModeLabel() {
@@ -1437,10 +1704,14 @@ function hasActiveSpeechRuntimeQueue() {
 function syncQuickActionButtons() {
   const audioState = appState.audioPaused ? "paused" : appState.speaking ? "playing" : "idle";
   const speechRuntimeAvailable = isSpeechRuntimeAvailable();
-  const hasSpeechDocument = speechRuntimeAvailable && getNavigableBlocks().length > 0;
+  const navigableBlocks = getNavigableBlocks();
+  const hasReadableDocument = navigableBlocks.length > 0;
+  const hasSpeechDocument = speechRuntimeAvailable && hasReadableDocument;
   const canUseOverview = Boolean(appState.importedDocument && appState.importedDocument.extractionQuality !== "poor");
   const canRestartAudioFromSelection = audioState === "paused" && Boolean(appState.audioResumeOverride?.startKey);
+  const showReadingDock = Boolean(appState.importedDocument && hasReadableDocument);
   document.documentElement.dataset.audioState = audioState;
+  document.body.classList.toggle("has-reader-command-bar", showReadingDock);
 
   if (elements.speechToggleButton) {
     elements.speechToggleButton.classList.toggle("is-active", audioState === "playing");
@@ -1470,25 +1741,60 @@ function syncQuickActionButtons() {
   }
 
   if (elements.quickActionDock) {
-    elements.quickActionDock.hidden = !canUseOverview;
+    elements.quickActionDock.hidden = !showReadingDock;
+  }
+  if (elements.quickActionHint) {
+    elements.quickActionHint.textContent =
+      !speechRuntimeAvailable
+        ? "Audio indisponible sur cet appareil"
+        : audioState === "playing"
+          ? "Lecture en cours"
+          : audioState === "paused"
+            ? canRestartAudioFromSelection
+              ? "Point de départ choisi"
+              : "Lecture en pause"
+            : appState.audioResumeOverride?.startKey
+              ? "Clique Lire pour repartir ici"
+              : "Clique un mot, puis Lire";
   }
   if (elements.quickOverviewButton) {
     elements.quickOverviewButton.disabled = !canUseOverview;
+    elements.quickOverviewButton.setAttribute("aria-label", "Ouvrir la vue d'ensemble du document");
   }
   if (elements.quickReadButton) {
     elements.quickReadButton.disabled = !hasSpeechDocument;
     elements.quickReadButton.classList.toggle("is-active", audioState === "playing");
     elements.quickReadButton.textContent =
       audioState === "paused"
-        ? "Reprendre"
+        ? canRestartAudioFromSelection
+          ? "Lire ici"
+          : "Reprendre"
         : audioState === "playing"
           ? "Pause"
           : "Lire";
+    elements.quickReadButton.setAttribute(
+      "aria-label",
+      audioState === "paused"
+        ? canRestartAudioFromSelection
+          ? "Lire à partir du mot sélectionné"
+          : "Reprendre la lecture audio"
+        : audioState === "playing"
+          ? "Mettre la lecture audio en pause"
+          : "Lancer la lecture audio"
+    );
   }
   if (elements.quickStopButton) {
     const showStop = audioState !== "idle";
     elements.quickStopButton.hidden = !showStop;
     elements.quickStopButton.disabled = !showStop;
+  }
+  if (elements.quickAidButton) {
+    elements.quickAidButton.disabled = !hasReadableDocument;
+    elements.quickAidButton.setAttribute("aria-label", "Ouvrir les aides de compréhension");
+  }
+  if (elements.quickSettingsButton) {
+    elements.quickSettingsButton.disabled = !hasReadableDocument;
+    elements.quickSettingsButton.setAttribute("aria-label", "Ouvrir les réglages de lecture");
   }
 
   if (elements.selectionSpeechButton) {
@@ -1520,57 +1826,91 @@ function syncControlsWithState() {
       output.textContent = formatOutputValue(key, appState.preferences[key]);
     }
   });
-  if (controls.overlayCustomColor) {
-    controls.overlayCustomColor.disabled = appState.preferences.overlayPreset !== "custom";
-  }
   syncAudioPreferences();
+  syncDependentControls();
   ariaManager.refreshSliderValues();
 }
 
 function renderProfiles() {
+  const profileDisplayOrder = ["decodage-renforce", "lecture-visuelle-allegee", "audio", "normal", "dyspraxie", "dyscalculie", "mode-examen"];
+  const orderedBuiltinProfiles = [...appState.builtinProfiles].sort((left, right) => {
+    const leftRank = profileDisplayOrder.indexOf(left.id);
+    const rightRank = profileDisplayOrder.indexOf(right.id);
+    return (leftRank === -1 ? 999 : leftRank) - (rightRank === -1 ? 999 : rightRank);
+  });
+
   const renderCard = (profile, isCustom = false) => {
     const activeClass = appState.activeProfileId === profile.id ? "is-active" : "";
-    const customBadge = isCustom
+    const featuredClass = !isCustom && profile.id === "decodage-renforce" ? " is-featured" : "";
+    const badge = isCustom
       ? `<span class="profile-badge">${isTemporaryCustomProfile(profile) ? "En cours" : "Perso"}</span>`
-      : "";
+      : profile.id === "decodage-renforce"
+        ? `<span class="profile-badge profile-badge--featured">Base dys</span>`
+        : "";
     const label = repairUiText(profile.label);
     const description = repairUiText(profile.description);
     return `
-      <button class="profile-card ${activeClass}" data-profile-id="${profile.id}" type="button">
+      <button class="profile-card ${activeClass}${featuredClass}" data-profile-id="${profile.id}" type="button">
         <div class="profile-card-head">
           <strong>${escapeHtml(label)}</strong>
-          ${customBadge}
+          ${badge}
         </div>
         <span>${escapeHtml(description)}</span>
       </button>
     `;
   };
 
-  const importantProfiles = appState.builtinProfiles.filter((profile) => IMPORTANT_PROFILE_IDS.has(profile.id));
-  const advancedProfiles = appState.builtinProfiles.filter((profile) => !IMPORTANT_PROFILE_IDS.has(profile.id));
-  elements.profilesList.innerHTML = importantProfiles.map((profile) => renderCard(profile)).join("");
-  if (elements.advancedProfilesList) {
-    elements.advancedProfilesList.hidden = !advancedProfiles.length;
-    elements.advancedProfilesList.innerHTML = advancedProfiles.length
-      ? advancedProfiles.map((profile) => renderCard(profile)).join("")
-      : "";
+  elements.profilesList.innerHTML = orderedBuiltinProfiles.map((profile) => renderCard(profile)).join("");
+  if (elements.customProfilesList) {
+    elements.customProfilesList.innerHTML = appState.customProfiles.length
+      ? appState.customProfiles.map((profile) => renderCard(profile, true)).join("")
+      : "<p class=\"muted-inline\">Aucun profil personnalisé pour l'instant.</p>";
   }
-  elements.customProfilesList.innerHTML = appState.customProfiles.length
-    ? appState.customProfiles.map((profile) => renderCard(profile, true)).join("")
-    : "<p class=\"muted-inline\">Aucun profil personnalisé pour l'instant.</p>";
 
   const activeProfile = findProfile(appState.activeProfileId) || appState.builtinProfiles[0];
-  elements.researchNotes.textContent = repairUiText(activeProfile?.researchNotes || "");
   renderProfileSummaryDialog();
-  renderStartAssistant();
   renderTeacherTools();
   if (elements.profileNameInput) {
     elements.profileNameInput.value =
       isCustomProfile(appState.activeProfileId) && !isTemporaryCustomProfile(activeProfile) ? activeProfile.label : "";
   }
-  elements.deleteProfileButton.disabled = !appState.customProfiles.some(
-    (profile) => profile.id === appState.activeProfileId
-  );
+
+  const activeSavedCustomProfile =
+    isCustomProfile(appState.activeProfileId) && !isTemporaryCustomProfile(activeProfile)
+      ? appState.customProfiles.find((profile) => profile.id === appState.activeProfileId) || null
+      : null;
+  const isTemporaryProfile = isTemporaryCustomProfile(activeProfile);
+  const customizationSource = getCustomizationSourceProfile(activeProfile);
+
+  if (elements.profileNameInput) {
+    elements.profileNameInput.placeholder = activeSavedCustomProfile
+      ? `Nom actuel : ${repairUiText(activeProfile.label)}`
+      : `Exemple : Mon profil ${repairUiText(customizationSource?.label || "personnel").toLowerCase()}`;
+  }
+
+  if (elements.settingsProfileHint) {
+    if (activeSavedCustomProfile) {
+      elements.settingsProfileHint.textContent = `Tu ajustes actuellement le profil personnalisé ${repairUiText(activeProfile.label)}. Clique sur Mettre à jour pour enregistrer les changements.`;
+    } else if (isTemporaryProfile) {
+      elements.settingsProfileHint.textContent = `Tu ajustes une version personnelle du profil ${repairUiText(customizationSource?.label || "actuel")}. Donne-lui un nom pour la conserver dans Profils personnalisés.`;
+    } else {
+      elements.settingsProfileHint.textContent =
+        "Quand cette combinaison te convient, donne-lui un nom pour la retrouver dans Profils personnalisés.";
+    }
+  }
+
+  if (elements.saveProfileButton) {
+    elements.saveProfileButton.textContent = activeSavedCustomProfile
+      ? "Mettre à jour ce profil"
+      : "Enregistrer dans mes profils";
+  }
+
+  if (elements.deleteProfileButton) {
+    const showDelete = Boolean(activeSavedCustomProfile || isTemporaryProfile);
+    elements.deleteProfileButton.hidden = !showDelete;
+    elements.deleteProfileButton.disabled = !showDelete;
+    elements.deleteProfileButton.textContent = isTemporaryProfile ? "Annuler ces réglages" : "Supprimer ce profil";
+  }
 }
 
 function renderRecentFiles() {
@@ -1650,6 +1990,71 @@ function clearSelectedWordHighlight() {
     ?.forEach((node) => node.classList.remove("is-word-selected"));
 }
 
+function resolveWordTargetFromPoint(clientX, clientY, block = null) {
+  if (!Number.isFinite(clientX) || !Number.isFinite(clientY) || !elements.pageList) {
+    return null;
+  }
+
+  const root = block instanceof Element ? block : elements.pageList;
+  const isValidWord = (node) =>
+    node instanceof Element &&
+    root.contains(node) &&
+    node.matches("[data-lookup-word][data-source-start][data-source-end]");
+
+  const pointElements =
+    typeof document.elementsFromPoint === "function"
+      ? document.elementsFromPoint(clientX, clientY)
+      : [document.elementFromPoint(clientX, clientY)].filter(Boolean);
+  for (const element of pointElements) {
+    const word = element instanceof Element ? element.closest("[data-lookup-word][data-source-start][data-source-end]") : null;
+    if (isValidWord(word)) {
+      return word;
+    }
+  }
+
+  const caret =
+    typeof document.caretRangeFromPoint === "function"
+      ? document.caretRangeFromPoint(clientX, clientY)
+      : null;
+  const caretAnchor = caret?.startContainer instanceof Element ? caret.startContainer : caret?.startContainer?.parentElement;
+  const caretWord = caretAnchor?.closest?.("[data-lookup-word][data-source-start][data-source-end]");
+  if (isValidWord(caretWord)) {
+    return caretWord;
+  }
+
+  if (!caret && typeof document.caretPositionFromPoint === "function") {
+    const position = document.caretPositionFromPoint(clientX, clientY);
+    const anchor = position?.offsetNode instanceof Element ? position.offsetNode : position?.offsetNode?.parentElement;
+    const word = anchor?.closest?.("[data-lookup-word][data-source-start][data-source-end]");
+    if (isValidWord(word)) {
+      return word;
+    }
+  }
+
+  const lineTolerance = Math.max(getCurrentReaderLineHeightPx() * 0.55, 18);
+  const horizontalTolerance = Math.max(getCurrentReaderLineHeightPx() * 1.2, 28);
+  let bestWord = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  root.querySelectorAll("[data-lookup-word][data-source-start][data-source-end]").forEach((word) => {
+    for (const rect of word.getClientRects()) {
+      const verticalDistance = clientY < rect.top ? rect.top - clientY : clientY > rect.bottom ? clientY - rect.bottom : 0;
+      const horizontalDistance = clientX < rect.left ? rect.left - clientX : clientX > rect.right ? clientX - rect.right : 0;
+      if (verticalDistance > lineTolerance || horizontalDistance > horizontalTolerance) {
+        continue;
+      }
+
+      const score = verticalDistance * 100000 + horizontalDistance;
+      if (score < bestScore) {
+        bestScore = score;
+        bestWord = word;
+      }
+    }
+  });
+
+  return bestWord;
+}
+
 function buildWordSelectionSnapshot(target) {
   const block = target?.closest?.(".reader-block");
   if (!target || !block?.dataset?.blockKey) {
@@ -1658,6 +2063,9 @@ function buildWordSelectionSnapshot(target) {
 
   const start = Number(target.dataset.sourceStart);
   const end = Number(target.dataset.sourceEnd);
+  const sentence = target.closest?.("[data-audio-sentence-index]");
+  const startSentenceIndex = Number(sentence?.dataset?.audioSentenceIndex);
+  const startWordIndex = Number(target.dataset.audioWordIndex);
   if (!Number.isFinite(start) || !Number.isFinite(end)) {
     return null;
   }
@@ -1666,7 +2074,9 @@ function buildWordSelectionSnapshot(target) {
     blockKey: block.dataset.blockKey,
     word: target.dataset.lookupWord || "",
     start,
-    end
+    end,
+    startSentenceIndex: Number.isFinite(startSentenceIndex) ? startSentenceIndex : 0,
+    startWordIndex: Number.isFinite(startWordIndex) ? startWordIndex : 0
   };
 }
 
@@ -1686,6 +2096,28 @@ function applySelectedWordHighlight(selection = appState.currentWordSelection) {
   const target = findSelectedWordNode(selection);
   target?.classList?.add("is-word-selected");
   return target;
+}
+
+function buildAudioStartContextFromWordSelection(selection = appState.currentWordSelection) {
+  if (!selection?.blockKey) {
+    return null;
+  }
+
+  const selectedWordNode = findSelectedWordNode(selection);
+  const sentenceNode = selectedWordNode?.closest?.("[data-audio-sentence-index]");
+  const startSentenceIndex = Number.isFinite(Number(selection.startSentenceIndex))
+    ? Number(selection.startSentenceIndex)
+    : Number(sentenceNode?.dataset?.audioSentenceIndex) || 0;
+  const startWordIndex = Number.isFinite(Number(selection.startWordIndex))
+    ? Number(selection.startWordIndex)
+    : Number(selectedWordNode?.dataset?.audioWordIndex) || 0;
+
+  return normalizeAudioStartContext({
+    startKey: selection.blockKey,
+    startSentenceIndex,
+    startWordIndex,
+    source: "word"
+  });
 }
 
 function isSameWordSelection(selection, word) {
@@ -1761,8 +2193,20 @@ function renderLocalAiStatus() {
 
   if (elements.blockReformulateButton) {
     elements.blockReformulateButton.title = canUseLocalAi
-      ? "Génère une reformulation simple avec Gemma locale, puis utilise le fallback local si besoin."
-      : "Génère une reformulation simple locale, sans dépendre d'une IA installée.";
+      ? "Explique le passage avec Gemma locale au niveau choisi, puis utilise le secours local si besoin."
+      : "Explique le passage localement au niveau choisi, sans dépendre d'une IA installée.";
+  }
+
+  if (elements.blockInstructionButton) {
+    elements.blockInstructionButton.title = canUseLocalAi
+      ? "Détecte les tâches d'une consigne avec Gemma locale, puis les découpe en étapes."
+      : "Détecte localement les tâches d'une consigne et les découpe en étapes.";
+  }
+
+  if (elements.documentQuestionButton) {
+    elements.documentQuestionButton.title = canUseLocalAi
+      ? "Pose une question à Gemma locale avec le passage sélectionné et le contexte du PDF."
+      : "La réponse complète nécessite Gemma locale. Sans IA, Odysey propose seulement des passages utiles.";
   }
 }
 
@@ -1846,7 +2290,10 @@ async function runLocalAiTask(taskType, request, { force = false } = {}) {
     temperature: taskType === "definition" ? 0.15 : 0.25
   });
 
-  const cleaned = cleanLocalAiText(response?.text || "", { maxLength: request.maxLength });
+  const cleaned = cleanLocalAiText(response?.text || "", {
+    maxLength: request.maxLength,
+    preserveLineBreaks: request.preserveLineBreaks
+  });
   if (cleaned) {
     appState.localAiCache.set(cacheKey, cleaned);
   }
@@ -1864,18 +2311,14 @@ function renderWordInsight() {
     elements.wordInsightWord.textContent = insight.word;
   }
   if (elements.wordInsightSyllables) {
-    const modeLabel = insight.syllabificationMode === "typographique" ? "typographique" : "pédagogique";
     if (insight.syllablesVisible && insight.syllableCount > 1) {
-      elements.wordInsightSyllables.textContent = `Découpe syllabique (${modeLabel}) : ${insight.syllableDisplay}`;
+      elements.wordInsightSyllables.textContent = `Découpe syllabique : ${insight.syllableDisplay}`;
     } else if (insight.syllableLevel === "off") {
-      elements.wordInsightSyllables.textContent = "Découpe syllabique désactivée dans les réglages.";
+      elements.wordInsightSyllables.textContent = "Aucune séparation syllabique supplémentaire n'est demandée ici.";
     } else if (insight.syllableCount <= 1) {
       elements.wordInsightSyllables.textContent = "Mot court : pas de découpe utile à afficher.";
-    } else if (insight.syllableWordScope === "auto") {
-      elements.wordInsightSyllables.textContent =
-        `Découpe syllabique (${modeLabel}) masquée avec le réglage Auto pour ce mot.`;
     } else {
-      elements.wordInsightSyllables.textContent = `Découpe syllabique (${modeLabel}) indisponible pour ce mot.`;
+      elements.wordInsightSyllables.textContent = "Découpe syllabique non affichée pour ce mot.";
     }
   }
   if (elements.wordInsightDefinition) {
@@ -1930,9 +2373,9 @@ async function inspectWord(word, options = {}) {
   applySelectedWordHighlight();
 
   const syllableInsightOptions = {
-    mode: appState.preferences.syllabificationMode,
+    mode: SIMPLIFIED_SYLLABLE_MODE,
     level: appState.preferences.syllableLevel,
-    wordScope: appState.preferences.syllableWordScope
+    wordScope: SIMPLIFIED_SYLLABLE_SCOPE
   };
 
   const localInsight = buildLocalWordInsight(sanitizedWord, syllableInsightOptions);
@@ -2004,7 +2447,8 @@ async function pronounceIsolatedWord() {
     stopSpeech();
     const result = await runtimeApi.speakNative({
       text: word,
-      rate: mapUiSpeechRate(appState.preferences.speechRate)
+      rate: mapUiSpeechRate(appState.preferences.speechRate),
+      voiceURI: appState.preferences.speechVoiceId
     });
     elements.statusLine.textContent = result?.ok
       ? `Prononciation du mot : ${word}.`
@@ -2023,7 +2467,8 @@ async function pronounceIsolatedWord() {
     stopSpeech();
     const result = await runtimeApi.speakNative({
       text: word,
-      rate: mapUiSpeechRate(appState.preferences.speechRate)
+      rate: mapUiSpeechRate(appState.preferences.speechRate),
+      voiceURI: appState.preferences.speechVoiceId
     });
     elements.statusLine.textContent = result?.ok
       ? `Prononciation du mot : ${word}.`
@@ -2051,10 +2496,212 @@ function renderBlockAssistMessage(message) {
   }
 }
 
-function getSelectedBlockAssistText() {
+function renderDocumentQuestionMessage(message) {
+  if (elements.documentQuestionOutput) {
+    elements.documentQuestionOutput.textContent = message;
+  }
+}
+
+function getAssistSchoolLevel() {
+  return normalizeSchoolLevel(appState.preferences.assistSchoolLevel);
+}
+
+function getAssistSchoolLevelLabel() {
+  return getSchoolLevelLabel(getAssistSchoolLevel());
+}
+
+function getBlockPlainText(block) {
+  const text = String(block?.text || "").trim();
+  if (!text) {
+    return "";
+  }
+
+  if (block?.type === "formula" || block?.math?.containsMath) {
+    return verbalizeMathText(text) || text;
+  }
+
+  return text;
+}
+
+function getSelectedBlockAssistText(minLength = 20) {
   const context = getSelectedReadableBlockContext();
-  const text = String(context?.block?.text || "").trim();
-  return text.length >= 20 ? text : "";
+  const text = getBlockPlainText(context?.block);
+  return text.length >= minLength ? text : "";
+}
+
+function getReadableDocumentContextBlocks() {
+  if (!appState.importedDocument?.pages?.length) {
+    return [];
+  }
+
+  const blocks = [];
+  for (const page of appState.importedDocument.pages) {
+    for (const [blockIndex, block] of (page.blocks || []).entries()) {
+      const text = getBlockPlainText(block).replace(/\s+/gu, " ").trim();
+      if (text.length < 8) {
+        continue;
+      }
+
+      blocks.push({
+        pageNumber: page.pageNumber,
+        blockIndex,
+        blockKey: buildBlockKey(page.pageNumber, blockIndex),
+        type: block?.type || "paragraph",
+        text
+      });
+    }
+  }
+
+  return blocks;
+}
+
+const QUESTION_CONTEXT_STOPWORDS = new Set([
+  "avec",
+  "dans",
+  "des",
+  "donc",
+  "elle",
+  "elles",
+  "est",
+  "ils",
+  "les",
+  "leur",
+  "mais",
+  "nous",
+  "pas",
+  "pour",
+  "que",
+  "quel",
+  "quelle",
+  "quels",
+  "quelles",
+  "qui",
+  "quoi",
+  "sur",
+  "une",
+  "vous"
+]);
+
+function normalizeContextSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/gu, "");
+}
+
+function getQuestionKeywords(question) {
+  const words = normalizeContextSearchText(question).match(/\b[\p{L}\d]{3,}\b/gu) || [];
+  return [...new Set(words.filter((word) => !QUESTION_CONTEXT_STOPWORDS.has(word)))].slice(0, 12);
+}
+
+function scoreQuestionContextBlock(block, keywords) {
+  if (!keywords.length) {
+    return 0;
+  }
+
+  const searchable = normalizeContextSearchText(block.text);
+  return keywords.reduce((score, keyword) => score + (searchable.includes(keyword) ? 1 : 0), 0);
+}
+
+function buildDocumentQuestionContext(question, { maxChars = 5200 } = {}) {
+  const blocks = getReadableDocumentContextBlocks();
+  if (!blocks.length) {
+    return "";
+  }
+
+  const keywords = getQuestionKeywords(question);
+  const selectedKey = appState.selectedBlockKey || getFirstReadableBlockKey(appState.importedDocument);
+  const selectedIndex = blocks.findIndex((block) => block.blockKey === selectedKey);
+  const chosen = [];
+  const seen = new Set();
+  const addBlock = (block) => {
+    if (!block || seen.has(block.blockKey)) {
+      return;
+    }
+    seen.add(block.blockKey);
+    chosen.push(block);
+  };
+
+  if (selectedIndex >= 0) {
+    for (let index = Math.max(0, selectedIndex - 4); index <= Math.min(blocks.length - 1, selectedIndex + 6); index += 1) {
+      addBlock(blocks[index]);
+    }
+  }
+
+  blocks
+    .map((block) => ({
+      block,
+      score: scoreQuestionContextBlock(block, keywords)
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score || left.block.pageNumber - right.block.pageNumber)
+    .slice(0, 10)
+    .forEach((entry) => addBlock(entry.block));
+
+  blocks.slice(0, 8).forEach(addBlock);
+
+  let output = "";
+  for (const block of chosen) {
+    const chunk = `[p.${block.pageNumber}] ${block.text}`;
+    const separator = output ? "\n\n" : "";
+    if (output.length + separator.length + chunk.length > maxChars) {
+      const remaining = maxChars - output.length - separator.length;
+      if (remaining > 180) {
+        output += `${separator}${chunk.slice(0, remaining).replace(/\s+\S*$/u, "").trim()}...`;
+      }
+      break;
+    }
+    output += `${separator}${chunk}`;
+  }
+
+  return output.trim();
+}
+
+function buildQuestionFallbackMessage(question) {
+  const blocks = getReadableDocumentContextBlocks();
+  const keywords = getQuestionKeywords(question);
+  const relevantBlocks = blocks
+    .map((block) => ({
+      block,
+      score: scoreQuestionContextBlock(block, keywords)
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score || left.block.pageNumber - right.block.pageNumber)
+    .slice(0, 3)
+    .map(({ block }) => `- p.${block.pageNumber} : ${truncateForAssist(block.text, 180)}`);
+
+  if (!relevantBlocks.length) {
+    return "IA locale indisponible. Je ne vais pas inventer une réponse : active Gemma locale dans Outils, puis repose ta question.";
+  }
+
+  return [
+    "IA locale indisponible. Je ne vais pas inventer une réponse.",
+    "Passages du PDF qui semblent utiles à relire :",
+    ...relevantBlocks
+  ].join("\n");
+}
+
+function truncateForAssist(value, maxLength = 220) {
+  const text = String(value || "").replace(/\s+/gu, " ").trim();
+  if (text.length <= maxLength) {
+    return text;
+  }
+  const clipped = text.slice(0, maxLength).replace(/\s+\S*$/u, "").trim();
+  return clipped ? `${clipped}...` : `${text.slice(0, maxLength).trim()}...`;
+}
+
+function renderSelectedBlockAssistHint() {
+  const text = getSelectedBlockAssistText(12);
+  if (!text) {
+    renderBlockAssistMessage("Sélectionne un bloc lisible pour obtenir un résumé, une reformulation ou une consigne découpée.");
+    return;
+  }
+
+  const analysis = detectInstructionStructure(text);
+  const levelLabel = getAssistSchoolLevelLabel();
+  renderBlockAssistMessage(
+    `${analysis.label}. Aide réglée au niveau ${levelLabel}. Tu peux résumer, expliquer plus simplement ou découper la consigne.`
+  );
 }
 
 async function summarizeSelectedBlock() {
@@ -2064,15 +2711,17 @@ async function summarizeSelectedBlock() {
     return;
   }
 
-  renderBlockAssistMessage("Génération du résumé en cours…");
-  const aiSummary = await runLocalAiTask("summary", buildLocalAiSummaryRequest(text), { force: true });
-  const summary = aiSummary || buildShortSummary(text);
+  const level = getAssistSchoolLevel();
+  const levelLabel = getAssistSchoolLevelLabel();
+  renderBlockAssistMessage(`Génération du résumé niveau ${levelLabel} en cours…`);
+  const aiSummary = await runLocalAiTask("summary", buildLocalAiSchoolSummaryRequest(text, { level }), { force: true });
+  const summary = aiSummary || buildSchoolSummary(text, { level }) || buildShortSummary(text);
   renderBlockAssistMessage(summary || "Résumé indisponible pour ce bloc.");
   elements.statusLine.textContent = aiSummary
-    ? "Résumé court généré avec Gemma locale."
+    ? `Résumé niveau ${levelLabel} généré avec Gemma locale.`
     : normalizeLocalAiMode(appState.preferences.localAiMode) !== "off"
-      ? "Gemma locale indisponible : résumé local affiché."
-      : "Résumé court généré pour le bloc sélectionné.";
+      ? `Gemma locale indisponible : résumé local niveau ${levelLabel} affiché.`
+      : `Résumé local niveau ${levelLabel} généré pour le bloc sélectionné.`;
 }
 
 async function reformulateSelectedBlock() {
@@ -2082,15 +2731,97 @@ async function reformulateSelectedBlock() {
     return;
   }
 
-  renderBlockAssistMessage("Reformulation en cours…");
-  const aiReformulation = await runLocalAiTask("reformulation", buildLocalAiReformulationRequest(text), { force: true });
-  const reformulation = aiReformulation || buildSimpleReformulation(text);
+  const level = getAssistSchoolLevel();
+  const levelLabel = getAssistSchoolLevelLabel();
+  renderBlockAssistMessage(`Reformulation niveau ${levelLabel} en cours…`);
+  const aiReformulation = await runLocalAiTask(
+    "reformulation",
+    buildLocalAiSchoolReformulationRequest(text, { level }),
+    { force: true }
+  );
+  const reformulation = aiReformulation || buildSchoolReformulation(text, { level }) || buildSimpleReformulation(text);
   renderBlockAssistMessage(reformulation || "Reformulation indisponible pour ce bloc.");
   elements.statusLine.textContent = aiReformulation
-    ? "Reformulation simple générée avec Gemma locale."
+    ? `Reformulation niveau ${levelLabel} générée avec Gemma locale.`
     : normalizeLocalAiMode(appState.preferences.localAiMode) !== "off"
-      ? "Gemma locale indisponible : reformulation locale affichée."
-      : "Reformulation simple générée pour le bloc sélectionné.";
+      ? `Gemma locale indisponible : reformulation locale niveau ${levelLabel} affichée.`
+      : `Reformulation locale niveau ${levelLabel} générée pour le bloc sélectionné.`;
+}
+
+async function explainSelectedInstruction() {
+  const text = getSelectedBlockAssistText();
+  if (!text) {
+    renderBlockAssistMessage("Choisis une consigne ou une question assez longue pour la découper en étapes.");
+    return;
+  }
+
+  const level = getAssistSchoolLevel();
+  const levelLabel = getAssistSchoolLevelLabel();
+  const analysis = detectInstructionStructure(text);
+  if (!analysis.isInstruction && !analysis.isQuestion) {
+    renderBlockAssistMessage(buildInstructionBreakdown(text, { level, analysis }));
+    elements.statusLine.textContent = "Ce bloc ne ressemble pas à une consigne : résumé ou reformulation recommandés.";
+    return;
+  }
+
+  renderBlockAssistMessage(`Analyse de la consigne niveau ${levelLabel} en cours…`);
+  const aiBreakdown = await runLocalAiTask(
+    "instruction",
+    buildLocalAiInstructionRequest({
+      text,
+      level,
+      detectedTasks: analysis.tasks
+    }),
+    { force: true }
+  );
+  const breakdown = aiBreakdown || buildInstructionBreakdown(text, { level, analysis });
+  renderBlockAssistMessage(breakdown || "Découpage de consigne indisponible pour ce bloc.");
+  elements.statusLine.textContent = aiBreakdown
+    ? `Consigne découpée avec Gemma locale au niveau ${levelLabel}.`
+    : normalizeLocalAiMode(appState.preferences.localAiMode) !== "off"
+      ? `Gemma locale indisponible : découpage local niveau ${levelLabel} affiché.`
+      : `Consigne découpée localement au niveau ${levelLabel}.`;
+}
+
+async function answerDocumentQuestion() {
+  const question = String(elements.documentQuestionInput?.value || "").replace(/\s+/gu, " ").trim();
+  if (!question) {
+    renderDocumentQuestionMessage("Écris une question sur le PDF, puis appuie sur Poser la question.");
+    return;
+  }
+
+  if (!appState.importedDocument || appState.importedDocument.extractionQuality === "poor") {
+    renderDocumentQuestionMessage("Importe un PDF lisible ou lance l’OCR avant de poser une question au document.");
+    return;
+  }
+
+  const level = getAssistSchoolLevel();
+  const levelLabel = getAssistSchoolLevelLabel();
+  const selectedText = getSelectedBlockAssistText(8);
+  const documentContext = buildDocumentQuestionContext(question);
+  if (!documentContext) {
+    renderDocumentQuestionMessage("Je n’ai pas assez de texte exploitable dans ce PDF pour construire un contexte fiable.");
+    return;
+  }
+
+  renderDocumentQuestionMessage(`Recherche dans le PDF et préparation d’une réponse niveau ${levelLabel}…`);
+  const aiAnswer = await runLocalAiTask(
+    "pdf-question",
+    buildLocalAiDocumentQuestionRequest({
+      question,
+      selectedText,
+      documentContext,
+      documentTitle: appState.importedDocument.fileName,
+      level
+    }),
+    { force: true }
+  );
+
+  const answer = aiAnswer || buildQuestionFallbackMessage(question);
+  renderDocumentQuestionMessage(answer);
+  elements.statusLine.textContent = aiAnswer
+    ? `Réponse IA générée avec le contexte du PDF au niveau ${levelLabel}.`
+    : "IA locale indisponible : passages utiles proposés sans inventer de réponse.";
 }
 
 function getExamProfileLabel() {
@@ -2259,21 +2990,6 @@ function formatTeacherDiagnostics(diagnostics) {
   return parts.join(" • ");
 }
 
-function renderStartAssistant() {
-  if (!elements.startAssistantButtons) {
-    return;
-  }
-
-  const activeNeed = getStartNeedFromProfile(appState.activeProfileId);
-  for (const button of elements.startAssistantButtons.querySelectorAll("[data-start-need]")) {
-    button.classList.toggle("is-active", button.dataset.startNeed === activeNeed);
-  }
-
-  if (elements.startAssistantSummary) {
-    elements.startAssistantSummary.textContent = getStartNeedSummary(activeNeed);
-  }
-}
-
 function renderTeacherTools() {
   if (!elements.teacherModeSummary) {
     return;
@@ -2357,11 +3073,12 @@ function renderTeacherCompareDialog() {
     `Page ${pageNumber} • ${getBlockTypeLabel(block)} • ${verificationText}`;
   elements.teacherCompareRaw.innerHTML = `<pre class="teacher-compare-raw">${escapeHtml(rawText)}</pre>`;
   elements.teacherCompareAdapted.innerHTML = `
-    <article class="teacher-compare-preview reader-block reader-block--${escapeAttribute(block.type || "paragraph")}">
+    <article class="teacher-compare-preview reader-block reader-block--${escapeAttribute(block.type || "paragraph")}" data-line-pattern="a">
       ${renderBlockBody(block, blockKey)}
       ${renderVerificationNote(block)}
     </article>
   `;
+  scheduleRenderedLinePatterns(elements.teacherCompareAdapted);
 }
 
 function buildTeacherSheetText() {
@@ -2843,6 +3560,11 @@ function getAudioStartContext({ preferSelection = true, requireSelection = false
     return null;
   }
 
+  const selectedWordContext = buildAudioStartContextFromWordSelection();
+  if (selectedWordContext) {
+    return selectedWordContext;
+  }
+
   if (
     appState.preferredAudioStartContext?.startKey &&
     blocks.some((block) => block.dataset.blockKey === appState.preferredAudioStartContext.startKey)
@@ -2919,8 +3641,11 @@ function updateLayoutVariables() {
   document.documentElement.dataset.verificationMode = getEffectiveVerificationMode();
   document.documentElement.dataset.audioState = appState.audioPaused ? "paused" : appState.speaking ? "playing" : "idle";
   document.body.classList.toggle("is-distraction-free", appState.preferences.distractionFree);
-  ariaManager.setSidebarExpanded(!appState.preferences.distractionFree);
-  updateSidebarToggleUi();
+  ariaManager.setRibbonExpanded(!appState.preferences.distractionFree);
+  updateRibbonToggleUi();
+  if (appState.activeRibbonTab) {
+    positionActiveRibbonPanel(appState.activeRibbonTab);
+  }
   syncQuickActionButtons();
 }
 
@@ -3099,10 +3824,11 @@ function renderAudioReadyText(
   }
 
   let sourceOffset = 0;
+  const visualPatternState = { index: 0 };
   return segments
     .map((segment, sentenceIndex) => {
-      const sentenceStart = sourceOffset;
-      const sentenceEnd = sentenceStart + segment.rawText.length;
+      const sentenceStart = Number.isFinite(Number(segment.start)) ? Number(segment.start) : sourceOffset;
+      const sentenceEnd = Number.isFinite(Number(segment.end)) ? Number(segment.end) : sentenceStart + segment.rawText.length;
       sourceOffset = sentenceEnd;
       const markup = renderAdaptedText(segment.rawText, {
         colorationMode,
@@ -3114,11 +3840,58 @@ function renderAudioReadyText(
         blockType,
         audioTracking: true,
         wordIndexOffset: 0,
+        sourceOffset: sentenceStart,
+        visualPatternState,
         annotationRanges
       });
       return `<span class="audio-sentence" data-audio-sentence-index="${sentenceIndex}" data-source-start="${sentenceStart}" data-source-end="${sentenceEnd}">${markup}</span>`;
     })
     .join("");
+}
+
+function applyRenderedLinePatterns(root = elements.pageList) {
+  if (!root) {
+    return;
+  }
+
+  const colorationMode = normalizeColorationPreference(appState.preferences.colorationMode);
+  const wordTargets = [...root.querySelectorAll(".word-select-target")];
+  wordTargets.forEach((target) => {
+    target.removeAttribute("data-line-pattern");
+  });
+
+  if (colorationMode !== "alternanceLignes" || wordTargets.length === 0) {
+    return;
+  }
+
+  let currentTop = null;
+  let lineIndex = -1;
+
+  wordTargets.forEach((target) => {
+    const sample = target.querySelector(".word-adapted") || target;
+    const rect = sample.getBoundingClientRect();
+    const top = Math.round(rect.top);
+    if (!Number.isFinite(top)) {
+      return;
+    }
+
+    if (currentTop === null || Math.abs(top - currentTop) > 6 || top < currentTop - 2) {
+      lineIndex += 1;
+      currentTop = top;
+    }
+
+    target.dataset.linePattern = lineIndex % 2 === 0 ? "a" : "b";
+  });
+}
+
+function scheduleRenderedLinePatterns(root = elements.pageList) {
+  if (!root) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    applyRenderedLinePatterns(root);
+  });
 }
 
 function renderBlockBody(block, blockKey) {
@@ -3424,53 +4197,6 @@ function highlightAudioSentence(blockKey, sentenceIndex, { align = true, showSen
   }
 }
 
-function getStartNeedFromProfile(profileId) {
-  switch (profileId) {
-    case "normal":
-    case "lecture-visuelle-allegee":
-    case "dyspraxie":
-      return "normal";
-    case "decodage-renforce":
-      return "dyslexie";
-    case "audio":
-      return "audio";
-    case "dyscalculie":
-      return "maths";
-    default:
-      return "";
-  }
-}
-
-function getStartNeedProfileId(needId) {
-  switch (needId) {
-    case "normal":
-      return "normal";
-    case "dyslexie":
-      return "decodage-renforce";
-    case "audio":
-      return "audio";
-    case "maths":
-      return "dyscalculie";
-    default:
-      return "";
-  }
-}
-
-function getStartNeedSummary(needId) {
-  switch (needId) {
-    case "normal":
-      return "Besoin actif : lecture simple et stable, sans aide supplementaire inutile.";
-    case "dyslexie":
-      return "Besoin actif : aide au decodage moderee, avec plus de confort visuel et moins de friction de lecture.";
-    case "audio":
-      return "Besoin actif : suivi guide par la voix, le focus et les reperes de lecture.";
-    case "maths":
-      return "Besoin actif : lecture plus sure des formules, unites, exposants et tableaux scientifiques.";
-    default:
-      return "Choisis un besoin simple pour activer directement le profil le plus pertinent.";
-  }
-}
-
 function keepAudioElementInView(element, { force = false } = {}) {
   if (!element || !elements.readArea) {
     return;
@@ -3543,6 +4269,263 @@ function getCurrentReaderLineHeightPx() {
   return computedFontSize * Math.max(1.5, appState.preferences.lineHeight);
 }
 
+function getGuideAnchorTopFromContentTop(contentTop) {
+  const lineHeight = Math.max(getCurrentReaderLineHeightPx(), 1);
+  const visibleLines = Math.max(Number(appState.preferences.readingGuideLines) || 1, 1);
+  const guideHeight = lineHeight * visibleLines;
+  const centeringOffset = Math.max(0, (guideHeight - lineHeight) / 2);
+  return Math.max(0, contentTop - centeringOffset);
+}
+
+function getRangeRect(range) {
+  if (!(range instanceof Range)) {
+    return null;
+  }
+
+  const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
+  if (rects.length > 0) {
+    return rects[0];
+  }
+
+  const rect = range.getBoundingClientRect();
+  if (rect.width > 0 || rect.height > 0) {
+    return rect;
+  }
+
+  return null;
+}
+
+function isPointInsideReadArea(clientX, clientY) {
+  if (!elements.readArea || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+    return false;
+  }
+
+  const rect = elements.readArea.getBoundingClientRect();
+  return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+}
+
+function getClosestRectForPoint(rectList, clientX, clientY) {
+  const rects = Array.from(rectList || []).filter((rect) => rect.width > 0 || rect.height > 0);
+  if (rects.length === 0) {
+    return null;
+  }
+
+  const exactMatch = rects.find(
+    (rect) =>
+      clientY >= rect.top - 0.5 &&
+      clientY <= rect.bottom + 0.5 &&
+      clientX >= rect.left - 6 &&
+      clientX <= rect.right + 6
+  );
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  let bestRect = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+  rects.forEach((rect) => {
+    const verticalDistance = clientY < rect.top ? rect.top - clientY : clientY > rect.bottom ? clientY - rect.bottom : 0;
+    const horizontalDistance = clientX < rect.left ? rect.left - clientX : clientX > rect.right ? clientX - rect.right : 0;
+    const score = verticalDistance * 100000 + horizontalDistance;
+    if (score < bestScore) {
+      bestScore = score;
+      bestRect = rect;
+    }
+  });
+
+  return bestRect;
+}
+
+function getGuideTargetRectFromElement(element, clientX, clientY) {
+  if (!(element instanceof Element)) {
+    return null;
+  }
+
+  const preciseRect = getClosestRectForPoint(element.getClientRects(), clientX, clientY);
+  if (preciseRect) {
+    return preciseRect;
+  }
+
+  const fallbackRect = element.getBoundingClientRect();
+  return fallbackRect.width > 0 || fallbackRect.height > 0 ? fallbackRect : null;
+}
+
+function getGuideRectFromBlockWords(block, clientX, clientY) {
+  if (!(block instanceof Element)) {
+    return null;
+  }
+
+  const lineTolerance = Math.max(getCurrentReaderLineHeightPx() * 0.8, 18);
+  const candidates = Array.from(block.querySelectorAll("[data-lookup-word], .word-audio-track, .audio-sentence"));
+  let bestRect = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  candidates.forEach((candidate) => {
+    const rect = getGuideTargetRectFromElement(candidate, clientX, clientY);
+    if (!rect) {
+      return;
+    }
+
+    const verticalDistance = clientY < rect.top ? rect.top - clientY : clientY > rect.bottom ? clientY - rect.bottom : 0;
+    if (verticalDistance > lineTolerance) {
+      return;
+    }
+
+    const horizontalDistance = clientX < rect.left ? rect.left - clientX : clientX > rect.right ? clientX - rect.right : 0;
+    const score = verticalDistance * 100000 + horizontalDistance;
+    if (score < bestScore) {
+      bestScore = score;
+      bestRect = rect;
+    }
+  });
+
+  return bestRect;
+}
+
+function resolveGuideTargetRectFromPoint(clientX, clientY) {
+  if (!elements.readArea || !elements.pageList || !isPointInsideReadArea(clientX, clientY)) {
+    return null;
+  }
+
+  if (typeof document.caretRangeFromPoint === "function") {
+    const range = document.caretRangeFromPoint(clientX, clientY);
+    const anchor = range?.startContainer instanceof Element ? range.startContainer : range?.startContainer?.parentElement;
+    if (anchor && elements.pageList.contains(anchor)) {
+      const rangeRect = getRangeRect(range);
+      if (rangeRect) {
+        return rangeRect;
+      }
+    }
+  } else if (typeof document.caretPositionFromPoint === "function") {
+    const caret = document.caretPositionFromPoint(clientX, clientY);
+    const anchor = caret?.offsetNode instanceof Element ? caret.offsetNode : caret?.offsetNode?.parentElement;
+    if (caret?.offsetNode && anchor && elements.pageList.contains(anchor)) {
+      const range = document.createRange();
+      const maxOffset =
+        caret.offsetNode.nodeType === Node.TEXT_NODE
+          ? caret.offsetNode.textContent?.length || 0
+          : caret.offsetNode.childNodes?.length || 0;
+      const safeOffset = Math.max(0, Math.min(caret.offset, maxOffset));
+      range.setStart(caret.offsetNode, safeOffset);
+      range.setEnd(caret.offsetNode, safeOffset);
+      const rangeRect = getRangeRect(range);
+      if (rangeRect) {
+        return rangeRect;
+      }
+    }
+  }
+
+  const pointElements =
+    typeof document.elementsFromPoint === "function"
+      ? document.elementsFromPoint(clientX, clientY)
+      : [document.elementFromPoint(clientX, clientY)].filter(Boolean);
+  const uniqueTargets = [];
+  const seen = new Set();
+
+  pointElements.forEach((element) => {
+    if (!(element instanceof Element)) {
+      return;
+    }
+    const target = element.closest?.("[data-lookup-word], .word-audio-track, .audio-sentence, .reader-block");
+    if (!target || !elements.pageList.contains(target) || seen.has(target)) {
+      return;
+    }
+    seen.add(target);
+    uniqueTargets.push(target);
+  });
+
+  for (const target of uniqueTargets) {
+    if (target.classList.contains("reader-block")) {
+      continue;
+    }
+    const rect = getGuideTargetRectFromElement(target, clientX, clientY);
+    if (rect) {
+      return rect;
+    }
+  }
+
+  const block = uniqueTargets.find((target) => target.classList.contains("reader-block"));
+  if (block) {
+    const lineRect = getGuideRectFromBlockWords(block, clientX, clientY);
+    if (lineRect) {
+      return lineRect;
+    }
+    return getGuideTargetRectFromElement(block, clientX, clientY);
+  }
+
+  return null;
+}
+
+function resolveGuideContentTopFromPoint(clientX, clientY) {
+  if (!elements.readArea || !elements.pageList) {
+    return null;
+  }
+
+  const containerRect = elements.readArea.getBoundingClientRect();
+  const targetRect = resolveGuideTargetRectFromPoint(clientX, clientY);
+
+  if (!targetRect) {
+    return Math.max(0, clientY - containerRect.top + elements.readArea.scrollTop);
+  }
+
+  return Math.max(0, targetRect.top - containerRect.top + elements.readArea.scrollTop);
+}
+
+function alignGuideToNode(node) {
+  const guideMode = normalizeReadingGuideMode(appState.preferences.readingGuideMode, appState.preferences.focusMode);
+  if (guideMode === "off" || !(node instanceof Element)) {
+    return;
+  }
+
+  readingGuide.moveToElement(node);
+}
+
+function updateGuideFromTrackedPointer() {
+  const guideMode = normalizeReadingGuideMode(appState.preferences.readingGuideMode, appState.preferences.focusMode);
+  if (guideMode === "off") {
+    return false;
+  }
+
+  if (!Number.isFinite(appState.rulerPointerClientX) || !Number.isFinite(appState.rulerPointerClientY)) {
+    return false;
+  }
+
+  if (!isPointInsideReadArea(appState.rulerPointerClientX, appState.rulerPointerClientY)) {
+    return false;
+  }
+
+  const contentTop = resolveGuideContentTopFromPoint(appState.rulerPointerClientX, appState.rulerPointerClientY);
+  if (!Number.isFinite(contentTop)) {
+    return false;
+  }
+
+  appState.rulerContentTop = contentTop;
+  readingGuide.moveToContentTop(getGuideAnchorTopFromContentTop(contentTop));
+  return true;
+}
+
+function cancelTrackedGuideUpdate() {
+  if (!appState.rulerUpdateFrameId) {
+    return;
+  }
+  window.cancelAnimationFrame(appState.rulerUpdateFrameId);
+  appState.rulerUpdateFrameId = 0;
+}
+
+function scheduleTrackedGuideUpdate({ clientX = appState.rulerPointerClientX, clientY = appState.rulerPointerClientY } = {}) {
+  if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+    return;
+  }
+
+  appState.rulerPointerClientX = clientX;
+  appState.rulerPointerClientY = clientY;
+  cancelTrackedGuideUpdate();
+  appState.rulerUpdateFrameId = window.requestAnimationFrame(() => {
+    appState.rulerUpdateFrameId = 0;
+    updateGuideFromTrackedPointer();
+  });
+}
+
 function syncReadingGuide({ alignToSelection = true } = {}) {
   readingGuide.attach(elements.readArea);
   readingGuide.setMode(normalizeReadingGuideMode(appState.preferences.readingGuideMode, appState.preferences.focusMode));
@@ -3550,6 +4533,10 @@ function syncReadingGuide({ alignToSelection = true } = {}) {
   readingGuide.setOpacity(appState.preferences.readingGuideOpacity);
   readingGuide.setColor(appState.preferences.readingGuideColor);
   readingGuide.setLineHeight(getCurrentReaderLineHeightPx());
+
+  if (updateGuideFromTrackedPointer()) {
+    return;
+  }
 
   if (!alignToSelection) {
     return;
@@ -3648,6 +4635,9 @@ function activateProfileByShortcut(index) {
 
 function toggleImmersion() {
   appState.preferences.distractionFree = !appState.preferences.distractionFree;
+  if (appState.preferences.distractionFree) {
+    closeRibbonMenus();
+  }
   updateLayoutVariables();
   debouncePersist();
 }
@@ -3711,7 +4701,8 @@ function renderDocument() {
     appState.ocrState.totalPages = 0;
     updateOcrUi();
     resetWordInsight();
-    renderBlockAssistMessage("Sélectionne un bloc pour obtenir un résumé ou une reformulation simple.");
+    renderBlockAssistMessage("Sélectionne un bloc pour obtenir un résumé, une reformulation ou une consigne découpée.");
+    renderDocumentQuestionMessage("Importe un PDF lisible pour poser une question au document.");
     renderTeacherCompareDialog();
     syncQuickActionButtons();
     return;
@@ -3723,13 +4714,14 @@ function renderDocument() {
       <article class="reader-empty-message">
         <h3>Lecture adaptée indisponible</h3>
         <p>Ce document ressemble à un scan ou ne contient pas assez de texte exploitable.</p>
-        <p>Utilise le panneau OCR local dans la colonne de gauche pour tenter une reconstruction automatique.</p>
+        <p>Utilise l’onglet Document du ruban pour lancer l’OCR local et tenter une reconstruction automatique.</p>
       </article>
     `;
     elements.keyboardHint.textContent = "Ctrl+O permet aussi d'ouvrir rapidement un autre document.";
     elements.printSummary.innerHTML = "";
     readingGuide.setMode("off");
     renderBlockAssistMessage("L’assistance détaillée sera disponible après reconstruction OCR.");
+    renderDocumentQuestionMessage("L’IA pourra utiliser le contexte du PDF après reconstruction OCR.");
     renderTeacherCompareDialog();
     syncQuickActionButtons();
     return;
@@ -3758,6 +4750,7 @@ function renderDocument() {
             <article
               class="reader-block reader-block--${block.type} ${block.math?.containsMath ? "has-math" : ""} ${block?.verification?.level && block.verification.level !== "none" ? "is-flagged" : ""} ${isActive ? "is-current" : ""}"
               data-block-key="${key}"
+              data-line-pattern="${blockIndex % 2 === 0 ? "a" : "b"}"
               tabindex="0"
               data-page-number="${page.pageNumber}"
               data-speech-text="${escapeAttribute(getBlockSpeechText(block))}"
@@ -3782,6 +4775,7 @@ function renderDocument() {
     .join("");
 
   elements.pageList.innerHTML = pagesMarkup;
+  scheduleRenderedLinePatterns(elements.pageList);
   clearAudioHighlights();
   if (!elements.pageList.querySelector(`[data-block-key="${appState.selectedBlockKey}"]`)) {
     appState.selectedBlockKey = elements.pageList.querySelector(".reader-block")?.dataset.blockKey || "";
@@ -3876,6 +4870,7 @@ function renderDocumentOverview() {
             <article
               class="document-overview-block document-overview-block--${escapeAttribute(block.type || "paragraph")} ${blockKey === appState.selectedBlockKey ? "is-current" : ""}"
               data-overview-block-key="${escapeAttribute(blockKey)}"
+              data-line-pattern="${blockIndex % 2 === 0 ? "a" : "b"}"
               tabindex="0"
               role="button"
               aria-label="Aller au ${escapeAttribute(typeLabel.toLowerCase())} page ${page.pageNumber}"
@@ -3899,6 +4894,7 @@ function renderDocumentOverview() {
     .join("");
 
   elements.documentOverviewContent.innerHTML = `<div class="document-overview-pages">${pagesMarkup}</div>`;
+  scheduleRenderedLinePatterns(elements.documentOverviewContent);
 }
 
 function openDocumentOverview() {
@@ -3911,6 +4907,7 @@ function openDocumentOverview() {
   if (!elements.documentOverviewDialog?.open) {
     elements.documentOverviewDialog?.showModal();
   }
+  scheduleRenderedLinePatterns(elements.documentOverviewContent);
   elements.statusLine.textContent = "Vue d'ensemble du document ouverte.";
 }
 
@@ -3948,6 +4945,7 @@ async function handlePdfOpen() {
     return;
   }
 
+  closeRibbonMenus();
   elements.statusLine.textContent = "Lecture du PDF en cours...";
   let nextPdfBlobUrl = "";
   try {
@@ -3969,7 +4967,8 @@ async function handlePdfOpen() {
     loadAnnotationsForCurrentDocument();
     loadTeacherNotesForCurrentDocument();
     resetWordInsight();
-    renderBlockAssistMessage("Sélectionne un bloc pour obtenir un résumé ou une reformulation simple.");
+    renderBlockAssistMessage("Sélectionne un bloc pour obtenir un résumé, une reformulation ou une consigne découpée.");
+    renderDocumentQuestionMessage("Pose une question : l’IA locale utilisera le passage sélectionné et le contexte du PDF.");
     clearSelectionAssist();
     appState.ocrState = {
       running: false,
@@ -4114,6 +5113,9 @@ function setSelectedBlock(blockKey, { scroll = true, audioStartContext = null, p
     highlightSelectedBlock(scroll);
     syncReadingGuide();
     renderTeacherTools();
+    if (blockChanged) {
+      renderSelectedBlockAssistHint();
+    }
   }
 
   if (elements.teacherCompareDialog?.open && blockChanged) {
@@ -4127,7 +5129,9 @@ function handleReaderTargetInteraction(
     allowWordInspect = true,
     updateAudioStatusLine = true,
     persistProgress = true,
-    autoRestartWhenPaused = false
+    autoRestartWhenPaused = false,
+    clientX = Number.NaN,
+    clientY = Number.NaN
   } = {}
 ) {
   if (!(target instanceof Element)) {
@@ -4139,7 +5143,10 @@ function handleReaderTargetInteraction(
     return false;
   }
 
-  const clickedWord = allowWordInspect ? target.closest("[data-lookup-word]") : null;
+  const clickedWord = allowWordInspect
+    ? target.closest("[data-lookup-word][data-source-start][data-source-end]") ||
+      resolveWordTargetFromPoint(clientX, clientY, block)
+    : null;
   const wordSelection = clickedWord ? buildWordSelectionSnapshot(clickedWord) : null;
   if (clickedWord?.dataset?.lookupWord && wordSelection) {
     clearSelectionAssist();
@@ -4151,7 +5158,9 @@ function handleReaderTargetInteraction(
     });
   }
 
-  const startContext = buildAudioStartContextFromNode(target);
+  const startContext =
+    buildAudioStartContextFromWordSelection(wordSelection) ||
+    buildAudioStartContextFromNode(clickedWord || target);
   const shouldPersistProgress = Boolean(
     persistProgress &&
       block.dataset.blockKey &&
@@ -4162,6 +5171,12 @@ function handleReaderTargetInteraction(
     audioStartContext: startContext,
     persistProgress: shouldPersistProgress
   });
+  alignGuideToNode(clickedWord || target.closest(".audio-sentence") || block);
+
+  if (appState.speechAvailable && appState.speaking && !appState.audioPaused && clickedWord) {
+    startAudioPlayback(startContext);
+    return true;
+  }
 
   if (appState.speechAvailable && appState.audioPaused) {
     if (autoRestartWhenPaused) {
@@ -4342,6 +5357,36 @@ function clearVoiceRefreshTimer() {
   }
 }
 
+function mapNativeVoiceToWebVoice(voice = {}) {
+  const name = String(voice.name || voice.id || "").trim();
+  return {
+    voiceURI: String(voice.id || name),
+    name: name || "Voix Windows",
+    lang: String(voice.lang || "fr-FR"),
+    default: false,
+    localService: true
+  };
+}
+
+async function refreshNativeVoices({ silent = false } = {}) {
+  if (runtimeApi.kind !== "electron" || typeof runtimeApi.getNativeVoices !== "function") {
+    appState.nativeVoices = [];
+    return [];
+  }
+
+  const result = await runtimeApi.getNativeVoices();
+  if (!result?.ok) {
+    appState.nativeVoices = [];
+    if (!silent) {
+      elements.statusLine.textContent = "Impossible de lire les voix Windows installées pour le moment.";
+    }
+    return [];
+  }
+
+  appState.nativeVoices = (Array.isArray(result.voices) ? result.voices : []).map(mapNativeVoiceToWebVoice);
+  return appState.nativeVoices;
+}
+
 function scheduleVoiceRefresh() {
   clearVoiceRefreshTimer();
 
@@ -4414,10 +5459,22 @@ function setVoices() {
     const defaultOption = document.createElement("option");
     defaultOption.value = "";
     defaultOption.textContent = "Voix Windows par défaut";
-    elements.voiceSelect.replaceChildren(defaultOption);
-    elements.voiceSelect.disabled = true;
-    appState.preferences.speechVoiceId = "";
+    const nativeOptions = appState.nativeVoices.map((voice) => {
+      const option = document.createElement("option");
+      option.value = voice.voiceURI;
+      option.textContent = `${voice.name} - ${voice.lang}`;
+      return option;
+    });
+    elements.voiceSelect.replaceChildren(defaultOption, ...nativeOptions);
+    elements.voiceSelect.disabled = false;
+    if (appState.nativeVoices.some((voice) => voice.voiceURI === appState.preferences.speechVoiceId)) {
+      elements.voiceSelect.value = appState.preferences.speechVoiceId;
+    } else {
+      elements.voiceSelect.value = "";
+      appState.preferences.speechVoiceId = "";
+    }
     audioEngine.setVoice("");
+    audioEngine.setVoice(appState.preferences.speechVoiceId);
     audioEngine.setRate(appState.preferences.speechRate);
     audioEngine.setPauseBetweenSentences(appState.preferences.pauseBetweenSentences || 0);
     syncQuickActionButtons();
@@ -4450,6 +5507,51 @@ function setVoices() {
   if (webSpeechAvailable && voices.length === 0) {
     scheduleVoiceRefresh();
   }
+}
+
+async function refreshVoiceCatalog({ manual = false } = {}) {
+  clearVoiceRefreshTimer();
+  appState.voiceRefreshAttempts = 0;
+
+  const synthesis = getSpeechSynthesisRuntime();
+  if (typeof synthesis?.cancel === "function") {
+    try {
+      synthesis.cancel();
+    } catch {
+      // Ignore best-effort browser refresh failures.
+    }
+  }
+  if (typeof synthesis?.getVoices === "function") {
+    try {
+      synthesis.getVoices();
+    } catch {
+      // Ignore best-effort browser refresh failures.
+    }
+  }
+
+  if (runtimeApi.kind === "electron") {
+    await refreshNativeVoices({ silent: !manual });
+  }
+
+  setVoices();
+
+  if (!manual) {
+    return;
+  }
+
+  if (audioEngine.preferNativeSpeech) {
+    elements.statusLine.textContent = appState.nativeVoices.length
+      ? `${appState.nativeVoices.length} voix Windows disponibles. Choisis-en une dans la liste audio.`
+      : "Voix Windows par défaut disponible. Ajoute d'autres voix dans les paramètres Windows pour élargir la liste.";
+    return;
+  }
+
+  if (appState.voices.length > 1) {
+    elements.statusLine.textContent = `${appState.voices.length} voix système chargées.`;
+    return;
+  }
+
+  elements.statusLine.textContent = "Voix rechargées. Pour en ajouter, installe des voix dans les paramètres du système.";
 }
 
 function buildSpeechQueue() {
@@ -4789,6 +5891,26 @@ function handleQuickReadButton() {
   startAudioPlayback(context);
 }
 
+function openRibbonPanelFromQuickAction(tabId, statusMessage) {
+  if (appState.preferences.distractionFree) {
+    appState.preferences.distractionFree = false;
+    updateLayoutVariables();
+    debouncePersist();
+  }
+  setActiveRibbonTab(tabId, { focus: true });
+  if (statusMessage) {
+    elements.statusLine.textContent = statusMessage;
+  }
+}
+
+function handleQuickAidButton() {
+  openRibbonPanelFromQuickAction("aides", "Aides ouvertes : sélectionne un passage pour le reformuler, le résumer ou poser une question.");
+}
+
+function handleQuickSettingsButton() {
+  openRibbonPanelFromQuickAction("lecture", "Réglages de lecture ouverts.");
+}
+
 function playPreviousSentence() {
   if (!appState.speaking && !appState.audioPaused) {
     startAudioPlayback(getAudioStartContext({ preferSelection: false }));
@@ -4837,12 +5959,11 @@ function bindControls() {
           "overlayCustomColor",
           "colorationMode",
           "syllableLevel",
-          "syllabificationMode",
-          "syllableWordScope",
           "soundColorMode",
           "syllableBreakMode",
           "verificationMode",
           "pauseBetweenSentences",
+          "assistSchoolLevel",
           "localAiMode",
           "localAiModel",
           "speechVoiceId",
@@ -4854,6 +5975,12 @@ function bindControls() {
       if (key === "focusMode" && value === "ruler") {
         appState.preferences.focusMode = "none";
         appState.preferences.readingGuideMode = "ruler";
+      } else if (key === "overlayCustomColor") {
+        appState.preferences.overlayCustomColor = value;
+        appState.preferences.overlayPreset = "custom";
+        if (controls.overlayPreset) {
+          controls.overlayPreset.value = "custom";
+        }
       } else {
         appState.preferences[key] = value;
       }
@@ -4877,17 +6004,17 @@ function bindControls() {
         appState.localAiCache.clear();
         void refreshLocalAiStatus({ silent: true });
       }
-      if (key === "syllabificationMode") {
-        appState.preferences.syllabificationMode = normalizeSyllabificationMode(appState.preferences.syllabificationMode);
+      if (key === "assistSchoolLevel") {
+        appState.preferences.assistSchoolLevel = normalizeSchoolLevel(appState.preferences.assistSchoolLevel);
+        appState.localAiCache.clear();
       }
-        if (key === "syllableWordScope") {
-          appState.preferences.syllableWordScope = normalizeSyllableWordScope(appState.preferences.syllableWordScope);
-        }
-        syncActiveEditableProfile({ announce: true });
-        updateLayoutVariables();
-        renderDocument();
-        ariaManager.refreshSliderValues();
-        debouncePersist();
+      enforceSimplifiedSyllablePreferences(appState.preferences);
+      syncActiveEditableProfile({ announce: true });
+      updateLayoutVariables();
+      renderDocument();
+      syncDependentControls();
+      ariaManager.refreshSliderValues();
+      debouncePersist();
       });
   });
 }
@@ -4909,18 +6036,26 @@ function registerProfileEvents() {
 }
 
 function bindReadingInteractions() {
-  const updateGuideFromPointer = (clientY) => {
+  const updateGuideFromPointer = (event) => {
     const guideMode = normalizeReadingGuideMode(appState.preferences.readingGuideMode, appState.preferences.focusMode);
     if (guideMode === "off") {
       return;
     }
 
-    const bounds = elements.readArea.getBoundingClientRect();
-    const lineHeight = Math.max(getCurrentReaderLineHeightPx(), 1);
-    const guideHeight = lineHeight * Math.max(Number(appState.preferences.readingGuideLines) || 1, 1);
-    appState.rulerY = clientY - bounds.top;
-    const relativeY = appState.rulerY + elements.readArea.scrollTop;
-    readingGuide.moveToContentTop(relativeY - guideHeight / 2);
+    appState.rulerPointerClientX = event.clientX;
+    appState.rulerPointerClientY = event.clientY;
+    updateGuideFromTrackedPointer();
+  };
+
+  const updateGuideFromWheel = (event) => {
+    const guideMode = normalizeReadingGuideMode(appState.preferences.readingGuideMode, appState.preferences.focusMode);
+    if (guideMode === "off") {
+      return;
+    }
+
+    appState.rulerPointerClientX = event.clientX;
+    appState.rulerPointerClientY = event.clientY;
+    scheduleTrackedGuideUpdate({ clientX: event.clientX, clientY: event.clientY });
   };
 
   const resetReaderPointerState = ({ keepSuppression = false } = {}) => {
@@ -4985,7 +6120,9 @@ function bindReadingInteractions() {
       allowWordInspect: true,
       updateAudioStatusLine: true,
       persistProgress: true,
-      autoRestartWhenPaused: true
+      autoRestartWhenPaused: true,
+      clientX: event.clientX,
+      clientY: event.clientY
     });
     appState.readerPointerState.suppressNextClick = handled;
   });
@@ -5005,7 +6142,9 @@ function bindReadingInteractions() {
       allowWordInspect: true,
       updateAudioStatusLine: true,
       persistProgress: true,
-      autoRestartWhenPaused: true
+      autoRestartWhenPaused: true,
+      clientX: event.clientX,
+      clientY: event.clientY
     });
   });
 
@@ -5033,23 +6172,28 @@ function bindReadingInteractions() {
     startAudioPlayback(startContext);
   });
 
-  elements.readArea.addEventListener("pointerenter", (event) => updateGuideFromPointer(event.clientY));
-  elements.readArea.addEventListener("pointermove", (event) => updateGuideFromPointer(event.clientY));
+  elements.readArea.addEventListener("pointerenter", (event) => updateGuideFromPointer(event));
+  elements.readArea.addEventListener("pointermove", (event) => updateGuideFromPointer(event));
+  elements.readArea.addEventListener("wheel", (event) => updateGuideFromWheel(event), { passive: true });
 
-  elements.readArea.addEventListener("scroll", () => {
-    const guideMode = normalizeReadingGuideMode(appState.preferences.readingGuideMode, appState.preferences.focusMode);
-    if (guideMode === "off" || appState.rulerY == null) {
-      return;
-    }
+  elements.readArea.addEventListener(
+    "scroll",
+    () => {
+      const guideMode = normalizeReadingGuideMode(appState.preferences.readingGuideMode, appState.preferences.focusMode);
+      if (guideMode === "off") {
+        return;
+      }
 
-    const lineHeight = Math.max(getCurrentReaderLineHeightPx(), 1);
-    const guideHeight = lineHeight * Math.max(Number(appState.preferences.readingGuideLines) || 1, 1);
-    const relativeY = appState.rulerY + elements.readArea.scrollTop;
-    readingGuide.moveToContentTop(relativeY - guideHeight / 2);
-  });
+      updateGuideFromTrackedPointer();
+    },
+    { passive: true, capture: true }
+  );
 
-  elements.readArea.addEventListener("mouseleave", () => {
-    appState.rulerY = null;
+  elements.readArea.addEventListener("pointerleave", () => {
+    cancelTrackedGuideUpdate();
+    appState.rulerContentTop = null;
+    appState.rulerPointerClientX = null;
+    appState.rulerPointerClientY = null;
     syncReadingGuide();
   });
 
@@ -5065,6 +6209,8 @@ function bindTopLevelActions() {
   elements.quickOverviewButton?.addEventListener("click", openDocumentOverview);
   elements.quickReadButton?.addEventListener("click", handleQuickReadButton);
   elements.quickStopButton?.addEventListener("click", () => stopSpeech());
+  elements.quickAidButton?.addEventListener("click", handleQuickAidButton);
+  elements.quickSettingsButton?.addEventListener("click", handleQuickSettingsButton);
   elements.printButton.addEventListener("click", handlePrint);
   elements.exportPdfButton.addEventListener("click", handleExportAdaptedPdf);
   elements.saveProfileButton.addEventListener("click", saveCurrentProfile);
@@ -5074,11 +6220,21 @@ function bindTopLevelActions() {
   elements.profileNameInput.addEventListener("input", () => {
     setPanelFeedback(elements.profileFeedback, "");
   });
+  elements.profileNameInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    saveCurrentProfile();
+  });
   elements.immersionButton.addEventListener("click", toggleImmersion);
   elements.speechToggleButton.addEventListener("click", toggleSpeech);
   elements.speechStopButton.addEventListener("click", () => stopSpeech());
   elements.speechPrevButton?.addEventListener("click", playPreviousSentence);
   elements.speechNextButton?.addEventListener("click", playNextSentence);
+  elements.refreshVoicesButton?.addEventListener("click", () => {
+    void refreshVoiceCatalog({ manual: true });
+  });
   elements.openExternalButton.addEventListener("click", async () => {
     await runtimeApi.openPath(appState.importedDocument?.filePath || "");
   });
@@ -5090,28 +6246,20 @@ function bindTopLevelActions() {
   });
   elements.blockSummaryButton?.addEventListener("click", summarizeSelectedBlock);
   elements.blockReformulateButton?.addEventListener("click", reformulateSelectedBlock);
+  elements.blockInstructionButton?.addEventListener("click", explainSelectedInstruction);
+  elements.documentQuestionButton?.addEventListener("click", answerDocumentQuestion);
+  elements.documentQuestionInput?.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      void answerDocumentQuestion();
+    }
+  });
   elements.localAiCheckButton?.addEventListener("click", () => {
     void refreshLocalAiStatus();
   });
   elements.localAiInstallButton?.addEventListener("click", async () => {
     await runtimeApi.openExternalUrl(LOCAL_AI_INSTALL_URL);
     elements.statusLine.textContent = "La page d'installation d'Ollama a été ouverte dans votre navigateur.";
-  });
-  elements.startAssistantButtons?.addEventListener("click", (event) => {
-    const needButton = event.target.closest("[data-start-need]");
-    if (!needButton) {
-      return;
-    }
-
-    const profileId = getStartNeedProfileId(needButton.dataset.startNeed);
-    const profile = findProfile(profileId);
-    if (!profile) {
-      return;
-    }
-
-    activateProfile(profile.id, {
-      statusMessage: `Besoin applique : ${repairUiText(profile.label)}.`
-    });
   });
   elements.teacherCompareButton?.addEventListener("click", openTeacherCompareDialog);
   elements.teacherExportButton?.addEventListener("click", handleExportTeacherSheet);
@@ -5212,29 +6360,94 @@ function bindTopLevelActions() {
   });
 }
 
-function updatePanelToggleButton(button) {
-  const panel = button.closest(".panel-collapsible");
-  if (!panel) {
+function moveRibbonFocus(step) {
+  if (!elements.ribbonTabs.length) {
     return;
   }
 
-  const isCollapsed = panel.classList.contains("is-collapsed");
-  button.textContent = isCollapsed ? "Afficher" : "Masquer";
-  button.setAttribute("aria-expanded", String(!isCollapsed));
+  const currentIndex = Math.max(
+    0,
+    elements.ribbonTabs.findIndex((button) => button.dataset.ribbonTab === appState.activeRibbonTab)
+  );
+  const nextIndex = (currentIndex + step + elements.ribbonTabs.length) % elements.ribbonTabs.length;
+  const nextButton = elements.ribbonTabs[nextIndex];
+  if (!nextButton) {
+    return;
+  }
+
+  setActiveRibbonTab(nextButton.dataset.ribbonTab, { focus: true });
 }
 
-function bindPanelToggles() {
-  document.querySelectorAll("[data-panel-toggle]").forEach((button) => {
-    updatePanelToggleButton(button);
+function bindRibbonTabs() {
+  elements.ribbonTabs.forEach((button) => {
+    button.setAttribute("aria-haspopup", "dialog");
     button.addEventListener("click", () => {
-      const panel = button.closest(".panel-collapsible");
-      if (!panel) {
+      setActiveRibbonTab(button.dataset.ribbonTab, { toggle: true });
+    });
+
+    button.addEventListener("mouseenter", () => {
+      if (appState.activeRibbonTab) {
+        setActiveRibbonTab(button.dataset.ribbonTab);
+      }
+    });
+
+    button.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        moveRibbonFocus(1);
         return;
       }
 
-      panel.classList.toggle("is-collapsed");
-      updatePanelToggleButton(button);
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        moveRibbonFocus(-1);
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        setActiveRibbonTab(elements.ribbonTabs[0]?.dataset.ribbonTab || "document", { focus: true });
+        return;
+      }
+
+      if (event.key === "End") {
+        event.preventDefault();
+        setActiveRibbonTab(elements.ribbonTabs[elements.ribbonTabs.length - 1]?.dataset.ribbonTab || "document", {
+          focus: true
+        });
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeRibbonMenus({ focusTarget: button });
+      }
     });
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    if (!appState.activeRibbonTab) {
+      return;
+    }
+
+    if (event.target?.closest?.(".app-ribbon-shell")) {
+      return;
+    }
+
+    closeRibbonMenus();
+  });
+
+  window.addEventListener("resize", () => {
+    if (appState.activeRibbonTab) {
+      positionActiveRibbonPanel(appState.activeRibbonTab);
+    }
+    scheduleRenderedLinePatterns(elements.pageList);
+    if (elements.documentOverviewDialog?.open) {
+      scheduleRenderedLinePatterns(elements.documentOverviewContent);
+    }
+    if (elements.teacherCompareDialog?.open) {
+      scheduleRenderedLinePatterns(elements.teacherCompareAdapted);
+    }
   });
 }
 
@@ -5253,7 +6466,8 @@ function init() {
       audioEngine.init(elements.pageList);
       bindControls();
       bindTopLevelActions();
-      bindPanelToggles();
+      bindRibbonTabs();
+      setActiveRibbonTab(appState.activeRibbonTab);
       bindRuntimeApiEvents();
       bindReadingInteractions();
       registerProfileEvents();
@@ -5276,7 +6490,7 @@ function init() {
           installButton: elements.installPwaButton,
           statusLine: elements.statusLine
         });
-        setVoices();
+        void refreshVoiceCatalog({ manual: false });
         renderLocalAiStatus();
         void refreshLocalAiStatus({ silent: true });
         syncExamDurationOutput();
@@ -5285,7 +6499,7 @@ function init() {
           const handleVoicesChanged = () => {
             clearVoiceRefreshTimer();
             appState.voiceRefreshAttempts = 0;
-            setVoices();
+            void refreshVoiceCatalog({ manual: false });
           };
           window.speechSynthesis.addEventListener?.("voiceschanged", handleVoicesChanged);
           if ("onvoiceschanged" in window.speechSynthesis) {
@@ -5303,6 +6517,7 @@ function init() {
           if (appState.examTimerId) {
             window.clearInterval(appState.examTimerId);
           }
+          cancelTrackedGuideUpdate();
           audioEngine.stop();
           clearVoiceRefreshTimer();
           ocrEngine.terminate();

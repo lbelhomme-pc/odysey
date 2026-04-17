@@ -65,12 +65,40 @@ export function buildPrintManifest({
 }
 
 export function formatPrintSettingsSummary(manifest) {
+  const colorationLabel =
+    manifest.preferences.colorationMode === "none"
+      ? "désactivée"
+      : manifest.preferences.colorationMode === "pedagogique"
+        ? "douce"
+        : manifest.preferences.colorationMode === "pedagogiqueAlt"
+          ? "alternative"
+          : manifest.preferences.colorationMode === "pedagogiqueContrast"
+            ? "dys accentuée"
+            : manifest.preferences.colorationMode === "sonsFrancais"
+              ? "sons français"
+              : manifest.preferences.colorationMode === "alternanceLignes"
+                ? "alternance par ligne"
+                : manifest.preferences.colorationMode === "alternanceMots"
+                  ? "alternance par mot"
+                  : manifest.preferences.colorationMode === "noirEtBlanc"
+                    ? "noir et blanc"
+                    : manifest.preferences.colorationMode;
+
+  const soundColorLabel =
+    manifest.preferences.soundColorMode === "strong"
+      ? "nettes"
+      : manifest.preferences.soundColorMode === "vivid"
+        ? "très contrastées"
+        : manifest.preferences.soundColorMode === "mono"
+          ? "noir et blanc"
+          : "douces";
+
   return [
     `Profil : ${manifest.profileLabel}`,
     `Police : ${manifest.preferences.fontSize}px`,
     `Interligne : ${Number(manifest.preferences.lineHeight).toFixed(2)}`,
-    `Coloration : ${manifest.preferences.colorationMode === "none" ? "désactivée" : manifest.preferences.colorationMode}`,
-    `Couleurs des sons : ${manifest.preferences.soundColorMode === "strong" ? "nettes" : "douces"}`,
+    `Coloration : ${colorationLabel}`,
+    `Couleurs des sons : ${soundColorLabel}`,
     `Coupure syllabique : ${manifest.preferences.syllableBreakMode === "hyphen" ? "tiret discret" : manifest.preferences.syllableBreakMode === "dot" ? "point médian" : "aucune"}`,
     `Vérification : ${manifest.preferences.verificationMode === "off" ? "désactivée" : "active"}`,
     `Formules détectées : ${manifest.formulaBlockCount}`,

@@ -80,6 +80,253 @@ const STOPWORDS = new Set([
   "vous"
 ]);
 
+const SCHOOL_LEVELS = new Set(["college", "lycee"]);
+
+const INSTRUCTION_VERB_ROOTS = [
+  "analyse",
+  "calcule",
+  "classe",
+  "compare",
+  "complete",
+  "conclus",
+  "deduis",
+  "decris",
+  "demontre",
+  "determine",
+  "developpe",
+  "donne",
+  "entoure",
+  "explique",
+  "exprime",
+  "identifie",
+  "indique",
+  "justifie",
+  "lis",
+  "montre",
+  "nomme",
+  "observe",
+  "precise",
+  "range",
+  "redige",
+  "reformule",
+  "relie",
+  "releve",
+  "repere",
+  "represente",
+  "repond",
+  "resous",
+  "resume",
+  "souligne",
+  "trace",
+  "trouve",
+  "verifie"
+];
+
+const TASK_CONNECTOR_PATTERN = /\b(?:puis|ensuite|apres|après|enfin|et)\b/iu;
+const EXERCISE_MARKER_PATTERN = /\b(?:exercice|question|consigne|probleme|problème|travail|consignes)\b/iu;
+
+/**
+ * Supprime les accents et homogénéise un texte pour les comparaisons souples.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function normalizeLooseText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/gu, "");
+}
+
+/**
+ * Vérifie si un segment contient un verbe de consigne courant.
+ *
+ * @param {string} value
+ * @returns {boolean}
+ */
+function containsInstructionVerb(value) {
+  const normalized = normalizeLooseText(value);
+  return INSTRUCTION_VERB_ROOTS.some((root) => new RegExp(`\\b${root}\\w*\\b`, "u").test(normalized));
+}
+
+/**
+ * Nettoie un segment de consigne sans changer son sens.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function cleanInstructionChunk(value) {
+  return String(value || "")
+    .replace(/^[\s•·\-–—\d]+[.)\]-]?\s*/u, "")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .replace(/^[,:;]+/u, "")
+    .trim();
+}
+
+/**
+ * Découpe localement une consigne en sous-tâches lisibles.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+function splitInstructionTasks(text) {
+  const source = String(text || "")
+    .replace(/\r\n?/gu, "\n")
+    .replace(/[•▪●]/gu, "-")
+    .replace(/\u00a0/gu, " ")
+    .trim();
+
+  if (!source) {
+    return [];
+  }
+
+  const enumerated = source
+    .replace(/(?:^|\n)\s*(\d+|[a-z])[\).]\s+/giu, "\n")
+    .replace(/\s*;\s*/gu, "\n")
+    .replace(/\s+(?=-\s+)/gu, "\n")
+    .replace(/\s+(?=(?:\d+|[a-z])[\).]\s+)/giu, "\n");
+
+  const coarseChunks = enumerated
+    .split(/\n+/u)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+
+  const fineChunks = coarseChunks.flatMap((chunk) => {
+    const sentences = chunk.split(/(?<=[.!?])\s+/u).filter(Boolean);
+    return sentences.flatMap((sentence) => {
+      const parts = sentence.split(
+        /\b(?:puis|ensuite|apres|après|enfin|et)\b(?=\s+(?:[A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸa-zàâäéèêëîïôöùûüÿ]))/iu
+      );
+      return parts.map((part) => cleanInstructionChunk(part)).filter(Boolean);
+    });
+  });
+
+  const filtered = fineChunks.filter((chunk, index, array) => {
+    if (!chunk) {
+      return false;
+    }
+
+    const normalized = normalizeLooseText(chunk);
+    return (
+      containsInstructionVerb(chunk) ||
+      chunk.includes("?") ||
+      EXERCISE_MARKER_PATTERN.test(normalized) ||
+      array.length === 1
+    );
+  });
+
+  return [...new Set(filtered)].slice(0, 6);
+}
+
+/**
+ * Adapte une phrase au niveau scolaire demandé sans en changer le fond.
+ *
+ * @param {string} sentence
+ * @param {"college"|"lycee"} level
+ * @returns {string}
+ */
+function simplifySentenceForLevel(sentence, level) {
+  const safeLevel = normalizeSchoolLevel(level);
+  let output = simplifySentence(sentence);
+
+  if (safeLevel === "college") {
+    output = output
+      .replace(/\bidentifier\b/giu, "repérer")
+      .replace(/\bjustifier\b/giu, "expliquer")
+      .replace(/\bdémontrer\b/giu, "montrer")
+      .replace(/\banalyser\b/giu, "observer");
+  }
+
+  return truncateSentence(output, safeLevel === "college" ? 170 : 210);
+}
+
+/**
+ * Normalise le niveau scolaire attendu pour les aides de lecture.
+ *
+ * @param {string} value
+ * @returns {"college"|"lycee"}
+ */
+export function normalizeSchoolLevel(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return SCHOOL_LEVELS.has(normalized) ? normalized : "college";
+}
+
+/**
+ * Retourne un libellé lisible pour le niveau scolaire courant.
+ *
+ * @param {string} value
+ * @returns {"collège"|"lycée"}
+ */
+export function getSchoolLevelLabel(value) {
+  return normalizeSchoolLevel(value) === "lycee" ? "lycée" : "collège";
+}
+
+/**
+ * Repère si un texte ressemble à une consigne, une question ou un exercice
+ * et, si possible, découpe les tâches implicites ou explicites.
+ *
+ * @param {string} text
+ * @returns {{
+ *   kind: "text"|"question"|"instruction",
+ *   isQuestion: boolean,
+ *   isInstruction: boolean,
+ *   isExercise: boolean,
+ *   multiTask: boolean,
+ *   taskCount: number,
+ *   tasks: string[],
+ *   label: string
+ * }}
+ */
+export function detectInstructionStructure(text) {
+  const source = String(text || "").replace(/\s+/gu, " ").trim();
+  if (!source) {
+    return {
+      kind: "text",
+      isQuestion: false,
+      isInstruction: false,
+      isExercise: false,
+      multiTask: false,
+      taskCount: 0,
+      tasks: [],
+      label: "Aucun passage sélectionné"
+    };
+  }
+
+  const normalized = normalizeLooseText(source);
+  const tasks = splitInstructionTasks(source);
+  const taskCount = tasks.length;
+  const isQuestion = source.includes("?") || /\b(?:pourquoi|comment|quel|quelle|quels|quelles|que)\b/iu.test(source);
+  const isExercise = EXERCISE_MARKER_PATTERN.test(normalized) || /^\d+[\).]/u.test(source);
+  const isInstruction = containsInstructionVerb(source) || isExercise || (isQuestion && taskCount > 0);
+  const multiTask = taskCount > 1 || (isInstruction && TASK_CONNECTOR_PATTERN.test(normalized));
+
+  let label = "Paragraphe explicatif";
+  let kind = "text";
+
+  if (isInstruction && multiTask) {
+    label = `Consigne à ${Math.max(2, taskCount)} tâches`;
+    kind = "instruction";
+  } else if (isInstruction) {
+    label = isQuestion ? "Question / consigne" : "Consigne simple";
+    kind = isQuestion ? "question" : "instruction";
+  } else if (isQuestion) {
+    label = "Question";
+    kind = "question";
+  }
+
+  return {
+    kind,
+    isQuestion,
+    isInstruction,
+    isExercise,
+    multiTask,
+    taskCount,
+    tasks,
+    label
+  };
+}
+
 /**
  * Normalise une clé de mot pour les comparaisons locales.
  *
@@ -451,6 +698,31 @@ export function buildShortSummary(text) {
 }
 
 /**
+ * Produit un résumé scolaire local, plus accessible au collège et un peu plus
+ * synthétique au lycée.
+ *
+ * @param {string} text
+ * @param {{ level?: string }} [options]
+ * @returns {string}
+ */
+export function buildSchoolSummary(text, options = {}) {
+  const level = normalizeSchoolLevel(options.level);
+  const summary = buildShortSummary(text);
+  if (!summary) {
+    return "";
+  }
+
+  if (level === "lycee") {
+    return summary;
+  }
+
+  return splitSentences(summary)
+    .map((sentence) => simplifySentenceForLevel(sentence, level))
+    .join(" ")
+    .trim();
+}
+
+/**
  * Produit une reformulation locale simple d’un paragraphe.
  *
  * @param {string} text
@@ -470,4 +742,59 @@ export function buildSimpleReformulation(text) {
   }
 
   return `En clair : ${reformulated}`;
+}
+
+/**
+ * Produit une reformulation scolaire adaptée au niveau collège ou lycée.
+ *
+ * @param {string} text
+ * @param {{ level?: string }} [options]
+ * @returns {string}
+ */
+export function buildSchoolReformulation(text, options = {}) {
+  const level = normalizeSchoolLevel(options.level);
+  const sentences = splitSentences(text);
+  if (sentences.length === 0) {
+    return "";
+  }
+
+  return sentences
+    .slice(0, level === "college" ? 3 : 4)
+    .map((sentence) => simplifySentenceForLevel(sentence, level))
+    .join(" ")
+    .trim();
+}
+
+/**
+ * Reformule une consigne et la découpe en étapes courtes quand plusieurs
+ * actions sont repérées dans le texte.
+ *
+ * @param {string} text
+ * @param {{ level?: string, analysis?: ReturnType<typeof detectInstructionStructure> }} [options]
+ * @returns {string}
+ */
+export function buildInstructionBreakdown(text, options = {}) {
+  const level = normalizeSchoolLevel(options.level);
+  const analysis = options.analysis || detectInstructionStructure(text);
+
+  if (!analysis.isInstruction && !analysis.isQuestion) {
+    return "Ce passage ressemble plutôt à une explication qu'à une consigne. Utilise plutôt le résumé ou la reformulation.";
+  }
+
+  const tasks = analysis.tasks.length > 0 ? analysis.tasks : splitSentences(text).slice(0, 2);
+  const simplifiedTasks = tasks
+    .map((task) => simplifySentenceForLevel(task, level))
+    .filter(Boolean);
+
+  if (simplifiedTasks.length === 0) {
+    return "";
+  }
+
+  const header = analysis.multiTask
+    ? `Consigne repérée : ${simplifiedTasks.length} étapes.`
+    : analysis.kind === "question"
+      ? "Question reformulée :"
+      : "Consigne reformulée :";
+
+  return [header, ...simplifiedTasks.map((task, index) => `${index + 1}. ${task}`)].join("\n");
 }

@@ -13,7 +13,16 @@ const VALID_HIGHLIGHT_MODES = new Set(["none", "soft", "strong"]);
 const VALID_FOCUS_MODES = new Set(["none", "paragraph"]);
 const VALID_READING_GUIDE_MODES = new Set(["off", "ruler", "window"]);
 const VALID_VERIFICATION_MODES = new Set(["off", "markers", "review"]);
-const VALID_COLORATION_MODES = new Set(["none", "pedagogique", "pedagogiqueAlt", "sonsFrancais"]);
+const VALID_COLORATION_MODES = new Set([
+  "none",
+  "pedagogique",
+  "pedagogiqueAlt",
+  "pedagogiqueContrast",
+  "sonsFrancais",
+  "alternanceLignes",
+  "alternanceMots",
+  "noirEtBlanc"
+]);
 const VALID_SYLLABLE_LEVELS = new Set(["off", "light", "strong"]);
 const VALID_SYLLABIFICATION_MODES = new Set(["pedagogique", "typographique"]);
 const VALID_SYLLABLE_WORD_SCOPES = new Set(["auto", "all"]);
@@ -81,11 +90,15 @@ const byId = Object.fromEntries(BUILTIN_PROFILES.map((profile) => [profile.id, {
 assert.deepEqual(
   BUILTIN_PROFILES.map((profile) => profile.id),
   ["normal", "lecture-visuelle-allegee", "audio", "decodage-renforce", "mode-examen", "dyspraxie", "dyscalculie"],
-  "La liste des profils integres doit rester simplifiee."
+  "La liste des profils intégrés doit rester simplifiée."
 );
 assert.equal(byId["decodage-renforce"].readingGuideMode, "ruler", "Dyslexie renforcée doit activer la réglette.");
-assert.equal(normalizeColorationMode(byId["decodage-renforce"].colorationMode), "pedagogique", "Dyslexie renforcée doit garder la coloration pédagogique.");
-assert.equal(byId["mode-examen"].verificationMode, "off", "Mode examen doit garder les aides reduites.");
+assert.equal(
+  normalizeColorationMode(byId["decodage-renforce"].colorationMode),
+  "alternanceLignes",
+  "Dyslexie renforcée doit activer l'alternance par ligne."
+);
+assert.equal(byId["mode-examen"].verificationMode, "off", "Mode examen doit garder les aides réduites.");
 assert.equal(byId.dyscalculie.verificationMode, "markers", "Dyscalculie doit activer les repères de vérification.");
 assert.equal(byId.dyspraxie.readingGuideMode, "ruler", "Dyspraxie doit garder une réglette simple.");
 

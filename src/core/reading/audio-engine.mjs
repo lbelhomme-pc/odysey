@@ -27,7 +27,7 @@ export function segmentTextIntoSentences(text) {
     const rawText = source.slice(start, end);
     const speechText = rawText.replace(/\s+/gu, " ").trim();
     if (speechText) {
-      segments.push({ rawText, speechText });
+      segments.push({ rawText, speechText, start, end });
     }
     start = end;
   }
@@ -36,7 +36,7 @@ export function segmentTextIntoSentences(text) {
     const rawText = source.slice(start);
     const speechText = rawText.replace(/\s+/gu, " ").trim();
     if (speechText) {
-      segments.push({ rawText, speechText });
+      segments.push({ rawText, speechText, start, end: source.length });
     }
   }
 

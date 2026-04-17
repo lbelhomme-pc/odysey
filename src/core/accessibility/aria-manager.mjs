@@ -23,6 +23,13 @@ const BUTTON_LABELS = {
   closeSupportDialogButton: "Fermer le panneau de soutien"
 };
 
+Object.assign(BUTTON_LABELS, {
+  immersionButton: "Activer ou quitter le mode immersion",
+  floatingSidebarButton: "Afficher le ruban principal",
+  toggleSidebarButton: "Reduire ou afficher le ruban principal",
+  refreshVoicesButton: "Recharger les voix audio disponibles"
+});
+
 function getLabelText(control) {
   const wrapper = control.closest("label");
   const label = wrapper?.querySelector("span");
@@ -32,7 +39,7 @@ function getLabelText(control) {
 export class AriaManager {
   constructor() {
     this.controls = {};
-    this.sidebar = null;
+    this.ribbon = null;
     this.readArea = null;
     this.statusLine = null;
     this.motionQuery = null;
@@ -47,7 +54,7 @@ export class AriaManager {
    */
   init({ controls = {}, elements = {} } = {}) {
     this.controls = controls;
-    this.sidebar = document.querySelector(".sidebar");
+    this.ribbon = document.querySelector(".app-ribbon-shell");
     this.readArea = elements.readArea || document.querySelector("#readingArea");
     this.statusLine = elements.statusLine || document.querySelector("#statusLine");
 
@@ -62,12 +69,12 @@ export class AriaManager {
    * Met à jour l'état expansé du panneau latéral.
    * @param {boolean} isVisible
    */
-  setSidebarExpanded(isVisible) {
+  setRibbonExpanded(isVisible) {
     const expanded = isVisible ? "true" : "false";
     document.querySelector("#toggleSidebarButton")?.setAttribute("aria-expanded", expanded);
     document.querySelector("#floatingSidebarButton")?.setAttribute("aria-expanded", expanded);
     document.querySelector("#immersionButton")?.setAttribute("aria-expanded", expanded);
-    this.sidebar?.setAttribute("aria-hidden", isVisible ? "false" : "true");
+    this.ribbon?.setAttribute("aria-hidden", isVisible ? "false" : "true");
   }
 
   /**
@@ -101,7 +108,8 @@ export class AriaManager {
 
   applyStaticRoles(elements) {
     document.querySelector(".main-stage")?.setAttribute("role", "main");
-    this.sidebar?.setAttribute("role", "complementary");
+    this.ribbon?.setAttribute("role", "region");
+    this.ribbon?.setAttribute("aria-label", "Ruban principal");
     document.querySelector("#profilesList")?.setAttribute("role", "navigation");
     document.querySelector("#profilesList")?.setAttribute("aria-label", "Profils intégrés");
     document.querySelector("#customProfilesList")?.setAttribute("role", "navigation");

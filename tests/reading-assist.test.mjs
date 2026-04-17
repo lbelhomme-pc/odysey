@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 
 import {
+  buildInstructionBreakdown,
   buildLocalWordInsight,
+  buildSchoolReformulation,
+  buildSchoolSummary,
   buildShortSummary,
   buildSimpleReformulation,
+  detectInstructionStructure,
   lookupWordInsight,
+  normalizeSchoolLevel,
   sanitizeLookupWord
 } from "../src/core/reading/reading-assist.mjs";
 
@@ -69,5 +74,25 @@ assert.match(summary, /concentration/i, "Le resume court doit conserver l'idee p
 const reformulation = buildSimpleReformulation(text);
 assert.match(reformulation, /En clair/i, "La reformulation doit annoncer sa version simplifiee.");
 assert.match(reformulation, /sert|permet|aide/i, "La reformulation doit rester concrete.");
+
+assert.equal(normalizeSchoolLevel("lycee"), "lycee", "Le niveau lycee doit etre reconnu.");
+assert.equal(normalizeSchoolLevel("primaire"), "college", "Le niveau inconnu doit revenir au college.");
+
+const schoolSummary = buildSchoolSummary(text, { level: "college" });
+assert.match(schoolSummary, /concentration/i, "Le resume scolaire doit conserver l'idee principale.");
+
+const schoolReformulation = buildSchoolReformulation(text, { level: "college" });
+assert.ok(schoolReformulation.length > 20, "La reformulation scolaire doit produire un texte lisible.");
+
+const instructionAnalysis = detectInstructionStructure("Lis le texte puis reponds a la question et justifie ta reponse.");
+assert.equal(instructionAnalysis.isInstruction, true, "Une consigne doit etre detectee.");
+assert.equal(instructionAnalysis.multiTask, true, "Une consigne composee doit etre reconnue comme multitache.");
+assert.ok(instructionAnalysis.taskCount >= 2, "La consigne composee doit etre decoupee en plusieurs taches.");
+
+const instructionBreakdown = buildInstructionBreakdown("Lis le texte puis reponds a la question et justifie ta reponse.", {
+  level: "college",
+  analysis: instructionAnalysis
+});
+assert.match(instructionBreakdown, /1\./u, "Le decoupage de consigne doit numeroter les etapes.");
 
 console.log("reading-assist: ok");

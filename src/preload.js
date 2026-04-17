@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld("dysReaderApi", {
   generateLocalAiText: (payload) => ipcRenderer.invoke("local-ai:generate", payload),
   speakNative: (payload) => ipcRenderer.invoke("speech:native-speak", payload),
   stopNativeSpeech: () => ipcRenderer.invoke("speech:native-stop"),
+  getNativeVoices: () => ipcRenderer.invoke("speech:native-voices"),
   onNativeSpeechProgress: (callback) => {
     if (typeof callback !== "function") {
       return () => {};

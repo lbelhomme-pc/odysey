@@ -28,43 +28,128 @@
     </div>
 
     <div class="app-shell">
-      <aside class="sidebar" aria-label="Réglages de lecture">
-        <section class="sidebar-hero">
-          <div class="brand-block">
-            <img class="brand-logo" src="./assets/odysey-brand.png" alt="Odysey" />
+      <header class="app-ribbon-shell" aria-label="Navigation principale">
+        <div class="app-menubar">
+          <nav class="app-ribbon-tabs" aria-label="Sections principales" role="tablist">
+            <button
+              id="ribbonTabDocument"
+              class="ribbon-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="ribbonPanelDocument"
+              data-ribbon-tab="document"
+            >
+              Document
+            </button>
+            <button
+              id="ribbonTabProfils"
+              class="ribbon-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="ribbonPanelProfils"
+              data-ribbon-tab="profils"
+              tabindex="-1"
+            >
+              Profils
+            </button>
+            <button
+              id="ribbonTabLecture"
+              class="ribbon-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="ribbonPanelLecture"
+              data-ribbon-tab="lecture"
+              tabindex="-1"
+            >
+              Lecture
+            </button>
+            <button
+              id="ribbonTabAudio"
+              class="ribbon-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="ribbonPanelAudio"
+              data-ribbon-tab="audio"
+              tabindex="-1"
+            >
+              Audio
+            </button>
+            <button
+              id="ribbonTabAides"
+              class="ribbon-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="ribbonPanelAides"
+              data-ribbon-tab="aides"
+              tabindex="-1"
+            >
+              Aides
+            </button>
+            <button
+              id="ribbonTabOutils"
+              class="ribbon-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="ribbonPanelOutils"
+              data-ribbon-tab="outils"
+              tabindex="-1"
+            >
+              Outils
+            </button>
+          </nav>
+
+          <div class="app-menubar-meta">
+            <div class="info-pills info-pills--compact">
+              <div class="info-pill info-pill--compact">
+                <span>Pages</span>
+                <strong id="documentPagesInfo">0</strong>
+              </div>
+              <div class="info-pill info-pill--compact">
+                <span>Mode</span>
+                <strong id="documentModeInfo">Normal</strong>
+              </div>
+              <div class="info-pill info-pill--compact">
+                <span>Profil</span>
+                <strong id="documentProfileInfo">Normal</strong>
+              </div>
+            </div>
+            <button id="toggleSidebarButton" class="ghost-action subtle app-menubar-utility" type="button" hidden>
+              Réduire le ruban
+            </button>
           </div>
+        </div>
 
-          <div class="info-pills">
-            <div class="info-pill">
-              <span>Pages</span>
-              <strong id="documentPagesInfo">0</strong>
-            </div>
-            <div class="info-pill">
-              <span>Mode actif</span>
-              <strong id="documentModeInfo">Normal</strong>
-            </div>
-            <div class="info-pill">
-              <span>Profil</span>
-              <strong id="documentProfileInfo">Normal</strong>
-            </div>
-          </div>
+        <div class="ribbon-panels">
+          <section
+            id="ribbonPanelDocument"
+            class="ribbon-panel"
+            role="tabpanel"
+            aria-labelledby="ribbonTabDocument"
+            data-ribbon-panel="document"
+            hidden
+          >
 
-        </section>
-
-        <section class="panel support-panel panel-collapsible is-collapsed" aria-labelledby="documentActionsTitle">
+        <section class="panel support-panel ribbon-panel-section" aria-labelledby="documentActionsTitle">
           <div class="section-head">
             <h2 id="documentActionsTitle">Document et actions</h2>
             <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
           </div>
           <p class="support-copy">
-            Toutes les actions liées au document sont ici : ouverture, immersion, impression, export et OCR.
+            Toutes les actions liées au document sont ici : ouverture, impression, export, original et OCR.
           </p>
           <div class="quick-actions-grid">
             <button id="openPdfButton" class="primary-action" type="button">Importer un PDF</button>
-            <button id="immersionButton" class="ghost-action" type="button">Masquer les réglages</button>
+            <button id="openHeaderButton" class="ghost-action subtle" type="button" hidden>Importer un autre PDF</button>
             <button id="printButton" class="ghost-action" type="button">Imprimer version adaptée</button>
             <button id="exportPdfButton" class="quick-action" type="button">Exporter en PDF</button>
             <button id="openExternalButton" class="quick-action" type="button">PDF original</button>
+            <button id="immersionButton" class="quick-action" type="button">Mode immersion</button>
             <button id="startOcrButton" class="quick-action" type="button">Lancer l'OCR</button>
           </div>
 
@@ -98,104 +183,122 @@
           </details>
         </section>
 
-        <section class="panel start-assistant-panel panel-collapsible is-collapsed" aria-labelledby="startAssistantTitle">
+          </section>
+
+          <section
+            id="ribbonPanelProfils"
+            class="ribbon-panel"
+            role="tabpanel"
+            aria-labelledby="ribbonTabProfils"
+            data-ribbon-panel="profils"
+            hidden
+          >
+        <section class="panel start-assistant-panel ribbon-panel-section" aria-labelledby="startAssistantTitle">
           <div class="section-head">
-            <h2 id="startAssistantTitle">Réglages standards</h2>
+            <h2 id="startAssistantTitle">Profils standards</h2>
             <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
           </div>
           <p class="support-copy">
-            Commence par un besoin simple. Odysey active ensuite directement le profil le plus utile, sans faire
-            apparaître tous les réglages à la fois.
+            Choisis directement l'un des 7 profils intégrés. Dyslexie renforcée est mis en avant comme base de lecture dys, puis tes profils enregistrés apparaissent juste dessous.
           </p>
-          <div id="startAssistantButtons" class="assistant-grid">
-            <button class="quick-action assistant-need" type="button" data-start-need="normal">
-              <strong>Lecture simple</strong>
-              <span>Le PDF recomposé reste sobre, sans aide visuelle supplémentaire.</span>
-            </button>
-            <button class="quick-action assistant-need" type="button" data-start-need="dyslexie">
-              <strong>Je lis difficilement</strong>
-              <span>Active directement un profil Dyslexie avec appuis utiles et sans surcharge.</span>
-            </button>
-            <button class="quick-action assistant-need" type="button" data-start-need="audio">
-              <strong>Je veux être guidé</strong>
-              <span>Prépare Audio/Focus pour suivre le texte avec la voix et le repère visuel.</span>
-            </button>
-            <button class="quick-action assistant-need" type="button" data-start-need="maths">
-              <strong>J'ai des maths / sciences</strong>
-              <span>Oriente vers un profil adapté aux formules, unités, exposants et tableaux.</span>
-            </button>
-          </div>
-          <p id="startAssistantSummary" class="support-copy assistant-summary"></p>
+          <div id="profilesList" class="profiles-grid"></div>
 
-          <details class="panel-subgroup">
-            <summary>Afficher les profils</summary>
+          <details class="panel-subgroup profiles-custom">
+            <summary>Afficher les profils personnalisés</summary>
+            <p class="support-copy">
+              Les profils enregistrés depuis les réglages personnalisés apparaissent ici automatiquement.
+            </p>
             <div class="section-head compact">
-              <h3>Profils intégrés</h3>
+              <h3>Profils personnalisés</h3>
             </div>
-            <div id="profilesList" class="profiles-grid"></div>
-
-            <details class="panel-subgroup profiles-advanced">
-              <summary>Personnaliser les profils</summary>
-              <p class="support-copy">
-                Les autres besoins peuvent être couverts en ajustant un profil puis en l'enregistrant comme profil personnalisé.
-              </p>
-              <div id="advancedProfilesList" class="profiles-grid"></div>
-
-              <div class="section-head compact">
-                <h3>Créer un profil</h3>
-              </div>
-
-              <div class="control-grid">
-                <label class="control">
-                  <span>Nom du profil personnalisé</span>
-                  <input
-                    id="customProfileName"
-                    type="text"
-                    maxlength="60"
-                    placeholder="Exemple : Mon profil maths calme"
-                    autocomplete="off"
-                  />
-                </label>
-              </div>
-
-              <div class="quick-actions-grid profile-actions-grid">
-                <button id="saveProfileButton" class="ghost-action subtle" type="button">Enregistrer ce profil</button>
-                <button id="deleteProfileButton" class="ghost-action danger subtle" type="button">Supprimer le profil</button>
-              </div>
-
-              <p id="profileFeedback" class="inline-feedback" hidden></p>
-
-              <div class="section-head compact">
-                <h3>Personnalisés</h3>
-              </div>
-              <div id="customProfilesList" class="profiles-grid"></div>
-              <p id="researchNotes" class="support-copy"></p>
-              <button id="profileSummaryButton" class="ghost-action subtle wide" type="button">Voir le tableau des profils</button>
-            </details>
+            <div id="customProfilesList" class="profiles-grid"></div>
+            <button id="profileSummaryButton" class="ghost-action subtle wide" type="button">Voir le tableau des profils</button>
           </details>
-
-          <ul id="recentList" class="recent-list" aria-live="polite" hidden aria-hidden="true">
-            <li>Aucun document récent.</li>
-          </ul>
         </section>
 
-        <section class="panel controls-panel essential-controls-panel panel-collapsible is-collapsed" aria-labelledby="essentialReadingTitle">
+          </section>
+
+          <section
+            id="ribbonPanelLecture"
+            class="ribbon-panel"
+            role="tabpanel"
+            aria-labelledby="ribbonTabLecture"
+            data-ribbon-panel="lecture"
+            hidden
+          >
+        <section class="panel controls-panel essential-controls-panel ribbon-panel-section" aria-labelledby="essentialReadingTitle">
           <div class="section-head">
-            <h2 id="essentialReadingTitle">Réglages personnalisés</h2>
-            <div class="section-actions">
-              <button id="openHeaderButton" class="ghost-action subtle" type="button" hidden>Importer un autre PDF</button>
-              <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
-            </div>
+            <h2 id="essentialReadingTitle">Lecture</h2>
+            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
           </div>
 
           <p class="support-copy help-intro">
-            Commence ici : police, taille, respiration et thème du PDF. Les réglages plus fins sont rangés juste dessous.
+            Commence par l’aide visuelle, puis ajuste seulement le confort. Les options plus fines restent cachées pour ne pas encombrer la lecture.
           </p>
 
           <div class="quick-actions-grid">
             <button id="resetSettingsButton" class="ghost-action subtle" type="button">Réinitialiser</button>
           </div>
 
+          <section class="priority-controls-card" aria-labelledby="priorityReadingTitle">
+            <div class="section-head compact">
+              <h3 id="priorityReadingTitle">1. Aide visuelle</h3>
+            </div>
+            <p class="support-copy priority-controls-card__intro">
+              Un seul choix principal, puis une aide syllabique si besoin. C’est la zone à utiliser en premier.
+            </p>
+
+            <div class="control-grid priority-controls-grid">
+              <label class="control">
+                <span>Aide principale</span>
+                <select id="colorationMode">
+                  <option value="none">Aucune aide</option>
+                  <option value="pedagogique">Dys doux</option>
+                  <option value="pedagogiqueAlt">Dys alterné</option>
+                  <option value="pedagogiqueContrast">Dys accentué</option>
+                  <option value="sonsFrancais">Sons français</option>
+                  <option value="alternanceLignes">Lignes alternées</option>
+                  <option value="alternanceMots">Mots alternés</option>
+                  <option value="noirEtBlanc">Noir et blanc</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Syllabes</span>
+                <select id="syllableLevel">
+                  <option value="off">Non</option>
+                  <option value="light">Oui, discret</option>
+                  <option value="strong">Oui, visible</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Séparer avec</span>
+                <select id="syllableBreakMode">
+                  <option value="none">Rien</option>
+                  <option value="dot">Point</option>
+                  <option value="hyphen">Tiret</option>
+                </select>
+              </label>
+
+              <label class="control">
+                <span>Style des sons</span>
+                <select id="soundColorMode">
+                  <option value="soft">Doux</option>
+                  <option value="strong">Net</option>
+                  <option value="vivid">Contrasté</option>
+                  <option value="mono">N/B doux</option>
+                  <option value="monoStrong">N/B fort</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="dysEssentialsSummary" class="dys-essentials-summary" aria-live="polite"></div>
+          </section>
+
+          <div class="section-head compact">
+            <h3>2. Confort de base</h3>
+          </div>
           <div class="control-grid">
             <label class="control">
               <span>Police</span>
@@ -219,7 +322,7 @@
           </div>
 
           <details class="panel-subgroup">
-            <summary>Afficher les réglages de lisibilité</summary>
+            <summary>Espacement et largeur</summary>
             <div class="control-grid">
               <label class="control">
                 <span>Interligne <output data-output-for="lineHeight"></output></span>
@@ -244,9 +347,9 @@
           </details>
 
           <details class="panel-subgroup">
-            <summary>Afficher les aides avancées</summary>
+            <summary>Repère, filtre et vérification</summary>
             <p class="support-copy">
-              Utilise seulement les aides vraiment utiles : filtre visuel, réglette, syllabes, sons ou vérification ciblée.
+              Ces options sont utiles si le texte fatigue encore les yeux ou si tu veux suivre la ligne plus facilement.
             </p>
 
             <div class="control-grid">
@@ -321,58 +424,6 @@
               </label>
 
               <label class="control">
-                <span>Mode dys</span>
-                <select id="colorationMode">
-                  <option value="none">Aucun</option>
-                  <option value="pedagogique">Coloration douce</option>
-                  <option value="pedagogiqueAlt">Coloration alternative</option>
-                  <option value="sonsFrancais">Sons français</option>
-                </select>
-              </label>
-
-              <label class="control">
-                <span>Mode syllabes</span>
-                <select id="syllableLevel">
-                  <option value="off">Désactivé</option>
-                  <option value="light">Léger</option>
-                  <option value="strong">Renforcé</option>
-                </select>
-              </label>
-
-              <label class="control">
-                <span>Mode de syllabation</span>
-                <select id="syllabificationMode">
-                  <option value="pedagogique">Pédagogique</option>
-                  <option value="typographique">Typographique (test)</option>
-                </select>
-              </label>
-
-              <label class="control">
-                <span>Étendue des syllabes</span>
-                <select id="syllableWordScope">
-                  <option value="auto">Auto</option>
-                  <option value="all">Tous les mots</option>
-                </select>
-              </label>
-
-              <label class="control">
-                <span>Couleurs des sons</span>
-                <select id="soundColorMode">
-                  <option value="soft">Douces</option>
-                  <option value="strong">Nettes</option>
-                </select>
-              </label>
-
-              <label class="control">
-                <span>Coupure syllabique</span>
-                <select id="syllableBreakMode">
-                  <option value="none">Aucune</option>
-                  <option value="dot">Point médian</option>
-                  <option value="hyphen">Tiret discret</option>
-                </select>
-              </label>
-
-              <label class="control">
                 <span>Vérification</span>
                 <select id="verificationMode">
                   <option value="off">Aucune</option>
@@ -385,10 +436,49 @@
             <div id="verificationSummary" class="verification-summary" hidden></div>
           </details>
 
+          <details class="panel-subgroup settings-profile-save">
+            <summary>Enregistrer comme profil personnalisé</summary>
+            <p id="settingsProfileHint" class="support-copy settings-profile-save__hint">
+              Quand cette combinaison te convient, donne-lui un nom pour la retrouver dans Profils personnalisés.
+            </p>
+
+            <div class="control-grid">
+              <label class="control">
+                <span>Nom du profil</span>
+                <input
+                  id="customProfileName"
+                  type="text"
+                  maxlength="60"
+                  placeholder="Exemple : Mon profil maths calme"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+
+            <div class="quick-actions-grid profile-actions-grid profile-actions-grid--compact">
+              <button id="saveProfileButton" class="ghost-action subtle" type="button">Enregistrer</button>
+              <button id="deleteProfileButton" class="ghost-action danger subtle" type="button" hidden>
+                Supprimer ce profil
+              </button>
+            </div>
+
+            <p id="profileFeedback" class="inline-feedback" hidden></p>
+          </details>
+
           <p id="settingsFeedback" class="inline-feedback" hidden></p>
         </section>
 
-        <section class="panel controls-panel panel-collapsible is-collapsed">
+          </section>
+
+          <section
+            id="ribbonPanelAudio"
+            class="ribbon-panel"
+            role="tabpanel"
+            aria-labelledby="ribbonTabAudio"
+            data-ribbon-panel="audio"
+            hidden
+          >
+        <section class="panel controls-panel ribbon-panel-section" aria-labelledby="ribbonTabAudio">
           <div class="section-head">
             <h2>Lecture audio</h2>
             <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
@@ -417,6 +507,11 @@
               </label>
 
               <label class="control">
+                <span>Actualiser les voix</span>
+                <button id="refreshVoicesButton" class="ghost-action subtle" type="button">Recharger les voix</button>
+              </label>
+
+              <label class="control">
                 <span>Vitesse audio réelle <output data-output-for="speechRate"></output></span>
                 <input id="speechRate" type="range" min="0.45" max="2" step="0.05" />
               </label>
@@ -425,9 +520,10 @@
                 <span>Pause entre les phrases</span>
                 <select id="pauseBetweenSentences">
                   <option value="0">Aucune</option>
-                  <option value="500">0,5 seconde</option>
-                  <option value="1000">1 seconde</option>
-                  <option value="2000">2 secondes</option>
+                  <option value="200">0,2 seconde</option>
+                  <option value="400">0,4 seconde</option>
+                  <option value="600">0,6 seconde</option>
+                  <option value="900">0,9 seconde</option>
                 </select>
               </label>
             </div>
@@ -438,7 +534,17 @@
           </details>
         </section>
 
-        <section class="panel reading-tools-panel panel-collapsible is-collapsed" aria-labelledby="readingToolsTitle">
+          </section>
+
+          <section
+            id="ribbonPanelAides"
+            class="ribbon-panel"
+            role="tabpanel"
+            aria-labelledby="ribbonTabAides"
+            data-ribbon-panel="aides"
+            hidden
+          >
+        <section class="panel reading-tools-panel ribbon-panel-section" aria-labelledby="readingToolsTitle">
           <div class="section-head">
             <h2 id="readingToolsTitle">Compréhension et vocabulaire</h2>
             <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
@@ -446,8 +552,18 @@
 
           <p class="support-copy">
             Clique un mot dans le texte pour afficher une aide rapide. Sélectionne aussi un paragraphe ou un bloc pour
-            demander une reformulation simple ou un résumé court.
+            demander un résumé, une reformulation ou une explication de consigne.
           </p>
+
+          <div class="reading-tools-card reading-tools-card--compact">
+            <label class="control">
+              <span>Niveau de l’aide</span>
+              <select id="assistSchoolLevel"></select>
+            </label>
+            <p class="support-copy subtle-note">
+              Le niveau règle le ton des résumés, des reformulations et des réponses IA.
+            </p>
+          </div>
 
           <div class="reading-tools-card">
             <p class="eyebrow">Mot sélectionné</p>
@@ -467,28 +583,62 @@
           <div class="reading-tools-card">
             <p class="eyebrow">Paragraphe sélectionné</p>
             <p id="blockAssistOutput" class="support-copy">
-              Choisis un bloc dans la zone de lecture pour obtenir une reformulation simple ou un résumé court.
+              Choisis un bloc dans la zone de lecture pour obtenir un résumé, une reformulation ou une consigne découpée.
             </p>
             <div class="quick-actions-grid">
-              <button id="blockSummaryButton" class="quick-action" type="button">Résumé court</button>
-              <button id="blockReformulateButton" class="quick-action" type="button">Reformulation simple</button>
+              <button id="blockSummaryButton" class="quick-action" type="button">Résumer</button>
+              <button id="blockReformulateButton" class="quick-action" type="button">Expliquer simplement</button>
+              <button id="blockInstructionButton" class="quick-action" type="button">Découper la consigne</button>
+            </div>
+          </div>
+
+          <div class="reading-tools-card">
+            <p class="eyebrow">Question sur le PDF</p>
+            <label class="control">
+              <span>Ta question</span>
+              <textarea
+                id="documentQuestionInput"
+                rows="4"
+                placeholder="Exemple : Pourquoi Harpagon est-il inquiet ?"
+              ></textarea>
+            </label>
+            <p id="documentQuestionOutput" class="support-copy assist-output">
+              Pose une question : l’IA locale répondra en utilisant le passage sélectionné et le contexte du PDF.
+            </p>
+            <div class="quick-actions-grid">
+              <button id="documentQuestionButton" class="quick-action primary-action" type="button">
+                Poser la question
+              </button>
             </div>
           </div>
         </section>
 
-        <section class="panel reading-tools-panel panel-collapsible is-collapsed" aria-labelledby="localAiTitle">
+          </section>
+
+          <section
+            id="ribbonPanelOutils"
+            class="ribbon-panel"
+            role="tabpanel"
+            aria-labelledby="ribbonTabOutils"
+            data-ribbon-panel="outils"
+            hidden
+          >
+        <section class="panel tools-panel ribbon-panel-section" aria-labelledby="toolsPanelTitle">
           <div class="section-head">
-            <h2 id="localAiTitle">IA locale Gemma</h2>
+            <h2 id="toolsPanelTitle">Outils</h2>
             <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
           </div>
 
           <p class="support-copy">
-            Cette aide reste optionnelle. Sur desktop, Odysey peut utiliser Gemma en local via Ollama pour mieux
-            définir un mot, résumer un paragraphe ou reformuler un passage difficile.
+            Regroupe les outils complémentaires : IA locale, fiche d'accompagnement et mode examen.
           </p>
 
           <details class="panel-subgroup">
-            <summary>Afficher les réglages IA locale</summary>
+            <summary>IA locale Gemma</summary>
+            <p class="support-copy">
+              Sur desktop, Odysey peut utiliser Gemma en local via Ollama pour définir un mot, résumer un passage,
+              reformuler une consigne ou répondre à une question sur le PDF.
+            </p>
             <div class="control-grid">
               <label class="control">
                 <span>Mode IA locale</span>
@@ -510,19 +660,13 @@
               IA locale non vérifiée pour le moment.
             </p>
           </details>
-        </section>
 
-        <section class="panel teacher-panel panel-collapsible is-collapsed" aria-labelledby="teacherToolsTitle">
-          <div class="section-head">
-            <h2 id="teacherToolsTitle">Mode enseignant / parent / ortho</h2>
-            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
-          </div>
-          <p class="support-copy">
-            Compare le document brut et la lecture adaptee, note ce qui aide ou ce qui coince, puis exporte une
-            fiche simple partageable.
-          </p>
           <details class="panel-subgroup">
-            <summary>Afficher les outils d'analyse</summary>
+            <summary>Mode enseignant / parent / ortho</summary>
+            <p class="support-copy">
+              Compare le document brut et la lecture adaptee, note ce qui aide ou ce qui coince, puis exporte une
+              fiche simple partageable.
+            </p>
             <div id="teacherModeSummary" class="teacher-summary"></div>
             <div class="quick-actions-grid teacher-actions">
               <button id="teacherCompareButton" class="quick-action" type="button">Comparer brut / adapte</button>
@@ -537,18 +681,12 @@
               ></textarea>
             </label>
           </details>
-        </section>
 
-        <section class="panel exam-panel panel-collapsible is-collapsed" aria-labelledby="examModeTitle">
-          <div class="section-head">
-            <h2 id="examModeTitle">Mode examen</h2>
-            <button class="ghost-action subtle panel-toggle" type="button" data-panel-toggle>Masquer</button>
-          </div>
-          <p class="support-copy">
-            Active un rendu très sobre, prévois le tiers-temps et imprime une version propre avec les aides réduites.
-          </p>
           <details class="panel-subgroup">
-            <summary>Afficher les réglages d'examen</summary>
+            <summary>Mode examen</summary>
+            <p class="support-copy">
+              Active un rendu très sobre, prévois le tiers-temps et imprime une version propre avec les aides réduites.
+            </p>
             <div class="quick-actions-grid">
               <button id="examModeButton" class="quick-action" type="button">Activer le mode examen</button>
               <button id="examPrintButton" class="quick-action" type="button">Imprimer en mode examen</button>
@@ -568,28 +706,41 @@
           </details>
         </section>
 
-      </aside>
+          </section>
+        </div>
+      </header>
 
       <main class="main-stage">
-        <header class="stage-topbar" hidden>
-          <div class="stage-topbar-copy">
-            <p class="eyebrow">Lecture adaptée</p>
-            <p class="stage-topbar-caption">Vue texte reflow, impression et export adaptés.</p>
-          </div>
-          <div class="topbar-actions">
-            <span class="view-pill is-active">Texte adapté</span>
-            <button id="toggleSidebarButton" class="ghost-action subtle" type="button">Masquer le panneau</button>
-          </div>
-        </header>
 
         <button id="floatingSidebarButton" class="floating-sidebar-toggle ghost-action subtle" type="button" hidden>
-          Afficher les réglages
+          Afficher le ruban
         </button>
 
         <div id="quickActionDock" class="quick-action-dock" hidden aria-label="Actions rapides de lecture">
-          <button id="quickOverviewButton" class="quick-action-dock__button" type="button">Vue</button>
-          <button id="quickReadButton" class="quick-action-dock__button" type="button">Lire</button>
-          <button id="quickStopButton" class="quick-action-dock__button quick-action-dock__button--stop" type="button" hidden>Arrêter</button>
+          <div class="quick-action-dock__status" aria-live="polite">
+            <span class="quick-action-dock__eyebrow">Mode lecture</span>
+            <span id="quickActionHint" class="quick-action-dock__hint">Prêt à lire</span>
+          </div>
+          <div class="quick-action-dock__actions">
+            <button id="quickOverviewButton" class="quick-action-dock__button" type="button">Parcourir</button>
+            <button
+              id="quickReadButton"
+              class="quick-action-dock__button quick-action-dock__button--primary"
+              type="button"
+            >
+              Lire
+            </button>
+            <button
+              id="quickStopButton"
+              class="quick-action-dock__button quick-action-dock__button--stop"
+              type="button"
+              hidden
+            >
+              Arrêter
+            </button>
+            <button id="quickAidButton" class="quick-action-dock__button" type="button">Aide</button>
+            <button id="quickSettingsButton" class="quick-action-dock__button" type="button">Réglages</button>
+          </div>
         </div>
 
         <div id="warningBanner" class="warning-banner" hidden>
@@ -644,6 +795,7 @@
 
         <footer class="app-copyright" aria-label="Copyright et contact">
           <p>&copy; 2026 Ludovic Belhomme</p>
+          <span class="app-copyright-separator" aria-hidden="true">•</span>
           <p>Contact : ludovic.belhomme@outlook.com</p>
           <button id="installPwaButton" class="ghost-action subtle support-footer-action" type="button" hidden>
             Installer l'app web

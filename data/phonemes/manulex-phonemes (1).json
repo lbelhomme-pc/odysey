@@ -1,0 +1,1569 @@
+{
+  "#": {
+    "ipa_hint": "(muet)",
+    "total_frequency": 3762,
+    "graphemes": [
+      {
+        "g": "t",
+        "freq": 1858,
+        "example": "abricot"
+      },
+      {
+        "g": "e",
+        "freq": 506,
+        "example": "lycée"
+      },
+      {
+        "g": "h",
+        "freq": 461,
+        "example": "heure"
+      },
+      {
+        "g": "s",
+        "freq": 359,
+        "example": "brebis"
+      },
+      {
+        "g": "x",
+        "freq": 267,
+        "example": "noix"
+      },
+      {
+        "g": "d",
+        "freq": 175,
+        "example": "brouillard"
+      },
+      {
+        "g": "p",
+        "freq": 40,
+        "example": "drap"
+      },
+      {
+        "g": "c",
+        "freq": 29,
+        "example": "tabac"
+      }
+    ]
+  },
+  "%": {
+    "ipa_hint": "(e muet)",
+    "total_frequency": 1599,
+    "graphemes": [
+      {
+        "g": "e",
+        "freq": 1574,
+        "example": "table"
+      },
+      {
+        "g": "e[CC]",
+        "freq": 18,
+        "example": "ressource"
+      },
+      {
+        "g": "ai",
+        "freq": 6,
+        "example": "faisan"
+      },
+      {
+        "g": "on",
+        "freq": 1,
+        "example": "monsieur"
+      }
+    ]
+  },
+  "1": {
+    "ipa_hint": "œ̃",
+    "total_frequency": 19,
+    "graphemes": [
+      {
+        "g": "un",
+        "freq": 16,
+        "example": "lundi"
+      },
+      {
+        "g": "um",
+        "freq": 3,
+        "example": "parfum"
+      }
+    ]
+  },
+  "2": {
+    "ipa_hint": "ø",
+    "total_frequency": 376,
+    "graphemes": [
+      {
+        "g": "eu",
+        "freq": 373,
+        "example": "deux"
+      },
+      {
+        "g": "oeu",
+        "freq": 2,
+        "example": "nœud"
+      },
+      {
+        "g": "eû",
+        "freq": 1,
+        "example": "jeûne"
+      }
+    ]
+  },
+  "5": {
+    "ipa_hint": "ɛ̃",
+    "total_frequency": 1131,
+    "graphemes": [
+      {
+        "g": "in",
+        "freq": 712,
+        "example": "interdit"
+      },
+      {
+        "g": "im",
+        "freq": 131,
+        "example": "impossible"
+      },
+      {
+        "g": "en",
+        "freq": 115,
+        "example": "ancien"
+      },
+      {
+        "g": "ain",
+        "freq": 98,
+        "example": "pain"
+      },
+      {
+        "g": "ein",
+        "freq": 42,
+        "example": "frein"
+      },
+      {
+        "g": "ym",
+        "freq": 17,
+        "example": "symbole"
+      },
+      {
+        "g": "yn",
+        "freq": 11,
+        "example": "lynx"
+      },
+      {
+        "g": "aim",
+        "freq": 3,
+        "example": "daim"
+      }
+    ]
+  },
+  "8": {
+    "ipa_hint": "ɥ",
+    "total_frequency": 306,
+    "graphemes": [
+      {
+        "g": "u",
+        "freq": 306,
+        "example": "bruit"
+      }
+    ]
+  },
+  "9": {
+    "ipa_hint": "œ",
+    "total_frequency": 655,
+    "graphemes": [
+      {
+        "g": "eu",
+        "freq": 617,
+        "example": "neuf"
+      },
+      {
+        "g": "oeu",
+        "freq": 14,
+        "example": "bœuf"
+      },
+      {
+        "g": "ue",
+        "freq": 11,
+        "example": "recueil"
+      },
+      {
+        "g": "u",
+        "freq": 10,
+        "example": "club"
+      },
+      {
+        "g": "oe",
+        "freq": 2,
+        "example": "œil"
+      },
+      {
+        "g": "a",
+        "freq": 1,
+        "example": "breakfast"
+      }
+    ]
+  },
+  "9R": {
+    "ipa_hint": "?",
+    "total_frequency": 13,
+    "graphemes": [
+      {
+        "g": "er",
+        "freq": 13,
+        "example": "scooter"
+      }
+    ]
+  },
+  "9j": {
+    "ipa_hint": "?",
+    "total_frequency": 3,
+    "graphemes": [
+      {
+        "g": "eil",
+        "freq": 1,
+        "example": "orgueil"
+      },
+      {
+        "g": "eill",
+        "freq": 1,
+        "example": "orgueilleux"
+      },
+      {
+        "g": "ueil",
+        "freq": 1,
+        "example": "écueil"
+      }
+    ]
+  },
+  "9n": {
+    "ipa_hint": "?",
+    "total_frequency": 1,
+    "graphemes": [
+      {
+        "g": "un",
+        "freq": 1,
+        "example": "sunlight"
+      }
+    ]
+  },
+  "@": {
+    "ipa_hint": "ɑ̃",
+    "total_frequency": 3399,
+    "graphemes": [
+      {
+        "g": "en",
+        "freq": 1784,
+        "example": "potence"
+      },
+      {
+        "g": "an",
+        "freq": 1321,
+        "example": "langage"
+      },
+      {
+        "g": "em",
+        "freq": 164,
+        "example": "emploi"
+      },
+      {
+        "g": "am",
+        "freq": 113,
+        "example": "tambour"
+      },
+      {
+        "g": "e[CC]",
+        "freq": 14,
+        "example": "ennui"
+      },
+      {
+        "g": "aon",
+        "freq": 3,
+        "example": "paon"
+      }
+    ]
+  },
+  "@m": {
+    "ipa_hint": "?",
+    "total_frequency": 1,
+    "graphemes": [
+      {
+        "g": "am",
+        "freq": 1,
+        "example": "samba"
+      }
+    ]
+  },
+  "@n": {
+    "ipa_hint": "?",
+    "total_frequency": 1,
+    "graphemes": [
+      {
+        "g": "en",
+        "freq": 1,
+        "example": "enivre"
+      }
+    ]
+  },
+  "E": {
+    "ipa_hint": "ɛ",
+    "total_frequency": 3493,
+    "graphemes": [
+      {
+        "g": "e",
+        "freq": 1407,
+        "example": "bel"
+      },
+      {
+        "g": "e[CC]",
+        "freq": 645,
+        "example": "adresse"
+      },
+      {
+        "g": "ai",
+        "freq": 593,
+        "example": "air"
+      },
+      {
+        "g": "è",
+        "freq": 407,
+        "example": "artère"
+      },
+      {
+        "g": "et",
+        "freq": 189,
+        "example": "jouet"
+      },
+      {
+        "g": "ê",
+        "freq": 132,
+        "example": "être"
+      },
+      {
+        "g": "ei",
+        "freq": 50,
+        "example": "baleine"
+      },
+      {
+        "g": "aî",
+        "freq": 48,
+        "example": "maître"
+      }
+    ]
+  },
+  "ER": {
+    "ipa_hint": "?",
+    "total_frequency": 40,
+    "graphemes": [
+      {
+        "g": "er",
+        "freq": 40,
+        "example": "mer"
+      }
+    ]
+  },
+  "Ej": {
+    "ipa_hint": "?",
+    "total_frequency": 100,
+    "graphemes": [
+      {
+        "g": "eill",
+        "freq": 54,
+        "example": "abeille"
+      },
+      {
+        "g": "ay",
+        "freq": 32,
+        "example": "frayeur"
+      },
+      {
+        "g": "eil",
+        "freq": 13,
+        "example": "éveil"
+      },
+      {
+        "g": "eilli",
+        "freq": 1,
+        "example": "groseillier"
+      }
+    ]
+  },
+  "Em": {
+    "ipa_hint": "?",
+    "total_frequency": 4,
+    "graphemes": [
+      {
+        "g": "em",
+        "freq": 4,
+        "example": "totem"
+      }
+    ]
+  },
+  "En": {
+    "ipa_hint": "?",
+    "total_frequency": 17,
+    "graphemes": [
+      {
+        "g": "en",
+        "freq": 17,
+        "example": "pollen"
+      }
+    ]
+  },
+  "Et": {
+    "ipa_hint": "?",
+    "total_frequency": 6,
+    "graphemes": [
+      {
+        "g": "et",
+        "freq": 6,
+        "example": "basket"
+      }
+    ]
+  },
+  "Ez": {
+    "ipa_hint": "?",
+    "total_frequency": 1,
+    "graphemes": [
+      {
+        "g": "ez",
+        "freq": 1,
+        "example": "merguez"
+      }
+    ]
+  },
+  "G": {
+    "ipa_hint": "ŋ",
+    "total_frequency": 21,
+    "graphemes": [
+      {
+        "g": "ng",
+        "freq": 21,
+        "example": "parking"
+      }
+    ]
+  },
+  "N": {
+    "ipa_hint": "ɲ",
+    "total_frequency": 202,
+    "graphemes": [
+      {
+        "g": "gn",
+        "freq": 202,
+        "example": "peigne"
+      }
+    ]
+  },
+  "O": {
+    "ipa_hint": "ɔ",
+    "total_frequency": 3525,
+    "graphemes": [
+      {
+        "g": "o",
+        "freq": 3496,
+        "example": "bord"
+      },
+      {
+        "g": "au",
+        "freq": 19,
+        "example": "dinosaure"
+      },
+      {
+        "g": "oo",
+        "freq": 3,
+        "example": "alcool"
+      },
+      {
+        "g": "a",
+        "freq": 1,
+        "example": "yacht"
+      },
+      {
+        "g": "ô",
+        "freq": 1,
+        "example": "hôpital"
+      },
+      {
+        "g": "oa",
+        "freq": 1,
+        "example": "skateboard"
+      },
+      {
+        "g": "oi",
+        "freq": 1,
+        "example": "oignon"
+      },
+      {
+        "g": "ow",
+        "freq": 1,
+        "example": "show"
+      }
+    ]
+  },
+  "Oj": {
+    "ipa_hint": "?",
+    "total_frequency": 4,
+    "graphemes": [
+      {
+        "g": "oy",
+        "freq": 4,
+        "example": "coyote"
+      }
+    ]
+  },
+  "Om": {
+    "ipa_hint": "?",
+    "total_frequency": 37,
+    "graphemes": [
+      {
+        "g": "um",
+        "freq": 36,
+        "example": "album"
+      },
+      {
+        "g": "om",
+        "freq": 1,
+        "example": "slalom"
+      }
+    ]
+  },
+  "On": {
+    "ipa_hint": "?",
+    "total_frequency": 7,
+    "graphemes": [
+      {
+        "g": "on",
+        "freq": 7,
+        "example": "bonheur"
+      }
+    ]
+  },
+  "R": {
+    "ipa_hint": "ʁ",
+    "total_frequency": 9449,
+    "graphemes": [
+      {
+        "g": "r",
+        "freq": 9147,
+        "example": "rêve"
+      },
+      {
+        "g": "rr",
+        "freq": 302,
+        "example": "marron"
+      }
+    ]
+  },
+  "S": {
+    "ipa_hint": "ʃ",
+    "total_frequency": 907,
+    "graphemes": [
+      {
+        "g": "ch",
+        "freq": 885,
+        "example": "chat"
+      },
+      {
+        "g": "sh",
+        "freq": 12,
+        "example": "short"
+      },
+      {
+        "g": "sch",
+        "freq": 9,
+        "example": "schéma"
+      },
+      {
+        "g": "sc",
+        "freq": 1,
+        "example": "crescendo"
+      }
+    ]
+  },
+  "Z": {
+    "ipa_hint": "ʒ",
+    "total_frequency": 1246,
+    "graphemes": [
+      {
+        "g": "g",
+        "freq": 942,
+        "example": "gel"
+      },
+      {
+        "g": "j",
+        "freq": 258,
+        "example": "jeu"
+      },
+      {
+        "g": "ge",
+        "freq": 45,
+        "example": "bourgeon"
+      },
+      {
+        "g": "gg",
+        "freq": 1,
+        "example": "appogiature"
+      }
+    ]
+  },
+  "a": {
+    "ipa_hint": "a",
+    "total_frequency": 7121,
+    "graphemes": [
+      {
+        "g": "a",
+        "freq": 6936,
+        "example": "ami"
+      },
+      {
+        "g": "â",
+        "freq": 154,
+        "example": "âne"
+      },
+      {
+        "g": "e[CC]",
+        "freq": 23,
+        "example": "femme"
+      },
+      {
+        "g": "à",
+        "freq": 8,
+        "example": "à"
+      }
+    ]
+  },
+  "aj": {
+    "ipa_hint": "?",
+    "total_frequency": 7,
+    "graphemes": [
+      {
+        "g": "ay",
+        "freq": 4,
+        "example": "papaye"
+      },
+      {
+        "g": "i",
+        "freq": 2,
+        "example": "smiley"
+      },
+      {
+        "g": "ei",
+        "freq": 1,
+        "example": "edelweiss"
+      }
+    ]
+  },
+  "am": {
+    "ipa_hint": "?",
+    "total_frequency": 6,
+    "graphemes": [
+      {
+        "g": "am",
+        "freq": 6,
+        "example": "ramdam"
+      }
+    ]
+  },
+  "an": {
+    "ipa_hint": "?",
+    "total_frequency": 9,
+    "graphemes": [
+      {
+        "g": "an",
+        "freq": 9,
+        "example": "gentleman"
+      }
+    ]
+  },
+  "b": {
+    "ipa_hint": "b",
+    "total_frequency": 2225,
+    "graphemes": [
+      {
+        "g": "b",
+        "freq": 2220,
+        "example": "bague"
+      },
+      {
+        "g": "bb",
+        "freq": 5,
+        "example": "abbé"
+      }
+    ]
+  },
+  "d": {
+    "ipa_hint": "d",
+    "total_frequency": 2587,
+    "graphemes": [
+      {
+        "g": "d",
+        "freq": 2580,
+        "example": "dur"
+      },
+      {
+        "g": "dd",
+        "freq": 7,
+        "example": "addition"
+      }
+    ]
+  },
+  "dZ": {
+    "ipa_hint": "?",
+    "total_frequency": 6,
+    "graphemes": [
+      {
+        "g": "j",
+        "freq": 4,
+        "example": "jean (blue jean)"
+      },
+      {
+        "g": "g",
+        "freq": 2,
+        "example": "gentleman"
+      }
+    ]
+  },
+  "dz": {
+    "ipa_hint": "?",
+    "total_frequency": 1,
+    "graphemes": [
+      {
+        "g": "zz",
+        "freq": 1,
+        "example": "pizza"
+      }
+    ]
+  },
+  "e": {
+    "ipa_hint": "e",
+    "total_frequency": 6485,
+    "graphemes": [
+      {
+        "g": "é",
+        "freq": 4045,
+        "example": "été"
+      },
+      {
+        "g": "er",
+        "freq": 2235,
+        "example": "loyer"
+      },
+      {
+        "g": "e[CC]",
+        "freq": 109,
+        "example": "tennis"
+      },
+      {
+        "g": "ai",
+        "freq": 48,
+        "example": "mairie"
+      },
+      {
+        "g": "e",
+        "freq": 40,
+        "example": "media"
+      },
+      {
+        "g": "a",
+        "freq": 3,
+        "example": "lady"
+      },
+      {
+        "g": "ez",
+        "freq": 3,
+        "example": "nez"
+      },
+      {
+        "g": "ë",
+        "freq": 1,
+        "example": "canoë"
+      }
+    ]
+  },
+  "ei": {
+    "ipa_hint": "?",
+    "total_frequency": 9,
+    "graphemes": [
+      {
+        "g": "ay",
+        "freq": 9,
+        "example": "pays"
+      }
+    ]
+  },
+  "f": {
+    "ipa_hint": "f",
+    "total_frequency": 1792,
+    "graphemes": [
+      {
+        "g": "f",
+        "freq": 1397,
+        "example": "feu"
+      },
+      {
+        "g": "ff",
+        "freq": 218,
+        "example": "affaire"
+      },
+      {
+        "g": "ph",
+        "freq": 177,
+        "example": "photo"
+      }
+    ]
+  },
+  "g": {
+    "ipa_hint": "g",
+    "total_frequency": 1139,
+    "graphemes": [
+      {
+        "g": "g",
+        "freq": 966,
+        "example": "gare"
+      },
+      {
+        "g": "gu",
+        "freq": 160,
+        "example": "guide"
+      },
+      {
+        "g": "gg",
+        "freq": 7,
+        "example": "toboggan"
+      },
+      {
+        "g": "c",
+        "freq": 6,
+        "example": "seconde"
+      }
+    ]
+  },
+  "g8": {
+    "ipa_hint": "?",
+    "total_frequency": 10,
+    "graphemes": [
+      {
+        "g": "gu",
+        "freq": 10,
+        "example": "aiguille"
+      }
+    ]
+  },
+  "gZ": {
+    "ipa_hint": "?",
+    "total_frequency": 2,
+    "graphemes": [
+      {
+        "g": "gg",
+        "freq": 2,
+        "example": "suggérer"
+      }
+    ]
+  },
+  "gw": {
+    "ipa_hint": "?",
+    "total_frequency": 2,
+    "graphemes": [
+      {
+        "g": "gu",
+        "freq": 2,
+        "example": "jaguar"
+      }
+    ]
+  },
+  "gz": {
+    "ipa_hint": "?",
+    "total_frequency": 44,
+    "graphemes": [
+      {
+        "g": "x",
+        "freq": 44,
+        "example": "exil"
+      }
+    ]
+  },
+  "i": {
+    "ipa_hint": "i",
+    "total_frequency": 6030,
+    "graphemes": [
+      {
+        "g": "i",
+        "freq": 5761,
+        "example": "jeudi"
+      },
+      {
+        "g": "y",
+        "freq": 217,
+        "example": "analyse"
+      },
+      {
+        "g": "ï",
+        "freq": 33,
+        "example": "naïf"
+      },
+      {
+        "g": "î",
+        "freq": 11,
+        "example": "île"
+      },
+      {
+        "g": "ea",
+        "freq": 5,
+        "example": "jean (blue jean)"
+      },
+      {
+        "g": "ee",
+        "freq": 3,
+        "example": "jeep"
+      }
+    ]
+  },
+  "ij": {
+    "ipa_hint": "?",
+    "total_frequency": 279,
+    "graphemes": [
+      {
+        "g": "ill",
+        "freq": 159,
+        "example": "fille"
+      },
+      {
+        "g": "i",
+        "freq": 100,
+        "example": "tablier"
+      },
+      {
+        "g": "y",
+        "freq": 18,
+        "example": "essuyer"
+      },
+      {
+        "g": "il",
+        "freq": 1,
+        "example": "gentilhomme"
+      },
+      {
+        "g": "illi",
+        "freq": 1,
+        "example": "serpillière"
+      }
+    ]
+  },
+  "il": {
+    "ipa_hint": "?",
+    "total_frequency": 36,
+    "graphemes": [
+      {
+        "g": "ill",
+        "freq": 36,
+        "example": "ville"
+      }
+    ]
+  },
+  "ili": {
+    "ipa_hint": "?",
+    "total_frequency": 6,
+    "graphemes": [
+      {
+        "g": "illi",
+        "freq": 6,
+        "example": "tranquillité"
+      }
+    ]
+  },
+  "ilj": {
+    "ipa_hint": "?",
+    "total_frequency": 8,
+    "graphemes": [
+      {
+        "g": "illi",
+        "freq": 8,
+        "example": "million"
+      }
+    ]
+  },
+  "im": {
+    "ipa_hint": "?",
+    "total_frequency": 1,
+    "graphemes": [
+      {
+        "g": "im",
+        "freq": 1,
+        "example": "intérim"
+      }
+    ]
+  },
+  "in": {
+    "ipa_hint": "?",
+    "total_frequency": 3,
+    "graphemes": [
+      {
+        "g": "in",
+        "freq": 3,
+        "example": "badminton"
+      }
+    ]
+  },
+  "j": {
+    "ipa_hint": "j",
+    "total_frequency": 2124,
+    "graphemes": [
+      {
+        "g": "i",
+        "freq": 1858,
+        "example": "ciel"
+      },
+      {
+        "g": "ill",
+        "freq": 198,
+        "example": "paille"
+      },
+      {
+        "g": "il",
+        "freq": 37,
+        "example": "corail"
+      },
+      {
+        "g": "y",
+        "freq": 21,
+        "example": "yeux"
+      },
+      {
+        "g": "ï",
+        "freq": 8,
+        "example": "aïeul"
+      },
+      {
+        "g": "illi",
+        "freq": 1,
+        "example": "quincaillier"
+      },
+      {
+        "g": "ll",
+        "freq": 1,
+        "example": "cancoillotte"
+      }
+    ]
+  },
+  "ji": {
+    "ipa_hint": "?",
+    "total_frequency": 21,
+    "graphemes": [
+      {
+        "g": "illi",
+        "freq": 21,
+        "example": "saillie"
+      }
+    ]
+  },
+  "ju": {
+    "ipa_hint": "?",
+    "total_frequency": 2,
+    "graphemes": [
+      {
+        "g": "ue",
+        "freq": 2,
+        "example": "fuel"
+      }
+    ]
+  },
+  "k": {
+    "ipa_hint": "k",
+    "total_frequency": 3957,
+    "graphemes": [
+      {
+        "g": "c",
+        "freq": 2891,
+        "example": "car"
+      },
+      {
+        "g": "qu",
+        "freq": 811,
+        "example": "liquide"
+      },
+      {
+        "g": "k",
+        "freq": 93,
+        "example": "kilo"
+      },
+      {
+        "g": "cc",
+        "freq": 81,
+        "example": "occasion"
+      },
+      {
+        "g": "ch",
+        "freq": 46,
+        "example": "chorale"
+      },
+      {
+        "g": "ck",
+        "freq": 24,
+        "example": "ticket"
+      },
+      {
+        "g": "cqu",
+        "freq": 7,
+        "example": "acquisition"
+      },
+      {
+        "g": "q",
+        "freq": 3,
+        "example": "coq"
+      }
+    ]
+  },
+  "k8": {
+    "ipa_hint": "?",
+    "total_frequency": 2,
+    "graphemes": [
+      {
+        "g": "qu",
+        "freq": 2,
+        "example": "équidistance"
+      }
+    ]
+  },
+  "ks": {
+    "ipa_hint": "?",
+    "total_frequency": 246,
+    "graphemes": [
+      {
+        "g": "x",
+        "freq": 211,
+        "example": "axe"
+      },
+      {
+        "g": "cc",
+        "freq": 35,
+        "example": "succès"
+      }
+    ]
+  },
+  "kw": {
+    "ipa_hint": "?",
+    "total_frequency": 16,
+    "graphemes": [
+      {
+        "g": "qu",
+        "freq": 16,
+        "example": "aquarium"
+      }
+    ]
+  },
+  "l": {
+    "ipa_hint": "l",
+    "total_frequency": 4646,
+    "graphemes": [
+      {
+        "g": "l",
+        "freq": 4329,
+        "example": "la"
+      },
+      {
+        "g": "ll",
+        "freq": 317,
+        "example": "allée"
+      }
+    ]
+  },
+  "m": {
+    "ipa_hint": "m",
+    "total_frequency": 3452,
+    "graphemes": [
+      {
+        "g": "m",
+        "freq": 3245,
+        "example": "main"
+      },
+      {
+        "g": "mm",
+        "freq": 207,
+        "example": "pomme"
+      }
+    ]
+  },
+  "n": {
+    "ipa_hint": "n",
+    "total_frequency": 2437,
+    "graphemes": [
+      {
+        "g": "n",
+        "freq": 2065,
+        "example": "note"
+      },
+      {
+        "g": "nn",
+        "freq": 372,
+        "example": "année"
+      }
+    ]
+  },
+  "o": {
+    "ipa_hint": "o",
+    "total_frequency": 956,
+    "graphemes": [
+      {
+        "g": "o",
+        "freq": 396,
+        "example": "stylo"
+      },
+      {
+        "g": "au",
+        "freq": 358,
+        "example": "haut"
+      },
+      {
+        "g": "eau",
+        "freq": 128,
+        "example": "bureau"
+      },
+      {
+        "g": "ô",
+        "freq": 64,
+        "example": "arôme"
+      },
+      {
+        "g": "a",
+        "freq": 3,
+        "example": "football"
+      },
+      {
+        "g": "aw",
+        "freq": 3,
+        "example": "crawl"
+      },
+      {
+        "g": "oa",
+        "freq": 2,
+        "example": "goal"
+      },
+      {
+        "g": "oo",
+        "freq": 1,
+        "example": "zoo"
+      }
+    ]
+  },
+  "p": {
+    "ipa_hint": "p",
+    "total_frequency": 3229,
+    "graphemes": [
+      {
+        "g": "p",
+        "freq": 3041,
+        "example": "opéra"
+      },
+      {
+        "g": "pp",
+        "freq": 149,
+        "example": "nappe"
+      },
+      {
+        "g": "b",
+        "freq": 39,
+        "example": "absent"
+      }
+    ]
+  },
+  "s": {
+    "ipa_hint": "s",
+    "total_frequency": 5093,
+    "graphemes": [
+      {
+        "g": "s",
+        "freq": 2488,
+        "example": "salade"
+      },
+      {
+        "g": "c",
+        "freq": 1051,
+        "example": "cil"
+      },
+      {
+        "g": "ss",
+        "freq": 850,
+        "example": "tasse"
+      },
+      {
+        "g": "t",
+        "freq": 568,
+        "example": "addition"
+      },
+      {
+        "g": "sc",
+        "freq": 72,
+        "example": "scie"
+      },
+      {
+        "g": "ç",
+        "freq": 58,
+        "example": "façon"
+      },
+      {
+        "g": "x",
+        "freq": 5,
+        "example": "soixantaine"
+      },
+      {
+        "g": "z",
+        "freq": 1,
+        "example": "quartz"
+      }
+    ]
+  },
+  "t": {
+    "ipa_hint": "t",
+    "total_frequency": 5826,
+    "graphemes": [
+      {
+        "g": "t",
+        "freq": 5306,
+        "example": "tête"
+      },
+      {
+        "g": "tt",
+        "freq": 410,
+        "example": "patte"
+      },
+      {
+        "g": "th",
+        "freq": 110,
+        "example": "thé"
+      }
+    ]
+  },
+  "tS": {
+    "ipa_hint": "?",
+    "total_frequency": 5,
+    "graphemes": [
+      {
+        "g": "c",
+        "freq": 2,
+        "example": "dolce"
+      },
+      {
+        "g": "ch",
+        "freq": 2,
+        "example": "sandwich"
+      },
+      {
+        "g": "cc",
+        "freq": 1,
+        "example": "carpaccio"
+      }
+    ]
+  },
+  "u": {
+    "ipa_hint": "u",
+    "total_frequency": 1249,
+    "graphemes": [
+      {
+        "g": "ou",
+        "freq": 1207,
+        "example": "loup"
+      },
+      {
+        "g": "oû",
+        "freq": 17,
+        "example": "goût"
+      },
+      {
+        "g": "oo",
+        "freq": 13,
+        "example": "foot"
+      },
+      {
+        "g": "u",
+        "freq": 6,
+        "example": "yucca"
+      },
+      {
+        "g": "e",
+        "freq": 3,
+        "example": "interview"
+      },
+      {
+        "g": "o",
+        "freq": 2,
+        "example": "clown"
+      },
+      {
+        "g": "où",
+        "freq": 1,
+        "example": "où"
+      }
+    ]
+  },
+  "v": {
+    "ipa_hint": "v",
+    "total_frequency": 1583,
+    "graphemes": [
+      {
+        "g": "v",
+        "freq": 1579,
+        "example": "vitre"
+      },
+      {
+        "g": "w",
+        "freq": 4,
+        "example": "wagon"
+      }
+    ]
+  },
+  "w": {
+    "ipa_hint": "w",
+    "total_frequency": 104,
+    "graphemes": [
+      {
+        "g": "ou",
+        "freq": 90,
+        "example": "douane"
+      },
+      {
+        "g": "w",
+        "freq": 12,
+        "example": "tramway"
+      },
+      {
+        "g": "u",
+        "freq": 1,
+        "example": "cacahuète"
+      },
+      {
+        "g": "wh",
+        "freq": 1,
+        "example": "whisky"
+      }
+    ]
+  },
+  "w5": {
+    "ipa_hint": "?",
+    "total_frequency": 48,
+    "graphemes": [
+      {
+        "g": "oin",
+        "freq": 47,
+        "example": "loin"
+      },
+      {
+        "g": "ooin",
+        "freq": 1,
+        "example": "shampooing"
+      }
+    ]
+  },
+  "wa": {
+    "ipa_hint": "?",
+    "total_frequency": 438,
+    "graphemes": [
+      {
+        "g": "oi",
+        "freq": 427,
+        "example": "roi"
+      },
+      {
+        "g": "oî",
+        "freq": 8,
+        "example": "boîte"
+      },
+      {
+        "g": "oe",
+        "freq": 2,
+        "example": "moelle"
+      },
+      {
+        "g": "oê",
+        "freq": 1,
+        "example": "poêle"
+      }
+    ]
+  },
+  "waj": {
+    "ipa_hint": "?",
+    "total_frequency": 82,
+    "graphemes": [
+      {
+        "g": "oy",
+        "freq": 82,
+        "example": "moyen"
+      }
+    ]
+  },
+  "y": {
+    "ipa_hint": "y",
+    "total_frequency": 1923,
+    "graphemes": [
+      {
+        "g": "u",
+        "freq": 1897,
+        "example": "puce"
+      },
+      {
+        "g": "û",
+        "freq": 26,
+        "example": "flûte"
+      }
+    ]
+  },
+  "z": {
+    "ipa_hint": "z",
+    "total_frequency": 1147,
+    "graphemes": [
+      {
+        "g": "s",
+        "freq": 1033,
+        "example": "rose"
+      },
+      {
+        "g": "z",
+        "freq": 100,
+        "example": "zéro"
+      },
+      {
+        "g": "x",
+        "freq": 7,
+        "example": "deuxième"
+      },
+      {
+        "g": "zz",
+        "freq": 7,
+        "example": "grizzli"
+      }
+    ]
+  },
+  "§": {
+    "ipa_hint": "ɔ̃",
+    "total_frequency": 1731,
+    "graphemes": [
+      {
+        "g": "on",
+        "freq": 1531,
+        "example": "rond"
+      },
+      {
+        "g": "om",
+        "freq": 196,
+        "example": "ombre"
+      },
+      {
+        "g": "un",
+        "freq": 4,
+        "example": "acupuncture"
+      }
+    ]
+  },
+  "°": {
+    "ipa_hint": "ə",
+    "total_frequency": 5325,
+    "graphemes": [
+      {
+        "g": "e",
+        "freq": 5324,
+        "example": "gare"
+      },
+      {
+        "g": "e[CC]",
+        "freq": 1,
+        "example": "travelling"
+      }
+    ]
+  }
+}

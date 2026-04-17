@@ -222,6 +222,7 @@ export const DEFAULT_PREFERENCES = {
   speechRate: 1,
   pauseBetweenSentences: 0,
   speechVoiceId: "",
+  assistSchoolLevel: "college",
   localAiMode: "off",
   localAiModel: "gemma3:4b",
   ocrLanguage: "fra",
@@ -306,15 +307,15 @@ export const BUILTIN_PROFILES = [
       soundColorMode: "soft",
       syllableBreakMode: "none",
       readingGuideMode: "off",
-      pauseBetweenSentences: 500
+      pauseBetweenSentences: 200
     }
   },
   {
     id: "decodage-renforce",
     label: "Dyslexie renforcée",
-    description: "Active une aide visuelle plus marquée pour syllabes, décodage et repères de lecture.",
+    description: "Met en avant la lecture dys avec alternance par ligne, repères stables et guidage visuel clair.",
     editable: true,
-    researchNotes: "Renforce les appuis visuels sans surcharge, avec focus léger et coloration douce.",
+    researchNotes: "Profil dys mis en avant avec alternance par ligne, largeur réduite et réglette simple pour garder le fil.",
     defaults: {
       ...DEFAULT_PREFERENCES,
       fontFamily: "\"OpenDyslexic\", \"Arial\", sans-serif",
@@ -323,13 +324,13 @@ export const BUILTIN_PROFILES = [
       letterSpacing: 0.12,
       wordSpacing: 0.2,
       maxLineLength: 58,
-      theme: "contraste",
+      theme: "blanc",
       focusMode: "none",
       highlightMode: "soft",
-      colorationMode: "pedagogique",
-      syllableLevel: "strong",
-      soundColorMode: "soft",
-      syllableBreakMode: "dot",
+      colorationMode: "alternanceLignes",
+      syllableLevel: "off",
+      soundColorMode: "strong",
+      syllableBreakMode: "none",
       readingGuideMode: "ruler",
       readingGuideLines: 1,
       readingGuideOpacity: 0.14

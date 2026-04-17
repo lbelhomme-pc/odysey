@@ -5,6 +5,13 @@ import {
   normalizeSyllableWordScope,
   shouldDisplaySyllables
 } from "./syllabify-french.mjs";
+import {
+  classifyPhoneme,
+  getKnownGraphemes,
+  getPhonemeCssToken,
+  isInconsistentGrapheme,
+  resolveGraphemePhoneme
+} from "./phoneme-reference.mjs";
 
 const WORD_TOKEN_REGEX = /(\s+|[\p{L}]+(?:['\u2019][\p{L}]+)?|[0-9]+|[^\s\p{L}0-9])/gu;
 const LETTER_REGEX = /\p{L}/u;
@@ -14,7 +21,24 @@ const ADMIN_KEYWORD_REGEX =
   /\b(?:acad[eé]mie|adresse|adolphe|affectation|arr[eê]t[eé]|avenue|cap|cert(?:ificat)?|collectif|croix|extrait|individuel|isnard|nice|recteur|rectoral|serrat|zone)\b/iu;
 const ADDRESS_OR_CODE_REGEX = /\b(?:\d{5}|\d{7}[A-Z]|\d{1,4}[A-Z]{1,3})\b/u;
 
-export const PEDAGOGIC_COLORATION_MODES = new Set(["pedagogique", "pedagogiqueAlt", "sonsFrancais"]);
+export const PEDAGOGIC_COLORATION_MODES = new Set([
+  "pedagogique",
+  "pedagogiqueAlt",
+  "pedagogiqueContrast",
+  "sonsFrancais"
+]);
+const SUPPORTED_COLORATION_MODES = new Set([
+  "none",
+  "pedagogique",
+  "pedagogiqueAlt",
+  "pedagogiqueContrast",
+  "sonsFrancais",
+  "alternanceLignes",
+  "alternanceMots",
+  "noirEtBlanc"
+]);
+const BACKGROUND_PATTERN_MODES = new Set(["alternanceLignes", "alternanceMots", "noirEtBlanc"]);
+const KNOWN_GRAPHEME_PATTERNS = getKnownGraphemes(5);
 
 const STOPWORDS = new Set([
   "a",
@@ -96,49 +120,6 @@ const STOPWORDS = new Set([
   "y"
 ]);
 
-const PHONEME_PATTERNS = [
-  "eaux",
-  "eau",
-  "oeu",
-  "euil",
-  "ueil",
-  "eille",
-  "eill",
-  "aille",
-  "ain",
-  "ein",
-  "oin",
-  "ion",
-  "ien",
-  "ill",
-  "ail",
-  "eil",
-  "ou",
-  "oi",
-  "ai",
-  "ei",
-  "eu",
-  "au",
-  "an",
-  "am",
-  "en",
-  "em",
-  "on",
-  "om",
-  "in",
-  "im",
-  "un",
-  "um",
-  "gn",
-  "ph",
-  "ch",
-  "qu"
-];
-
-const NASAL_PHONEMES = new Set(["an", "am", "en", "em", "on", "om", "in", "im", "ain", "ein", "oin", "un", "um"]);
-const VOWEL_PHONEMES = new Set(["eau", "eaux", "au", "eu", "oeu", "ai", "ei", "oi", "ou"]);
-const COMPLEX_PHONEMES = new Set(["ion", "ien", "ill", "eille", "eill", "aille", "ail", "eil", "gn", "ph", "ch", "qu"]);
-
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -155,11 +136,20 @@ function normalizeWord(value) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+function normalizeGraphemeKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFC");
+}
+
 export function normalizeColorationMode(value) {
   if (value === "grammar") {
     return "pedagogique";
   }
-  return value || "none";
+  if (value === "alternanceMotsNB") {
+    return "noirEtBlanc";
+  }
+  return SUPPORTED_COLORATION_MODES.has(value) ? value : "none";
 }
 
 function tokenizeForColoring(text) {
@@ -191,28 +181,35 @@ function getPhonemeColorClass(unit) {
   return checksum % 2 === 0 ? "syllabe1" : "syllabe2";
 }
 
-function getFrenchSoundClass(unit) {
-  if (NASAL_PHONEMES.has(unit.normalized)) {
-    return "sound-nasal";
+function getFrenchSoundClass(phonemeCode, unit) {
+  switch (classifyPhoneme(phonemeCode)) {
+    case "nasal":
+      return "sound-nasal";
+    case "semivowel":
+      return "sound-semivowel";
+    case "vowel":
+      return "sound-vowel";
+    case "silent":
+      return "sound-silent";
+    case "consonant":
+      return "sound-consonant";
+    default:
+      if (containsVowel(unit.text) || containsVowel(unit.normalized)) {
+        return "sound-vowel";
+      }
+      return "sound-complex";
   }
-  if (COMPLEX_PHONEMES.has(unit.normalized)) {
-    return "sound-complex";
-  }
-  if (VOWEL_PHONEMES.has(unit.normalized) || containsVowel(unit.text) || containsVowel(unit.normalized)) {
-    return "sound-vowel";
-  }
-  return "sound-consonant";
 }
 
 function splitIntoPhonemeUnits(word) {
   const units = [];
   const source = String(word);
-  const lower = source.toLowerCase();
+  const lower = normalizeGraphemeKey(source);
   let index = 0;
 
   while (index < source.length) {
     let matched = "";
-    for (const pattern of PHONEME_PATTERNS) {
+    for (const pattern of KNOWN_GRAPHEME_PATTERNS) {
       if (lower.startsWith(pattern, index)) {
         matched = source.slice(index, index + pattern.length);
         break;
@@ -225,7 +222,10 @@ function splitIntoPhonemeUnits(word) {
 
     units.push({
       text: matched,
-      normalized: normalizeWord(matched)
+      key: normalizeGraphemeKey(matched),
+      normalized: normalizeWord(matched),
+      start: index,
+      end: index + matched.length
     });
     index += matched.length;
   }
@@ -359,11 +359,40 @@ function renderSyllableSeparator(syllableBreakMode, isLast) {
   return `<span class="syllable-separator syllable-separator--${syllableBreakMode}" aria-hidden="true">${separator}</span>`;
 }
 
+function getWordPatternValue(colorationMode, wordIndex) {
+  if (!BACKGROUND_PATTERN_MODES.has(colorationMode)) {
+    return "";
+  }
+  return wordIndex % 2 === 0 ? "a" : "b";
+}
+
 function renderPhonemeUnits(text, { colorationMode = "pedagogique", soundColorMode = "soft", fallbackClass = "syllabe1" } = {}) {
   return splitIntoPhonemeUnits(text)
     .map((unit) => {
       if (colorationMode === "sonsFrancais") {
-        return `<span class="phoneme sound ${getFrenchSoundClass(unit)} ${soundColorMode === "strong" ? "sound-strong" : "sound-soft"}">${escapeHtml(unit.text)}</span>`;
+        const association = resolveGraphemePhoneme(unit.key, text, unit.start);
+        const phonemeCode = association?.phoneme || unit.key;
+        const soundClass = association?.classification
+          ? getFrenchSoundClass(phonemeCode, unit)
+          : containsVowel(unit.text) || containsVowel(unit.normalized)
+            ? "sound-vowel"
+            : "sound-complex";
+        const toneClass =
+          soundColorMode === "monoStrong"
+            ? "sound-mono-strong"
+            : soundColorMode === "mono"
+            ? "sound-mono"
+            : soundColorMode === "vivid"
+              ? "sound-vivid"
+              : soundColorMode === "strong"
+                ? "sound-strong"
+                : "sound-soft";
+        const phonemeToken = getPhonemeCssToken(phonemeCode);
+        const inconsistentClass = association?.inconsistent || isInconsistentGrapheme(unit.key) ? " phoneme-inconsistent" : "";
+        const tooltip = association?.phonemeMeta
+          ? `${association.phonemeMeta.label} écrit « ${unit.text} »${association.example ? ` comme dans ${association.example}` : ""}`
+          : "";
+        return `<span class="phoneme sound ${soundClass} ${toneClass} sound-phoneme-${phonemeToken}${inconsistentClass}" data-phoneme="${escapeHtml(phonemeCode)}" data-grapheme="${escapeHtml(unit.text)}"${tooltip ? ` title="${escapeHtml(tooltip)}"` : ""}>${escapeHtml(unit.text)}</span>`;
       }
       const phonemeClass = fallbackClass || getPhonemeColorClass(unit);
       return `<span class="phoneme ${phonemeClass}">${escapeHtml(unit.text)}</span>`;
@@ -413,16 +442,25 @@ function renderWordCore(
   }
 
   const normalizedMode = normalizeColorationMode(colorationMode);
+  if (BACKGROUND_PATTERN_MODES.has(normalizedMode)) {
+    return escapeHtml(source);
+  }
   const normalizedLevel = normalizeSyllableLevel(syllableLevel);
   if (normalizedMode === "none" && normalizedLevel === "off") {
     return escapeHtml(source);
   }
 
   const analysis = analyzeFrenchWord(source, { mode: syllabificationMode });
-  const showSyllables = shouldDisplaySyllables(analysis, {
-    level: syllableLevel,
-    wordScope: syllableWordScope
-  });
+  const pedagogicColorationActive =
+    normalizedMode === "pedagogique" ||
+    normalizedMode === "pedagogiqueAlt" ||
+    normalizedMode === "pedagogiqueContrast";
+  const showSyllables =
+    shouldDisplaySyllables(analysis, {
+      level: syllableLevel,
+      wordScope: syllableWordScope
+    }) ||
+    (pedagogicColorationActive && analysis.syllables.length > 1);
   const silentMarkup = analysis.silentEnding ? `<span class="muet">${escapeHtml(analysis.silentEnding)}</span>` : "";
 
   if (!showSyllables) {
@@ -465,17 +503,23 @@ function renderAdaptedWord(
     syllableWordScope = "auto",
     audioTracking = false,
     audioState = null,
+    visualPatternState = null,
     annotationRanges = [],
-    blockAssistDisabled = false
+    blockAssistDisabled = false,
+    sourceOffset = 0
   } = {}
 ) {
   const word = token.value;
   const wordIndex = audioTracking && audioState ? audioState.index++ : null;
-  const lookupAttributes = `data-lookup-word="${escapeHtml(word)}" data-source-start="${token.start}" data-source-end="${token.end}"`;
+  const visualIndex = visualPatternState ? visualPatternState.index++ : 0;
+  const sourceStart = token.start + sourceOffset;
+  const sourceEnd = token.end + sourceOffset;
+  const lookupAttributes = `data-lookup-word="${escapeHtml(word)}" data-source-start="${sourceStart}" data-source-end="${sourceEnd}"`;
   const parts = String(word).split(/(['\u2019])/u);
-  const activeAnnotation = annotationRanges.find((range) => token.start < range.end && token.end > range.start);
+  const activeAnnotation = annotationRanges.find((range) => sourceStart < range.end && sourceEnd > range.start);
   const annotationClass = activeAnnotation ? ` is-annotated text-annotation--${activeAnnotation.color}` : "";
   const importantClass = isImportantWord(word, blockType) && !blockAssistDisabled ? " important" : "";
+  const wordPatternValue = getWordPatternValue(normalizeColorationMode(colorationMode), visualIndex);
   const content = parts
     .map((part) => {
       if (!part) {
@@ -506,10 +550,10 @@ function renderAdaptedWord(
     .join("");
 
   if (!audioTracking) {
-    return `<span class="word-select-target" ${lookupAttributes}>${content}</span>`;
+    return `<span class="word-select-target"${wordPatternValue ? ` data-word-pattern="${wordPatternValue}"` : ""} ${lookupAttributes}>${content}</span>`;
   }
 
-  return `<span class="word-audio-track word-select-target${annotationClass}" data-audio-word-index="${wordIndex}" ${lookupAttributes}>${content}</span>`;
+  return `<span class="word-audio-track word-select-target${annotationClass}"${wordPatternValue ? ` data-word-pattern="${wordPatternValue}"` : ""} data-audio-word-index="${wordIndex}" ${lookupAttributes}>${content}</span>`;
 }
 
 export function renderAdaptedText(
@@ -524,6 +568,8 @@ export function renderAdaptedText(
     blockType = "paragraph",
     audioTracking = false,
     wordIndexOffset = 0,
+    sourceOffset = 0,
+    visualPatternState = null,
     annotationRanges = []
   } = {}
 ) {
@@ -535,6 +581,7 @@ export function renderAdaptedText(
   const audioState = {
     index: wordIndexOffset
   };
+  const sharedVisualPatternState = visualPatternState || { index: 0 };
 
   return tokenizeForColoring(text)
     .map((token) => {
@@ -551,8 +598,10 @@ export function renderAdaptedText(
         syllableWordScope: normalizedSyllableWordScope,
         audioTracking,
         audioState,
+        visualPatternState: sharedVisualPatternState,
         annotationRanges,
-        blockAssistDisabled
+        blockAssistDisabled,
+        sourceOffset
       });
     })
     .join("");

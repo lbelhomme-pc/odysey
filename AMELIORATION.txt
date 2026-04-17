@@ -1,0 +1,17 @@
+Pour les profils : N'avoir que : Normal / Lecture Visuelle / Audio/Focus / Dyslexie renforcée (transformé le nom en dyslexie renforcée) et mode examen / Dyspraxie / Dyscalculie 
+
+Supprimer les autres profils complètement pour simplifier l'application. Le reste sera des profils à personnaliser par l'utilisateur 
+
+Dans réglage standard il faut juste afficher les profils que l'on a défini avant (les 7) et supprimer le reste
+
+Avoir un réglage / case collège pour simplifier 
+- Il faut les différents profils en "onglet".
+- Importer PDF / Exporter PDF
+
+Autrement avec l'IA : 
+- Résumé / Reformulation niveau collège lycée
+
+- Détection d'exercice et de question : si la question demande plusieurs tâches il faudrait permettre une reformulation de la consigne avec subdivision des tâches
+
+
+-

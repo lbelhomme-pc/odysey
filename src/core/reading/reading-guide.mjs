@@ -46,7 +46,7 @@ export class ReadingGuide {
 
     this.destroy();
     this.container = container;
-    this.host = this.container.parentElement || this.container;
+    this.host = this.container;
     if (getComputedStyle(this.host).position === "static") {
       this.host.style.position = "relative";
     }
@@ -216,8 +216,8 @@ export class ReadingGuide {
     const boundedBottom = clamp(visibleHeight - boundedTop - guideHeight, 0, visibleHeight);
 
     this.root.hidden = this.mode === "off";
-    this.root.style.top = `${this.container.offsetTop}px`;
-    this.root.style.left = `${this.container.offsetLeft}px`;
+    this.root.style.top = `${this.container.scrollTop}px`;
+    this.root.style.left = `${this.container.scrollLeft}px`;
     this.root.style.width = `${this.container.clientWidth}px`;
     this.root.style.height = `${this.container.clientHeight}px`;
     this.root.style.setProperty("--dl-guide-color", this.color);

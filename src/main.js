@@ -41,8 +41,9 @@ function stopNativeSpeech({ markStopped = true } = {}) {
   return { ok: true };
 }
 
-function buildWindowsSpeechCommand(text, rate, requestId) {
+function buildWindowsSpeechCommand(text, rate, requestId, voiceURI = "") {
   const encodedText = Buffer.from(String(text || ""), "utf16le").toString("base64");
+  const encodedVoice = Buffer.from(String(voiceURI || ""), "utf16le").toString("base64");
   const speechRate = normalizeNativeSpeechRate(rate);
   const safeRequestId = Math.max(0, Number(requestId) || 0);
   return [
@@ -53,14 +54,35 @@ function buildWindowsSpeechCommand(text, rate, requestId) {
     "  [Console]::Out.Flush();",
     "}",
     `$text = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encodedText}'));`,
+    `$voiceName = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encodedVoice}'));`,
     "$speaker = New-Object System.Speech.Synthesis.SpeechSynthesizer;",
     `$speaker.Rate = ${speechRate};`,
+    "if ($voiceName) { try { $speaker.SelectVoice($voiceName) } catch { } }",
     "$speaker.SetOutputToDefaultAudioDevice();",
     "$speaker.add_SpeakStarted({ Send-NativeProgress 'start' 0 0 });",
     "$speaker.add_SpeakProgress({ param($sender, $eventArgs) Send-NativeProgress 'word' $eventArgs.CharacterPosition $eventArgs.CharacterCount });",
     "$speaker.add_SpeakCompleted({ Send-NativeProgress 'end' 0 0 });",
     "$speaker.Speak($text);",
     "$speaker.Dispose();"
+  ].join(" ");
+}
+
+function buildWindowsVoiceCatalogCommand() {
+  return [
+    "Add-Type -AssemblyName System.Speech;",
+    "$speaker = New-Object System.Speech.Synthesis.SpeechSynthesizer;",
+    "$voices = $speaker.GetInstalledVoices() | ForEach-Object {",
+    "  $info = $_.VoiceInfo;",
+    "  [pscustomobject]@{",
+    "    id = [string]$info.Name;",
+    "    name = [string]$info.Name;",
+    "    lang = [string]$info.Culture.Name;",
+    "    gender = [string]$info.Gender;",
+    "    description = [string]$info.Description",
+    "  }",
+    "};",
+    "$speaker.Dispose();",
+    "$voices | ConvertTo-Json -Compress"
   ].join(" ");
 }
 
@@ -91,7 +113,7 @@ async function speakWithNativeVoice(payload = {}, webContents = null) {
   stopNativeSpeech({ markStopped: false });
   const requestId = ++nativeSpeechSequence;
   const clientRequestId = Math.max(0, Number(payload.requestId) || requestId);
-  const command = buildWindowsSpeechCommand(text, payload.rate, clientRequestId);
+  const command = buildWindowsSpeechCommand(text, payload.rate, clientRequestId, payload.voiceURI);
   const child = spawn(
     "powershell.exe",
     ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
@@ -146,6 +168,75 @@ async function speakWithNativeVoice(payload = {}, webContents = null) {
         stopped: Boolean(signal),
         reason: code === 0 ? "" : stderr.trim() || `NATIVE_SPEECH_EXIT_${code}`
       });
+    });
+  });
+}
+
+async function listNativeVoices() {
+  if (process.platform !== "win32") {
+    return {
+      ok: false,
+      voices: [],
+      reason: "NATIVE_VOICES_UNSUPPORTED_PLATFORM"
+    };
+  }
+
+  const command = buildWindowsVoiceCatalogCommand();
+  const child = spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command], {
+    windowsHide: true,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  return new Promise((resolve) => {
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout?.on("data", (chunk) => {
+      stdout += chunk.toString("utf8");
+    });
+
+    child.stderr?.on("data", (chunk) => {
+      stderr += chunk.toString("utf8");
+    });
+
+    child.on("error", (error) => {
+      resolve({
+        ok: false,
+        voices: [],
+        reason: error?.message || "NATIVE_VOICES_SPAWN_FAILED"
+      });
+    });
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        resolve({
+          ok: false,
+          voices: [],
+          reason: stderr.trim() || `NATIVE_VOICES_EXIT_${code}`
+        });
+        return;
+      }
+
+      try {
+        const parsed = stdout.trim() ? JSON.parse(stdout.trim()) : [];
+        const voices = (Array.isArray(parsed) ? parsed : parsed ? [parsed] : []).map((voice) => ({
+          id: String(voice?.id || voice?.name || ""),
+          name: String(voice?.name || voice?.id || ""),
+          lang: String(voice?.lang || "fr-FR"),
+          gender: String(voice?.gender || ""),
+          description: String(voice?.description || "")
+        }));
+        resolve({
+          ok: true,
+          voices
+        });
+      } catch (error) {
+        resolve({
+          ok: false,
+          voices: [],
+          reason: error?.message || "NATIVE_VOICES_PARSE_FAILED"
+        });
+      }
     });
   });
 }
@@ -530,6 +621,7 @@ ipcMain.handle("local-ai:status", async (_event, model) => getLocalAiStatus(mode
 ipcMain.handle("local-ai:generate", async (_event, payload) => generateLocalAiText(payload));
 ipcMain.handle("speech:native-speak", async (event, payload) => speakWithNativeVoice(payload, event.sender));
 ipcMain.handle("speech:native-stop", async () => stopNativeSpeech());
+ipcMain.handle("speech:native-voices", async () => listNativeVoices());
 
 ipcMain.handle("storage:load-settings", async () => loadSettings());
 
